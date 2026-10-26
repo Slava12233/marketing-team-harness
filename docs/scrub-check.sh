@@ -2,8 +2,9 @@
 # Scrub gate: fails when any term of docs/TEMPLATE-SPEC.md §8 appears anywhere in the repository.
 # Usage: bash docs/scrub-check.sh [repo-root]   (exit 0 = clean, 1 = hits, 2 = usage)
 # The term list is read from the fenced block under "## 8. Scrub gate" so it lives in one place.
-# Excluded: .git, node_modules, media folders, this script, the spec, and the verbatim third-party
-# skills (their attribution lines are theirs; they were checked for company terms when copied).
+# Excluded: .git, node_modules, media folders, this script, the spec, the verbatim third-party
+# skills (their attribution lines are theirs; they were checked for company terms when copied), and
+# vendor/ (the HyperFrames plugin, vendored verbatim; see THIRD-PARTY.md).
 set -u
 ROOT="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
 SPEC="$ROOT/docs/TEMPLATE-SPEC.md"
@@ -13,7 +14,7 @@ TERMS=$(awk '/^## 8\. Scrub gate/{f=1;next} f&&/^```/{c++; if(c==2){exit}; next}
   | tr ',' '\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//' | sed '/^$/d')
 
 THIRD_PARTY="ad-creative image banner-design frontend-design find-skills grill-me grilling viral-reverse-engineering"
-EXCL=(--exclude-dir=.git --exclude-dir=node_modules --exclude-dir=media --exclude=TEMPLATE-SPEC.md --exclude=scrub-check.sh --binary-files=without-match)
+EXCL=(--exclude-dir=.git --exclude-dir=node_modules --exclude-dir=media --exclude-dir=vendor --exclude=TEMPLATE-SPEC.md --exclude=scrub-check.sh --binary-files=without-match)
 for d in $THIRD_PARTY; do EXCL+=("--exclude-dir=$d"); done
 
 STATUS=0

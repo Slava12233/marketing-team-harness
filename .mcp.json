@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "meta-ads": { "type": "http", "url": "https://mcp.facebook.com/ads" },
+    "fal": { "type": "http", "url": "https://mcp.fal.ai/mcp-relay" }
+  }
+}

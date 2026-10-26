@@ -10,28 +10,41 @@ It was cut from a harness that ran real campaigns, so its rules carry what was l
 
 A company that advertises on Meta and wants Claude Code to do the paid-media work under one accountable person. The **Owner** gives the go on money and holds the Meta logins; the **Operator** (often a marketer, sometimes the Owner) runs the sessions and does not need to be technical: every console step comes as a click list and every engineer step as a copy-paste block. A **product team** that ships the website is optional; without one, page changes are the Owner's.
 
+**The Claude plan.** Claude Max is the working plan: the agents run on Opus and Sonnet, and creative rounds and builds use a lot of model time. Claude Pro works for reads and reports but runs into its usage limits on creative rounds and builds. A company that has an Anthropic API key can use that instead. Plans and their limits change; check them on Anthropic's site.
+
 ## Quick start
 
-1. Clone this repository, or press **Use this template** on GitHub and clone your copy.
-2. Connect the tools (below) and open the folder in Claude Code.
-3. Run `/setup`: the wizard interviews you in rounds of four questions, writes `config/*.md`, checks the Meta account live and drafts a first-flight plan.
-4. Run `/health`: a green/yellow/red table of every connection and file.
-5. Run `/morning` at the start of each working day.
+1. **Get the files.** Download the release zip (or clone this repository, or press **Use this template** on GitHub and clone your copy, kept private) and unzip it into a folder you own, for example inside your Documents folder.
+2. **Run the bootstrap** in that folder. Windows: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1`. macOS: `bash bootstrap.sh`. It checks Git, Node 20+ and Claude Code, reports whether a browser (Edge or Chrome) is present, installs what is missing after a y/n for each, copies `.env.example` to `.env`, offers the optional extras and prints what remains. With `-Check` (Windows) or `--check` (macOS) it only reports. Flags: `-Check` (Windows) or `--check` (macOS) reports without installing; `-Yes` / `--yes` accepts every required item; `-Help` / `--help`.
+3. **Open the folder in Claude Code** (type `claude` in a terminal in the folder) and approve the two MCP servers it brings in `.mcp.json`: `meta-ads` and `fal`.
+4. **Log in:** `/mcp` → `meta-ads` → log in with the Owner's Facebook profile, granting this company's business, ad account and Page. Optional: `/mcp` → `fal` → log in with the company's fal account.
+5. **Start a new session** (Meta's tools load only into sessions started after the login) and run `/setup`: the wizard interviews you in rounds of four questions, prints the Meta console click lists and checks each outcome live, writes `config/*.md` and drafts a first-flight plan.
+6. Run `/health`: a green/yellow/red table of every connection and file, the bootstrap's prerequisites, and spend against the caps in `config/goals.md`.
+7. Run `/morning` at the start of each working day.
+
+**Guided setup.** An A-Z explainer video, in chapters, and a screenshot guide walk a non-technical Owner through every step, from an empty laptop to a first campaign built PAUSED in the company's own Meta account. The text half of the guide is `docs/meta-setup-guide.md`. [link to the explainer video and the setup guide]
 
 New Operators: read `ONBOARDING.md`. A fully filled fictional configuration is in `examples/acme-fitness/`.
 
 ## Folder map
 
 ```
-CLAUDE.md               the rules; imports config/*.md
-config/                 your company, written by /setup (see config/README.md)
-memory.md, checklist.md the harness's memory and the go checklist
-plans/, reports/        dated Markdown, YYYY-MM-DD-<topic>.md
-creatives/              sources, finished files, tools, the preview-site template
-docs/                   the template spec and Meta platform notes
-.claude/agents, skills  the ten agents and the skills
-control-room/, dashboard/  the optional status pane and its data file
-examples/               a filled example company
+CLAUDE.md                 the rules; imports config/*.md
+config/                   your company, written by /setup (see config/README.md)
+config/goals.md           budget band, target costs, caps, the first funnel (round (i) of /setup)
+memory.md, checklist.md   the harness's memory and the go checklist
+plans/, reports/          dated Markdown, YYYY-MM-DD-<topic>.md
+creatives/                sources, finished files, tools, the preview-site template
+docs/                     the template spec and Meta platform notes
+docs/meta-setup-guide.md  the Owner's Meta console steps, in order, with what the harness checks
+.claude/agents, skills    the ten agents and the skills
+.mcp.json                 the two MCP servers (meta-ads, fal) Claude Code asks you to approve
+bootstrap.ps1, .sh        first-run check and install (Windows, macOS)
+release.ps1, .sh          cuts a release: scrub gate, version tag, zip (for whoever publishes releases)
+CHANGELOG.md              what changed in each release
+LICENSE, THIRD-PARTY.md   the licence; the third-party skills and their licences
+control-room/, dashboard/ the optional status pane and its data file
+examples/                 a filled example company
 ```
 
 ## Safety model
@@ -45,24 +58,30 @@ examples/               a filled example company
 
 ## Connections needed
 
-- **Meta Ads MCP** (required):
+The folder brings its two MCP servers in `.mcp.json`; the bootstrap checks or installs the local tools.
+
+- **Meta Ads MCP** (`meta-ads`, required). Approve it when Claude Code first opens the folder, then `/mcp` → `meta-ads` → log in. The login is the Owner's Facebook Login for Business; grant this company's business, ad account and Page. Start a new Claude Code session afterwards so the tools load.
+- **fal MCP** (`fal`, optional, for generated pictures and video; paid per run on the company's own fal account). Approve it with `meta-ads`, and `/mcp` → `fal` → log in when you want it.
+- **Typed fallback**, if the servers were not approved or not offered. Run these in a terminal, then `/mcp` → the server → log in, then start a new session:
   ```
   claude mcp add --transport http --scope user meta-ads https://mcp.facebook.com/ads
-  claude mcp login meta-ads
-  ```
-  The login is the Owner's Facebook Login for Business. Start a new Claude Code session afterwards so the tools load.
-- **Direct uploads** (recommended): copy `.env.example` to `.env`, set `META_AD_ACCOUNT_ID`, and have the Owner paste a System User token as `META_MARKETING_TOKEN`. Check it with `node creatives/tools/meta-upload.mjs --check`.
-- **fal MCP** (optional, for generated pictures and video; paid):
-  ```
   claude mcp add --transport http --scope user fal https://mcp.fal.ai/mcp-relay
   ```
+  To be asked again about the folder's own servers instead, run `claude mcp reset-project-choices` and reopen the folder.
+- **Direct uploads** (recommended): `.env` (the bootstrap copies it from `.env.example`) holds `META_AD_ACCOUNT_ID` and the Owner's System User token as `META_MARKETING_TOKEN`, pasted by the Owner with a text editor and never into chat (`docs/meta-setup-guide.md`, step 7). Check it with `node creatives/tools/meta-upload.mjs --check`.
 - **Node 20+** for the creative tools.
 - **Microsoft Edge or Google Chrome** for the ad screenshots and still renders.
-- **`playwright-core`** (`npm i -D playwright-core` in the repo root) only if you render stills with `creatives/tools/render-stills.mjs`.
-- **Vercel CLI** (optional) to publish a flight's preview site.
+- **`playwright-core`** (optional; the bootstrap offers it, or run `npm install --no-save --no-package-lock playwright-core` in the repo root) only if you render stills with `creatives/tools/render-stills.mjs`.
+- **HyperFrames plugin** (optional, for short silent ad videos): the plugin's files ship in `vendor/hyperframes/` (Apache-2.0, see `THIRD-PARTY.md`) and the bootstrap offers to install them from there. By hand, from this folder: `claude plugin marketplace add ./vendor/hyperframes`, then `claude plugin install hyperframes@hyperframes`. The renderer itself (`npx hyperframes`) is fetched from npm on first use and needs Node 22+ and FFmpeg.
+- **Vercel CLI** (optional) to publish a flight's preview site, with the company's own Vercel login.
+- **Lead delivery** needs no connection: instant-form leads arrive in Meta's Leads Center by default (or by email, CSV download or a CRM). A lead webhook is an advanced option, only for a company whose product team runs one.
 
-Third-party skills shipped with this repository, with their sources and licences, are listed in `THIRD-PARTY.md`.
+## Versions
+
+`CHANGELOG.md` lists what changed in each release. Releases are tagged `vX.Y.Z`; the first release after the beta run is 1.0.0. When you update, keep your own `config/`, `memory.md`, `checklist.md`, `plans/`, `reports/` and `.env`: a release ships the first five as empty templates, and no `.env` at all.
 
 ## Licence
 
-Private repository; all rights reserved by its owner. Copies for other companies are made with GitHub's "Use this template" by people the owner grants access to; each copy keeps this notice and `THIRD-PARTY.md`.
+A single-company licence: a copy may be used, copied internally and modified to run the marketing of one company, the one that obtained it. No resale, no redistribution, no publishing of modified copies, and no service to third parties built on it (an agency serving clients needs a separate agreement). The licence is a draft, to be reviewed by a lawyer; its text is in `LICENSE`. The eight third-party skills keep their own licences (MIT and Apache-2.0), listed with their sources in `THIRD-PARTY.md`.
+
+**No warranty, no guarantee of results.** Nothing here guarantees any ad result, cost, approval or account standing, and AI output can be wrong. You are responsible for your Meta accounts and spend, for Meta's advertising policies and for the law in your markets.

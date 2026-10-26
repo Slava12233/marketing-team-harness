@@ -14,8 +14,8 @@
 
 | Campaign id | Name | Status | Daily budget | Cap | Start | End | Ad sets | Ads | Last verified |
 |---|---|---|---|---|---|---|---|---|---|
-| `600000000000001` | 2026-11-MEMBERS-Trial | PAUSED | 1.00 GBP placeholder (Needs the Owner's go) | none set | not set | not set | 1 (`Members-GM-25-45`) | 3 (#1, #2, #3), PAUSED | 2026-10-27 17:10 Europe/London |
-| `600000000000002` | 2026-11-CORPORATE-Call | PAUSED | 1.00 GBP placeholder (Needs the Owner's go) | none set | not set | not set | 1 (`Corporate-GM-HR`) | 2 (#4, #5), PAUSED | 2026-10-27 17:10 Europe/London |
+| `600000000000001` | 2026-11-MEMBERS-Trial | PAUSED | 1.00 GBP placeholder (Needs the Owner's go) | none set on Meta (the £750 per-campaign cap in `config/goals.md` applies) | not set | not set | 1 (`Members-GM-25-45`) | 3 (#1, #2, #3), PAUSED | 2026-10-27 17:10 Europe/London |
+| `600000000000002` | 2026-11-CORPORATE-Call | PAUSED | 1.00 GBP placeholder (Needs the Owner's go) | none set on Meta (the £750 per-campaign cap in `config/goals.md` applies) | not set | not set | 1 (`Corporate-GM-HR`) | 2 (#4, #5), PAUSED | 2026-10-27 17:10 Europe/London |
 
 ## How to verify
 
@@ -41,6 +41,7 @@
 - 2026-10-26: the two funnels never share a campaign.
 - 2026-10-26: the corporate campaign stays paused until domain verification is done.
 - 2026-10-26: the Owner pauses, on a click list; the harness pauses only when the Owner asks in chat.
+- 2026-10-26: the money limits live in `config/goals.md` (band £600–£1,500 a month; caps £60 a day, £420 a week, £1,500 a month, £750 per campaign); no proposal above a cap, and a cap change is for the Owner alone, in writing.
 
 ## Session log
 
@@ -49,10 +50,10 @@
 ### 2026-10-26 14:00 Europe/London
 
 - Asked: `/setup` with Sam Park (fictional), Operator.
-- Done: interview in four rounds; `config/` written (all eight files); live Meta check found the ad account, portfolio, Page, pixel and lead form and wrote their ids into `config/accounts.md`; both destination pages fetched and quoted in `config/product.md`.
+- Done: interview in rounds (a)–(i); `config/` written (all nine files, `goals.md` included); live Meta check found the ad account, portfolio, Page, pixel and lead form and wrote their ids into `config/accounts.md`; both destination pages fetched and quoted in `config/product.md`.
 - Done: first flight plan drafted (`plans/2026-10-26-first-flight-plan.md`) with five proposed ads #1–#5 and every budget, cap and date left as "Needs the Owner's go".
 - Nothing built, nothing activated.
-- Open: budgets, caps and dates (Owner); domain verification (Owner); System User token (Owner); clearance of "Cancel anytime." (Owner).
+- Open: budgets, caps and dates (Owner); domain verification (Owner); System User token (Owner); clearance of "Cancel anytime." (Owner); Leads Center notifications for form `500000000000001` confirmed (Owner).
 
 ### 2026-10-27 16:30 Europe/London
 
@@ -71,3 +72,4 @@
 3. Send renders of #1–#5 to the Owner as images (`ads_get_ad_preview` → `ad-shots.sh`).
 4. Ask the Owner for the budgets, caps and dates in the plan and, if agreed, the go in the phrasing from `config/operator.md`.
 5. Remind the Owner of domain verification and the System User token; confirm whether "Cancel anytime." is cleared for ads.
+6. Confirm with the Owner that Leads Center notifications for form `500000000000001` reach the Operator (checklist item 4) before any lead-form ad is proposed for a go.

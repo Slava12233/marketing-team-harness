@@ -10,3 +10,8 @@
 *.mp4 binary
 *.woff binary
 *.woff2 binary
+*.mp3 binary
+*.wav binary
+*.ttf binary
+*.otf binary
+*.ico binary

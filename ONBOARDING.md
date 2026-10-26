@@ -1,10 +1,10 @@
 # The marketing harness: the manual for a new Operator
 
-If something here contradicts `CLAUDE.md`, `CLAUDE.md` wins; tell the Owner so this page gets fixed. This manual is written for someone who has never used Claude Code. You do not need to read code, and you never need to edit a file by hand unless you want to.
+If something here contradicts `CLAUDE.md`, `CLAUDE.md` wins; tell the Owner so this page gets fixed. This manual is written for someone who has never used Claude Code. You do not need to read code, and apart from one paste into `.env` (the Owner's upload token, §3) you never need to edit a file by hand unless you want to.
 
 ## 1. What this is, in one paragraph
 
-This folder turns Claude Code into your company's marketing and paid-media team on Meta (Facebook, Instagram, WhatsApp, Messenger). It is not an app and has no code you need to run. It holds rules (`CLAUDE.md`), your company's facts (`config/`), memory (`memory.md`), a go checklist (`checklist.md`), plans, reports, ad creatives, a set of skills (step-by-step procedures) and a set of agents (specialist helpers). Claude reads them when you open a session here and behaves like a careful media buyer who knows the account, the product, the claims you may make and what happened yesterday. It is connected to your Meta ad account through Meta's official Ads server, so it can read performance, build campaigns and ads, upload creatives and write reports. It never turns anything on and never spends money by itself.
+This folder turns Claude Code into your company's marketing and paid-media team on Meta (Facebook, Instagram, WhatsApp, Messenger). It is not an app, and apart from a one-time install script (§3) there is no code you need to run. It holds rules (`CLAUDE.md`), your company's facts (`config/`), memory (`memory.md`), a go checklist (`checklist.md`), plans, reports, ad creatives, a set of skills (step-by-step procedures) and a set of agents (specialist helpers). Claude reads them when you open a session here and behaves like a careful media buyer who knows the account, the product, the claims you may make and what happened yesterday. It is connected to your Meta ad account through Meta's official Ads server, so it can read performance, build campaigns and ads, upload creatives and write reports. It never turns anything on and never spends money by itself.
 
 **Why a harness and not just "ask Claude":** a fresh chat knows nothing about your company, your account, your decisions or last week's results. The files in this folder are that knowledge, written down, so every session starts where the last one stopped and follows the same rules.
 
@@ -27,20 +27,75 @@ Both are named in `config/operator.md`. If you have a **Product team** (the peop
 
 ## 3. Before your first session
 
+This is the path from an empty computer to your first `/setup`. The explainer video (§3d) shows every step on screen, and the Owner's clicks in Meta are written out one by one in `docs/meta-setup-guide.md`.
+
+### 3a. The Claude plan
+
+Claude Max is the working plan: the agents run on Opus and Sonnet, and creative rounds and builds use a lot of model time. Claude Pro works for reads and reports but runs into its usage limits on creative rounds and builds. A company that has an Anthropic API key can use that instead. Plans and their limits change; check them on Anthropic's site.
+
+### 3b. The path, step by step
+
+1. **Download and unzip.** Download the release zip (or clone the repository, or press "Use this template" on GitHub and clone your copy, kept private) and unzip it into a folder you own, for example a folder named `marketing-team-harness` inside your Documents folder. Every later step runs in that folder.
+2. **Open a terminal in the folder.** Windows: open the folder in File Explorer, right-click an empty spot and choose "Open in Terminal". macOS: open Terminal, type `cd ` (with a space after it), drag the folder onto the window and press Return.
+3. **Run the bootstrap.**
+   - Windows: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1`
+   - macOS: `bash bootstrap.sh`
+
+   It checks, one at a time, Git, Node.js 20 or newer and Claude Code, reports whether a browser (Microsoft Edge or Google Chrome) is present, and asks y/n before it installs anything that is missing. Flags: `-Check` (Windows) or `--check` (macOS) only reports; `-Yes` / `--yes` accepts every required item; `-Help` / `--help`. It copies `.env.example` to `.env`, the file on this computer that will hold the upload token. It then offers the optional extras of §3c (`playwright-core` and the HyperFrames plugin), y/n each. At the end it prints what is in place and what remains: the logins below and the Owner's Meta steps. It never asks for a password or a token. To get the report without installing anything, add `-Check` on Windows or `--check` on macOS. Running it again is safe.
+4. **Open the folder in Claude Code.** In the same terminal, type `claude`. The first time, Claude Code asks you to log in to your Claude account (§3a) and whether you trust this folder. It then asks whether to use the two MCP servers the folder brings in `.mcp.json`: `meta-ads` (Meta's official Ads server) and `fal` (picture and video generation). Approve both; neither can do anything until someone logs in.
+5. **Log in to Meta.** Type `/mcp`, pick `meta-ads` and choose to log in. The Facebook consent screen opens in the browser, and it must show **the Owner's** Facebook profile: the one that runs the company's Business portfolio and ad account. Grant this company's business, ad account and Page, and nothing else. If the company has no Business portfolio or ad account yet, the Owner does steps 1 to 4 of `docs/meta-setup-guide.md` first; the login can only grant what exists.
+6. **Log in to fal (optional).** `/mcp` → `fal` → log in with the company's fal account, when you want generated pictures or clips. fal is paid per run; every paid round is stated in money first and runs on the Owner's go.
+7. **Start a new session.** Type `/exit`, then `claude` again. Meta's tools load only into sessions started after the login: if they are missing, this is why.
+8. **Type `/setup`** (§4).
+
+**The Owner's Meta steps** (the Page; the Business portfolio; the ad account owned by the portfolio, with its payment method and a verified phone number; people and roles; the MCP login; the pixel / dataset, or "no website"; the developer app and the System User token in `.env`; the WhatsApp Business number linked to the Page; the Lead Ads terms and Leads Center access for whoever answers leads; the domain; Instagram linked for ads, optional; and, only with a product team, the lead webhook subscription) are in `docs/meta-setup-guide.md`, each with where to click, what you should see and what the harness checks. Do them before `/setup`, as the video does, or when `/setup` asks for them: it prints the same click lists and checks each outcome live.
+
+**If the servers were not approved**, or the folder's servers are not offered, add them by hand in a terminal, then `/mcp` → the server → log in, and start a new session:
+
+```
+claude mcp add --transport http --scope user meta-ads https://mcp.facebook.com/ads
+claude mcp add --transport http --scope user fal https://mcp.fal.ai/mcp-relay
+```
+
+### 3c. Optional extras
+
 | You need | Why | How |
 |---|---|---|
-| Claude Code installed, opened in this folder | The rules, config and memory load from this folder | In a terminal: go to this folder, then type `claude` |
-| Node.js 20 or newer | The local tools (still renderer, ad screenshots, upload tool) run on it | Install the LTS version from nodejs.org; `node --version` checks it |
-| `playwright-core` (optional) | Only the still renderer needs it | `npm i -D playwright-core` once in this folder; skip it if you bring finished image files |
-| The Meta Ads server added and logged in | Every account read and build goes through it | Run once in a terminal: `claude mcp add --transport http --scope user meta-ads https://mcp.facebook.com/ads`. Then start Claude Code, type `/mcp`, pick `meta-ads` and log in; the consent screen opens in the browser where the Owner is signed in to Facebook. **Tools load only into sessions started after the server was added or logged in**: if the `meta-ads` tools are missing, close the session and start a new one |
-| The upload token in `.env` (optional at first) | Local image and video files go straight into the ad account with `creatives/tools/meta-upload.mjs` | The Owner creates a System User token in Meta Business Settings and pastes it into `.env` under `META_MARKETING_TOKEN` (template: `.env.example`). Claude never opens, prints or asks for the value |
-| fal (optional) | Generates pictures and short clips; paid per run | The `/setup` wizard prints the add-and-login block; every paid round is stated in money first and runs on the Owner's go |
+| `playwright-core` (optional) | Only the still renderer needs it | The bootstrap offers it; or `npm install --no-save --no-package-lock playwright-core` once in this folder; skip it if you bring finished image files |
+| HyperFrames (optional) | Short silent ad videos and motion graphics, made through the `creative-production` skill | The plugin's files ship in `vendor/hyperframes/`; the bootstrap offers to install them from there (it needs Node 22+ and FFmpeg; the renderer `npx hyperframes` comes from npm on first use). By hand, from this folder: `claude plugin marketplace add ./vendor/hyperframes`, then `claude plugin install hyperframes@hyperframes` |
 | Vercel (optional) | Hosts a preview site where the team sees every creative in a Facebook-style frame | `npx vercel@latest login` with the company's own Vercel account; deploys happen only when asked |
 | The control room (optional) | A side pane in Claude Code with the next routine, tasks by owner, money and campaigns | See `control-room/README.md`; installing it is the Owner's click |
 
+### 3d. The explainer video
+
+One A-Z video in chapters, plus a short clip per chapter: [link to the explainer video and the setup guide]
+
+| # | Chapter | What it covers | Link |
+|---|---|---|---|
+| 1 | Install | Download and unzip, the bootstrap, opening the folder in Claude Code, approving the two servers | [link to clip 1] |
+| 2 | Meta business basics | Business portfolio, Page, ad account (the currency and time zone are permanent), payment method, phone verification, people and roles; guide steps 1–4 and 11 | [link to clip 2] |
+| 3 | Meta login | `/mcp` → `meta-ads`, the consent screen, a new session, the account visible; guide step 5 | [link to clip 3] |
+| 4 | Pixel and tracking | The dataset in Events Manager, installing it, consent, test events, the no-website path; guide step 6 | [link to clip 4] |
+| 5 | Developer app and upload token | The app, the System User, the token into `.env` and never into chat, the check; guide step 7 | [link to clip 5] |
+| 6 | WhatsApp, lead forms, domain | The WhatsApp Business number, the Lead Ads terms and a form, lead delivery (Leads Center by default), domain verification; guide steps 8–10 | [link to clip 6] |
+| 7 | fal | Sign-up, credit, `/mcp` → `fal` → log in | [link to clip 7] |
+| 8 | `/setup` | The interview, rounds (a) to (i), and what it writes | [link to clip 8] |
+| 9 | `/health` | Reading the green/yellow/red table | [link to clip 9] |
+| 10 | First flight, PAUSED | Copy, the compliance gate, one still, the upload, the build PAUSED, Meta's preview images, the go rule (explained, not executed) | [link to clip 10] |
+| 11 | What's next | `/morning`, `/sync`, `/next-round` and the optional clips | [link to clip 11] |
+
+Optional clips:
+
+| Clip | What it covers | Link |
+|---|---|---|
+| HyperFrames | Installing the plugin and making a short silent ad video | [link to the HyperFrames clip] |
+| Vercel preview | Publishing a flight's preview site | [link to the Vercel preview clip] |
+| Control room | Installing and reading the side pane | [link to the control-room clip] |
+| Claude in Chrome | Letting the harness read Ads Manager screens in the Owner's browser | [link to the Claude in Chrome clip] |
+
 ## 4. Your first session: `/setup`, then the first ten minutes
 
-**The very first time, type `/setup`.** The wizard interviews you in rounds of four questions (in English, with the recommended answer first) and writes your company's facts into `config/`:
+**The very first time, type `/setup`.** The wizard interviews you in rounds of four questions (in English, with the recommended answer first): (a) who runs this, (b) the company, (c) the product and its funnels, (d) the audiences, (e) the brand, (f) claims and law, (g) accounts and tracking, (h) routines and the go, and (i) goals and money. It writes your company's facts into `config/`:
 
 | File | What it holds |
 |---|---|
@@ -49,15 +104,16 @@ Both are named in `config/operator.md`. If you have a **Product team** (the peop
 | `config/audiences.md` | Each audience: who, where, language, pains, what they must never be addressed as, exclusions, special ad category |
 | `config/brand.md` | Colours, fonts, logo rules, tone, languages and direction, the AI-imagery disclosure rule |
 | `config/claims.md` | Allowed claims with sources, forbidden words, lines that need clearance, consent notice ids, legal notes ("verify with your lawyer") |
-| `config/accounts.md` | Meta ids (ad account, portfolio, Page, pixel, forms), currency, minimum daily budget, analytics, who holds which login, console steps and their status |
+| `config/accounts.md` | Meta ids (ad account, portfolio, Page, pixel, forms), lead delivery, currency, minimum daily budget, analytics, who holds which login, console steps and their status |
 | `config/operator.md` | The Owner and Operators, the chat language, timezone, working days, routine times, the exact phrasing of a go |
 | `config/product-team.md` | Where product truth lives and how requests are filed, or one line saying there is no product team |
+| `config/goals.md` | Goals and money, from round (i): the monthly budget band (in the account currency), the target cost per result for each funnel, the first funnel to launch, the hard caps (daily, weekly, monthly, per campaign), what success in 30 days means, how much risk you accept in tests, and when spend is reviewed |
 
-The wizard then prints the connection blocks you still need, reads the live Meta account and writes the ids it finds, opens each destination page, and drafts `plans/<date>-first-flight-plan.md`: one campaign proposal per funnel, with the budgets left as "Needs the Owner's go". It can also show you the fictional example in `examples/acme-fitness/` (in a scratch copy, never over your own config) so you can see a configured harness first. You can re-run `/setup` or edit any `config/` file by hand at any time.
+As it goes, the wizard prints the Meta console click lists (the steps of `docs/meta-setup-guide.md`, with Meta's addresses and what you should see) and checks each outcome live: it reads the Meta account and writes the ids it finds, runs the upload-token check, and opens each destination page. It then drafts `plans/<date>-first-flight-plan.md`: one campaign proposal per funnel, with budgets proposed inside the band and below the caps of `config/goals.md`, each labelled "Needs the Owner's go". It can also show you the fictional example in `examples/acme-fitness/` (in a scratch copy, never over your own config) so you can see a configured harness first. You can re-run `/setup` or edit any `config/` file by hand at any time.
 
 **Every day after that:**
 
-1. Type `/health`. It checks the plumbing (Meta login and account, objects against memory, review flags, pixel, destination pages, preview site, credits, `checklist.md`, memory files) and prints a green/yellow/red table. It changes nothing.
+1. Type `/health`. It checks the plumbing (the servers in `.mcp.json`, the Meta login and account, objects against memory, review flags, pixel, destination pages, preview site, credits, `checklist.md`, memory and config files, the upload token, the bootstrap's prerequisites, and money against the caps in `config/goals.md`) and prints a green/yellow/red table. It changes nothing.
 2. Type `/morning`. It reads memory and the checklist, reads the live account, reports what changed overnight, what is in review, what is spending, which gates are open and who owns them, and gives ranked recommendations. The full report lands in `reports/YYYY-MM-DD-morning.md`.
 3. Read the two lists at the end: **Needs the Owner's go** (anything that moves money or delivery) and **Needs product team** (anything on the website). Those are the decisions; everything else Claude can do now.
 4. Work: ask for what you need (§6).
@@ -114,7 +170,7 @@ A table of everything that must be true before a campaign runs: each item has an
 | Path | What it is | Who edits |
 |---|---|---|
 | `CLAUDE.md` | The rulebook: money and safety, claims, compliance, skills, agents, the campaign from A to Z | Claude, only when a rule changes |
-| `config/` | Your company's facts, written by `/setup` (§4); `config/README.md` explains each file | `/setup`, or you by hand |
+| `config/` | Your company's facts, written by `/setup` (§4), including `config/goals.md` (budgets, targets, caps); `config/README.md` explains each file | `/setup`, or you by hand |
 | `memory.md` | The working memory: current state, how to verify it, learnings, decision rules, a session log, "next session should" | Claude, at every state change and at every sync |
 | `checklist.md` | The go checklist (§8) | Claude and the team |
 | `ONBOARDING.md` | This manual | Claude, on request |
@@ -126,7 +182,11 @@ A table of everything that must be true before a campaign runs: each item has an
 | `creatives/preview-template/` | The Facebook-frame preview site, copied per flight | Claude |
 | `creatives/uploads/` | The upload ledger: one JSON per day with every image hash and video id | the upload tool |
 | `.env`, `.env.example` | The upload token `META_MARKETING_TOKEN` and its template. Only the Owner pastes into `.env` | the Owner |
-| `docs/` | The template contract and the notes on how Meta's server behaves | Claude |
+| `.mcp.json` | The two MCP servers this folder uses (`meta-ads`, `fal`); Claude Code asks you to approve them the first time you open the folder | nobody; it ships as is |
+| `bootstrap.ps1`, `bootstrap.sh` | The first-run check and install (§3), for Windows and macOS | nobody; they ship as is |
+| `README.md`, `LICENSE`, `THIRD-PARTY.md` | What this is and the quick start; the licence (a single-company draft); the third-party skills and their licences | the repository owner |
+| `CHANGELOG.md`, `release.ps1`, `release.sh` | What changed in each release; the script that cuts a release | whoever publishes releases |
+| `docs/` | The template contract, the notes on how Meta's server behaves, and the Owner's Meta setup guide (`docs/meta-setup-guide.md`) | Claude |
 | `.claude/skills/` | The procedures, one folder each (§10) | Claude |
 | `.claude/agents/` | The specialists (§11) | Claude |
 | `dashboard/state.json`, `control-room/` | The optional control room and its data file | Claude; installing the mod is the Owner's |
@@ -142,7 +202,7 @@ A table of everything that must be true before a campaign runs: each item has an
 | Vercel (optional) | The preview site for the team | the company's Vercel login |
 | Browser tools (optional) | Reads of Ads Manager screens and public pages; console clicks stay the Owner's | the Owner's browser |
 
-`CLAUDE.md` → "Tool inventory" is the technical version, and "The campaign from A to Z" says which tool does which step.
+Both MCP servers come with the folder in `.mcp.json`: Claude Code asks you to approve them the first time you open the folder, and `/mcp` logs in or renews a login. `CLAUDE.md` → "Tool inventory" is the technical version, and "The campaign from A to Z" says which tool does which step.
 
 ## 10. The skills
 
@@ -150,7 +210,7 @@ Commands you type: `/setup`, `/morning`, `/health`, `/next-round`, `/sync`. The 
 
 | Skill | One line |
 |---|---|
-| `setup` | The onboarding interview that writes `config/` and drafts the first flight plan |
+| `setup` | The onboarding interview (rounds (a) to (i)) that writes `config/`, prints the Meta click lists and checks each outcome live, and drafts the first flight plan |
 | `memory-update` | How memory is read at the start and written at every change and at the end |
 | `meta-campaign-build` | How campaigns, ad sets and ads are built and changed through Meta's server, with every learned platform rule; uploads |
 | `meta-performance-report` | The report: columns, the diagnosis order, the decision rules |
@@ -160,7 +220,7 @@ Commands you type: `/setup`, `/morning`, `/health`, `/next-round`, `/sync`. The 
 | `audience-research` | Signals, audience structure, retargeting ladder, special ad categories |
 | `compliance-check` | The gate: Meta policy, the legal notes in `config/claims.md`, the harness rules |
 | `landing-page-cro` | Audits of the pages the ads send to; requests to the product team |
-| `signals-audit` | Pixel, consent gating, events, attribution, the lead webhook |
+| `signals-audit` | Pixel, consent gating, events, attribution, and lead delivery (Leads Center by default, or email, CSV or a CRM; a lead webhook only when a product team runs one) |
 | `ab-test-design` | Experiments with pre-registered decision rules |
 | `offer-design`, `scaling-playbook`, `marketing-psychology`, `competitor-research` | What each funnel offers; how to scale and pause; principles for copy; Ad Library scans |
 | Third-party: `ad-creative`, `image`, `banner-design`, `frontend-design`, `viral-reverse-engineering`, `find-skills`, `grill-me`, `grilling` | Craft references (sources in `THIRD-PARTY.md`); the harness rules win on any conflict |
@@ -186,9 +246,9 @@ Claude delegates to these when a task is big or needs a second, independent read
 
 | Symptom | What it usually means | What to do |
 |---|---|---|
-| No `meta-ads` tools in the session | The server was added or logged in after this session started | Start a new session; if `/mcp` shows it needs a login, the Owner logs in |
+| No `meta-ads` tools in the session | The server was logged in after this session started, or the folder's servers were not approved | Start a new session. If `/mcp` does not list `meta-ads`, run `claude mcp reset-project-choices` in a terminal and open the folder again to approve it, or add it by hand (§3b); if `/mcp` shows it needs a login, the Owner logs in |
 | `/health` says a `config/` file is missing or still holds `{{...}}` placeholders | Setup was not finished | Run `/setup` again, or fill the field by hand |
-| An upload fails with a token error | The token in `.env` is missing, expired or lacks access to the ad account | Tell the Owner; they rotate it in Business Settings. Claude does not retry blindly |
+| An upload fails with a token error | The token in `.env` is missing, expired or lacks access to the ad account | Tell the Owner; they rotate it in Business Settings (`docs/meta-setup-guide.md`, step 7). Claude does not retry blindly |
 | An ad shows DISAPPROVED or "with issues" | Meta's review flagged it | Claude reports the ad and the Ads Manager path; the pause and any appeal are the Owner's |
 | A long render or check was stopped | Heavy commands run with a time limit, one at a time | Normal; Claude reports the partial result and does not loop |
 | A number looks wrong | Often consent gating (only visitors who accepted cookies send events) or a different attribution window | Ask for the `signals-audit`; compare with the counts the product team hands over |

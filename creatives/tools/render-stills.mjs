@@ -25,9 +25,10 @@
 // "[data-safe]") is checked; content taller or wider than its box is reported as OVERFLOW and the run exits 2
 // (the files are still written so they can be inspected). Page errors or failed requests abort with exit 1.
 //
-// Dependencies: playwright-core (or playwright) resolvable from the repository root (npm i -D playwright-core)
-// or from the folder in $PLAYWRIGHT_MODULE_DIR. Browser: --browser, else $CHROME_PATH, else an installed Chrome
-// or Edge at the usual Windows, macOS or Linux path, else Playwright's own Chromium (npx playwright install chromium).
+// Dependencies: playwright-core (or playwright) resolvable from the repository root
+// (npm install --no-save --no-package-lock playwright-core; the bootstrap offers it) or from the folder in
+// $PLAYWRIGHT_MODULE_DIR. Browser: --browser, else $CHROME_PATH, else an installed Chrome or Edge at the usual
+// Windows, macOS or Linux path, else Playwright's own Chromium (npx playwright install chromium).
 import path from "node:path";
 import fs from "node:fs";
 import { createRequire } from "node:module";
@@ -61,7 +62,7 @@ function loadChromium() {
       try { return req(mod).chromium; } catch { /* try the next */ }
     }
   }
-  console.error("playwright-core not found. Run `npm i -D playwright-core` at the repository root, or set PLAYWRIGHT_MODULE_DIR.");
+  console.error("playwright-core not found. Run `npm install --no-save --no-package-lock playwright-core` at the repository root, or set PLAYWRIGHT_MODULE_DIR.");
   process.exit(2);
 }
 const chromium = loadChromium();

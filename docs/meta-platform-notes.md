@@ -57,7 +57,7 @@ On accounts where the MCP stages writes as Ads Manager drafts:
 
 - There is no lead-form tool in the MCP: form ids come from Meta Business Suite's forms library.
 - The lead-ads guide lists APPLY_NOW, DOWNLOAD, GET_QUOTE, LEARN_MORE, SIGN_UP and SUBSCRIBE as instant-form buttons; expect CONTACT_US to be refused.
-- Before any instant-form ad runs, the lead webhook (developer app with Webhooks, `leadgen` subscription, a long-lived Page token) must carry the form id; otherwise leads sit only in the forms library.
+- **Lead delivery without a webhook (2026-10-26, from Meta's help and published guides; confirm on the first live form):** Meta stores instant-form leads itself. They are read in Meta Business Suite's Leads Center (alerts in Business Suite and its mobile app) and can be downloaded as CSV from Ads Manager, from Business Suite's Instant Forms page or from Leads Center, for up to 90 days after the form is submitted. Some accounts also offer a lead-delivery option at ad creation (Email or CRM: leads sent on a schedule to named people). Download access is the Page admins' unless the Business portfolio grants it to others in Leads Access Manager. A lead webhook (a Business-type developer app with Webhooks, a `leadgen` subscription on the Page, a long-lived Page token) is needed only when leads must flow into the company's own system automatically; then every running form id must be registered with it before the form's ads run.
 
 ## Budgets and reads (observed 2026-10-21 to 2026-10-25)
 

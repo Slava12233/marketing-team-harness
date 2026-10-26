@@ -49,5 +49,16 @@
       "skillPath": "skills/viral-reverse-engineering/SKILL.md",
       "computedHash": "a528c5190d25e85d3ad257445a5587c88efb85b3b5cef25af48f697bb1345203"
     }
+  },
+  "plugins": {
+    "hyperframes": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "commit": "695110e46ba4ec971f5dcfc797ce8bf750e1029d",
+      "version": "0.8.160",
+      "path": "vendor/hyperframes",
+      "manifestPath": "vendor/hyperframes/skills-manifest.json",
+      "computedHash": "f768d1f7f13a3da93fe4185690dd49f3ac250588843c8749c0b35e1595b8ba03"
+    }
   }
 }

@@ -15,3 +15,6 @@ node_modules/
 
 # Local control-room state
 dashboard/state.local.json
+
+# Release zips built by release.sh / release.ps1
+dist/

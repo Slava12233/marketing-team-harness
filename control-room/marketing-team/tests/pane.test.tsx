@@ -143,3 +143,28 @@ test('outside a harness project the mod stays silent', async ($, on) => {
   expect((await hint.find({ type: 'Text', text: /shortcuts/ }))?.text).toBe('? for shortcuts')
   await hint.unmount()
 })
+
+test('the money tile shows the caps from config/goals.md in the new and the old shape', async ($, on) => {
+  // /morning and /sync write { label, amount, period }; files written before config/goals.md held { name, amount }.
+  const board = {
+    ...BOARD,
+    money: { ...BOARD.money, caps: [{ label: 'daily', amount: 60, period: 'day' }, { name: 'weekly', amount: 420 }] },
+  }
+  on('command.register', () => ({ value: { command: 'team' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('session.root', () => ({ value: '/project' }))
+  on('fs.list', () => ({ value: [] }))
+  on('fs.stat', () => ({ value: { kind: 'file', size: 1, mtimeMs: 42, isLink: false } }))
+  on('fs.read', () => ({ value: JSON.stringify(board) }))
+  on('clock.now', () => ({ value: NOW }))
+  on('agent.list', () => ({ value: [] }))
+
+  await $.session.start({ cwd: '/project', surface: 'terminal', isInteractive: true })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  const caps = (await ui.find({ type: 'Text', text: /^Caps:/ }))?.text
+  expect(caps).toContain('daily: 60 / day')
+  expect(caps).toContain('weekly: 420')
+  await ui.unmount()
+})

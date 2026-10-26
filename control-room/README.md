@@ -29,7 +29,7 @@ All words are English. Times are shown in `routines.timezone` (the Operator's ti
 
 ## Where the data comes from
 
-The mod reads `dashboard/state.json` every minute and after every turn (only when the file changed). `/morning` and `/sync` write it, and the main session rewrites it after any state change (publish, pause, budget, new object). They copy the company name from `config/company.md`, the launch date, routine times, working days and time zone from `config/operator.md`, and every number from a live read only; a number no live read gave is left null. The shipped file is the empty shape:
+The mod reads `dashboard/state.json` every minute and after every turn (only when the file changed). `/morning` and `/sync` write it, and the main session rewrites it after any state change (publish, pause, budget, new object). They copy the company name from `config/company.md`, the launch date, routine times, working days and time zone from `config/operator.md`, the caps from `config/goals.md`, and every other number from a live read only; a number no live read gave is left null. The shipped file is the empty shape:
 
 ```json
 {
@@ -48,6 +48,8 @@ The mod reads `dashboard/state.json` every minute and after every turn (only whe
 ```
 
 (The comments are for this page only; the file itself is plain JSON.) The mod tolerates a half-filled file: missing keys read as empty. Default lanes when `team` is empty: Measure (performance-analyst, signals-auditor, cro-auditor), Create (creative-director, copywriter, competitor-researcher), Gate (compliance-reviewer, test-designer), Build (media-buyer), Close (harness-librarian); an agent in no lane is listed under Other.
+
+The caps are the one set of numbers that does not come from a live read. `money.caps` holds the Owner's hard caps, copied from `config/goals.md` by `/morning` and `/sync` (a rewrite by the main session keeps them) as `[{ "label": "daily" | "weekly" | "monthly" | "<campaign name>", "amount": <number>, "period": "day" | "week" | "month" | "campaign" }]`, amounts in `money.currency`, and `[]` while that file is missing or still holds placeholders. The mod never reads `config/` itself: it shows only what the writers copied into `dashboard/state.json`.
 
 ## Install it (per user, by the Owner)
 

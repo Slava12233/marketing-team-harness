@@ -1,0 +1,106 @@
+Marketing Team Harness Licence (draft, lawyer to review)
+
+DRAFT, to be reviewed by a lawyer before the first sale.
+
+This licence covers every copy of the Marketing Team Harness, however it was obtained: a release zip, a download, a clone, a fork, or a copy made with "Use this template". Using the Materials means accepting this licence.
+
+
+1. Definitions
+
+1.1 "Licensor" means the owner of the repository in which the Marketing Team Harness is published.
+
+1.2 "Licensee" means the company (the legal entity) that obtained a copy of the Materials. The people who work for the Licensee, as employees or contractors, act under this licence on its behalf.
+
+1.3 "Materials" means everything in the repository (the rules, the configuration templates, the skills, the agent briefs, the scripts and tools, the preview-site template, the control-room mod, the documentation and the examples), except the third-party skills listed in THIRD-PARTY.md, which keep their own licences (clause 4).
+
+1.4 "Own Company" means the Licensee itself. A parent company, subsidiary, sister company or other affiliate is a different company.
+
+1.5 "Your Content" means what the Licensee adds to its copy and what the Materials produce for it: its filled-in configuration, memory, checklist, plans, reports, ad copy and creatives. Your Content belongs to the Licensee and is not part of the Materials.
+
+
+2. Grant
+
+2.1 The Licensor grants the Licensee a non-exclusive, non-transferable licence to use, copy internally and modify the Materials for one purpose only: running the marketing of its Own Company.
+
+2.2 One company per copy. An affiliate that wants to use the Materials needs its own copy under its own licence.
+
+2.3 Copying internally includes working copies on the computers of the Licensee's people, backups, and repositories that the Licensee controls and keeps private.
+
+2.4 A contractor (for example a freelance marketer) may use the Licensee's copy only for the Licensee's Own Company, and only while working for it.
+
+
+3. Not permitted
+
+Unless the Licensor agrees in writing, the Licensee may not:
+
+3.1 sell, resell, rent, lend or give away the Materials, or a modified copy of them;
+
+3.2 redistribute, sublicense or publish the Materials, or a modified copy of them, for example in a public repository or as a download;
+
+3.3 offer the Materials, or a service built on them, to third parties; an agency or consultant that runs marketing for clients needs a separate agreement with the Licensor;
+
+3.4 remove or change any copyright, licence or attribution notice, including this licence, THIRD-PARTY.md and the licence files of third-party components.
+
+
+4. Third-party components
+
+4.1 The skills listed in THIRD-PARTY.md are not Materials. Their authors license them under their own terms (MIT and Apache-2.0), which THIRD-PARTY.md lists, and those terms govern them.
+
+4.2 The Apache-2.0 licence file of the frontend-design skill (.claude/skills/frontend-design/LICENSE.txt) stays in place in every copy.
+
+4.3 Nothing in this licence limits what those third-party licences allow.
+
+
+5. Advertising accounts, money and law
+
+5.1 The Licensee is solely responsible for its advertising and business accounts on Meta and on every other service the Materials connect to, for its logins and tokens, and for everything done in those accounts, including all advertising spend, billing and taxes.
+
+5.2 The Licensee is solely responsible for complying with Meta's terms and advertising policies, and with the advertising, consumer-protection, privacy, data-protection, consent and electronic-marketing laws of every market where it advertises.
+
+5.3 The Licensee is solely responsible for every claim, offer, image and statement in its ads, forms and pages, including generated content and its disclosure.
+
+5.4 The Materials are built to create campaigns paused and to require an explicit go before anything is activated or any budget is raised. That go is given by the Licensee's people. This design does not move any responsibility to the Licensor.
+
+
+6. No warranty
+
+6.1 The Materials are provided "as is", without warranty of any kind, express or implied, including any warranty of merchantability, fitness for a particular purpose or non-infringement, to the extent the law allows.
+
+6.2 The Licensor does not guarantee any advertising result: no reach, cost per result, number of leads or sales, ad approval or account standing.
+
+6.3 The Materials work with AI models. Their output (analysis, recommendations, ad copy, images and builds) can be wrong, incomplete or out of date. The Licensee reviews it before relying on it.
+
+6.4 Meta and the other services the Materials use change their products, screens and policies without notice. Parts of the Materials may stop working as a result.
+
+
+7. Limitation of liability
+
+7.1 To the extent the law allows, the Licensor is not liable for any indirect, incidental, special or consequential loss, for lost profits, revenue, data, advertising spend or goodwill, or for the restriction or loss of any account.
+
+7.2 To the extent the law allows, the Licensor's total liability under or in connection with this licence is limited to the price the Licensee paid for the Materials, if any.
+
+7.3 Nothing in this licence limits a liability that the law does not allow to be limited.
+
+
+8. Termination
+
+8.1 This licence ends automatically if the Licensee breaches it.
+
+8.2 When it ends, the Licensee stops using the Materials and deletes its copies of them. Your Content stays the Licensee's.
+
+8.3 Clauses 5, 6 and 7 survive termination.
+
+
+9. Governing law and venue
+
+9.1 This licence is governed by the laws of [jurisdiction, to be set by the Licensor's lawyer].
+
+9.2 The courts of [jurisdiction, to be set by the Licensor's lawyer] have exclusive jurisdiction over any dispute about this licence.
+
+
+10. Contact
+
+Questions about this licence, and requests for a separate agreement (for example for an agency), go to the Licensor through the repository page.
+
+
+Copyright (c) the Licensor. All rights not expressly granted in this licence are reserved.

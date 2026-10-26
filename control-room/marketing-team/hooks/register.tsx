@@ -86,7 +86,12 @@ const normalise = (raw: unknown): Board => {
       dailySpend: str(money.dailySpend),
       caps: arr(money.caps).map(c => {
         const o = obj(c)
-        return Object.keys(o).length > 0 ? [str(o.name), str(o.amount)].filter(Boolean).join(': ') : String(c)
+        if (Object.keys(o).length === 0) return String(c)
+        // /morning and /sync write { label, amount, period } from config/goals.md; older files wrote { name, amount }
+        const label = str(o.label) ?? str(o.name)
+        const period = str(o.period)
+        const head = [label, str(o.amount)].filter(Boolean).join(': ')
+        return period && period !== 'campaign' ? `${head} / ${period}` : head
       }),
       liveToday: str(money.liveToday),
       nextGo: str(money.nextGo),

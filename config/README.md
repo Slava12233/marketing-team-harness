@@ -4,7 +4,7 @@ Everything specific to the company lives in this folder. The rules in `CLAUDE.md
 
 ## Who writes these files
 
-The `/setup` wizard writes them. It interviews the Operator in rounds of four questions (in English, recommended option first), runs a live Meta check for the ids, fetches each destination page, and fills the placeholders. Each file starts with a header comment saying when `/setup` wrote it. Re-run `/setup` whenever the company, product, accounts or people change; it shows what it is about to replace before writing.
+The `/setup` wizard writes them. It interviews the Operator in rounds of four questions (in English, recommended option first), runs a live Meta check for the ids, fetches each destination page, and fills the placeholders. Round (i) of the interview, goals and money, writes `goals.md`: the budget band, the targets and the caps are the Owner's decisions (the wizard proposes, the Owner confirms), and the harness never proposes a budget above a cap. Each file starts with a header comment saying when `/setup` wrote it. Re-run `/setup` whenever the company, product, accounts, people or money limits change; it shows what it is about to replace before writing.
 
 ## The files
 
@@ -15,7 +15,8 @@ The `/setup` wizard writes them. It interviews the Operator in rounds of four qu
 | `audiences.md` | One section per audience: who, geo, language, pains (with sources and dates), what they must not be addressed as, exclusions, special ad category | `audience-research`, `ad-copy`, `compliance-check`, `meta-campaign-build` |
 | `brand.md` | Colours, fonts, logo rules, tone of voice, languages and their direction, RTL rules, the AI-imagery disclosure rule, the do-not-do list | `creative-brief`, `creative-production`, `ad-copy` |
 | `claims.md` | Allowed claims with sources, forbidden words and claims, lines needing clearance, consent and notice ids, dated legal notes ("verify with your lawyer"), special ad category per market, the custom-audience ruling | `compliance-check`, `ad-copy`, `landing-page-cro` |
-| `accounts.md` | Meta ids (ad account, portfolio, Page, Instagram, pixel, forms), WhatsApp number names, currency, minimum daily budget, analytics and attribution, lead webhook, who holds each login, console-step status | `meta-campaign-build`, `signals-audit`, `health`, `morning` |
+| `accounts.md` | Meta ids (ad account, portfolio, Page, Instagram, pixel, forms), WhatsApp number names, currency, minimum daily budget, analytics and attribution, lead delivery (Meta's Leads Center by default; a lead webhook is the advanced path, only with a product team), the MCP servers, plugins and who holds each login, console-step status | `meta-campaign-build`, `signals-audit`, `health`, `morning` |
+| `goals.md` | Money and goals: the monthly budget band, the target cost per result per funnel, the first funnel to launch, the hard caps (daily, weekly, monthly, per campaign) and the budget week, what success in 30 days means, the risk appetite for tests, the review cadence | `/setup`, `morning`, `sync`, `health` (check 15), `meta-campaign-build` (no budget above a cap), the first flight plan; `/morning` and `/sync` copy its caps into `dashboard/state.json` |
 | `operator.md` | Owner, Operators, chat language, timezone, working days, routine times, the phrasing of a go, who clicks what | every command; the control room |
 | `product-team.md` | The product repository (read-only), where product truth lives, how a request is filed, shared memory conventions; or the one line saying there is no product team | `landing-page-cro`, `signals-audit`, `memory-update` |
 
