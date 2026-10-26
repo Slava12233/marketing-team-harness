@@ -50,3 +50,5 @@ Optional connections that are not set up read **n/a** with the reason, never red
 15 caps ....... green  nothing live: 0 of the daily cap <amount>, 0 of the weekly cap <amount>
 Red items → what to do (one line each, who clicks).
 ```
+
+After the table, regenerate the setup progress page: `node dashboard/setup-page.mjs --mark health.run=done` (it writes only `dashboard/setup.html` and `dashboard/setup-progress.json`, names and public ids only).

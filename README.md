@@ -15,7 +15,7 @@ A company that advertises on Meta and wants Claude Code to do the paid-media wor
 ## Quick start
 
 1. **Get the files.** Download the release zip (or clone this repository, or press **Use this template** on GitHub and clone your copy, kept private) and unzip it into a folder you own, for example inside your Documents folder.
-2. **Run the bootstrap** in that folder. Windows: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1`. macOS: `bash bootstrap.sh`. It checks Git, Node 20+ and Claude Code, reports whether a browser (Edge or Chrome) is present, installs what is missing after a y/n for each, copies `.env.example` to `.env`, offers the optional extras and prints what remains. With `-Check` (Windows) or `--check` (macOS) it only reports. Flags: `-Check` (Windows) or `--check` (macOS) reports without installing; `-Yes` / `--yes` accepts every required item; `-Help` / `--help`.
+2. **Run the bootstrap** in that folder. Windows: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1`. macOS: `bash bootstrap.sh`. It checks Git, Node 20+ and Claude Code, reports whether a browser (Edge or Chrome) is present, installs what is missing after a y/n for each, copies `.env.example` to `.env`, offers the optional extras and prints what remains. With `-Check` (Windows) or `--check` (macOS) it only reports. Flags: `-Check` (Windows) or `--check` (macOS) reports without installing; `-Yes` / `--yes` accepts every required item; `-Help` / `--help`. A progress page (`dashboard/setup.html`) opens in your browser at the end of the bootstrap and ticks itself as the wizard confirms each step (your own Meta clicks show as "your turn"); keep it beside Claude Code.
 3. **Open the folder in Claude Code** (type `claude` in a terminal in the folder) and approve the two MCP servers it brings in `.mcp.json`: `meta-ads` and `fal`.
 4. **Log in:** `/mcp` → `meta-ads` → log in with the Owner's Facebook profile, granting this company's business, ad account and Page. Optional: `/mcp` → `fal` → log in with the company's fal account.
 5. **Start a new session** (Meta's tools load only into sessions started after the login) and run `/setup`: the wizard interviews you in rounds of four questions, prints the Meta console click lists and checks each outcome live, writes `config/*.md` and drafts a first-flight plan.
@@ -43,7 +43,7 @@ bootstrap.ps1, .sh        first-run check and install (Windows, macOS)
 release.ps1, .sh          cuts a release: scrub gate, version tag, zip (for whoever publishes releases)
 CHANGELOG.md              what changed in each release
 LICENSE, THIRD-PARTY.md   the licence; the third-party skills and their licences
-control-room/, dashboard/ the optional status pane and its data file
+control-room/, dashboard/ the optional status pane, its data file, and setup-page.mjs (the setup progress page)
 examples/                 a filled example company
 ```
 

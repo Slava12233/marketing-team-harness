@@ -26,6 +26,8 @@ Vocabulary, file names and field names are fixed by `docs/TEMPLATE-SPEC.md`; whe
 
 ## Step 0.5. Prerequisites and connections
 
+**The progress page first.** Run `node dashboard/setup-page.mjs --open` once: it writes `dashboard/setup.html` from the files (the console-steps table of `config/accounts.md`, `checklist.md`, `dashboard/state.json`) and opens it in the default browser; the Operator keeps it beside Claude Code (it reloads itself every 5 seconds). From here on, after every confirmed step, mark it with `node dashboard/setup-page.mjs --mark <key>=<status>` (statuses `done`, `doing`, `owner` for a click that waits for the Owner, `na`; `--help` lists the keys) so the page ticks as the wizard goes; a file always wins over a mark. After the checks below: `--mark install.git=done --mark install.node=done --mark install.claude=done` (`todo` for a missing one), and `--mark install.approved=done --mark login.tools=done` once the Meta tools are loaded.
+
 Run `git --version`, `node --version` and `claude --version` yourself through Bash from the repository root and show a short table (item, found, needed, what to do). Needed: Git; Node **20 or newer** (the upload tool needs it); Claude Code (a desktop-app session may lack the `claude` command; only the typed fallback below needs it). Also run `claude plugin list` when the command exists: the HyperFrames plugin row of `config/accounts.md` reads `installed` or `not installed` (also `not installed` without the command). Not installed is fine (video is optional); the Owner can add it later with `claude plugin marketplace add ./vendor/hyperframes` (the plugin ships in `vendor/hyperframes/`; the renderer needs Node 22+ and FFmpeg) then `claude plugin install hyperframes@hyperframes`.
 - **Missing or too old:** never install from the chat. The Operator closes Claude Code and runs the bootstrap in this folder, report-only first: Windows `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check`, macOS `bash bootstrap.sh --check`, then the same without the flag. It asks before each install, copies `.env.example` to `.env`, offers `playwright-core` and the HyperFrames plugin, and prints what remains; then the Operator reopens the folder in Claude Code and types `/setup`.
 - **`.env`:** only check that it exists (`test -f .env && echo present || echo missing`); never open, read, grep or print it.
@@ -43,6 +45,7 @@ Use the **AskUserQuestion** tool. Rules for every round:
 - English, at most **four questions a round**, the **recommended option first** and labelled "(Recommended)", two to four options per question; "Other" (free text) is always possible, and for free-text fields say "pick Other and type it".
 - Look facts up yourself where you can (the website, the live pages, the Meta account in step 3) and put only decisions and facts you cannot find to the Operator. When a round has more than four questions, or a question depends on an answer given in the same round, split it into two rounds.
 - After each round, repeat the answers back in one short block (in the chat language once known) and keep them in a working list; nothing is written to `config/` until step 5.
+- After each round, tick it on the progress page: `node dashboard/setup-page.mjs --mark interview.<letter>=done` (letters a–i; rounds (b1) and (b2) together are `b`, (g) and (g2) together are `g`).
 - An answer of "I don't know" is valid: record `not stated` (for a fact) or `open` with the Owner as the person to ask (for a decision), and add it to the open questions of step 6. Never invent a value.
 
 **Round (a): who runs this** → `config/operator.md`
@@ -112,6 +115,8 @@ Use the **AskUserQuestion** tool. Rules for every round:
 
 ## Step 2. Connections and the Owner's Meta console steps
 
+**Marks for this step:** as each console step is confirmed (the Operator's word, or the live read in step 3), run `node dashboard/setup-page.mjs --mark meta.<key>=done` with that step's key (`portfolio`, `page`, `adaccount`, `payment`, `phone`, `people`, `login`, `pixel`, `apptoken`, `whatsapp`, `leadads`, `leadscenter`, `domain`, `webhook`, `instagram`); a step the Owner still has to click is `owner`, one that does not apply is `na`. Once step 5 writes `config/accounts.md`, its table drives the page and the marks are only a fallback.
+
 **(a) Connections.** The servers ship in `.mcp.json`: approve them when Claude Code asks, then `/mcp` → `meta-ads` → log in, in the browser where the Owner is signed in to Facebook (step 0.5); the typed `claude mcp add` lines of step 0.5 stay the fallback.
 
 **(b) Console click lists.** Print the whole list in one message, in the chat language (Meta's labels in English); what does not apply (WhatsApp, lead forms; pixel and domain without a website) is marked `n/a`. Meta's labels drift, outcomes do not: read a changed screen for the outcome. Do not wait for "done" per step: after printing, run every live check a read can do, then record each status (done / open / n/a / unknown, dated) under the row names in bold below, in the console-steps table of `config/accounts.md` and as `checklist.md` rows (owner Owner). `docs/meta-setup-guide.md` repeats the steps with their pitfalls.
@@ -142,9 +147,9 @@ All calls are reads (never create, update or activate anything here); carry `cli
    ```
    node creatives/tools/meta-upload.mjs --check
    ```
-   Record the result in `config/accounts.md` by names only (token present yes/no, account reachable yes/no, the error code if any). Code 190 or 200 means the token is missing, expired or lacks the account: add it to the Owner's checklist rows; do not retry.
+   Record the result in `config/accounts.md` by names only (token present yes/no, account reachable yes/no, the error code if any). Then `node dashboard/setup-page.mjs --mark token.check=done` when it passed, or `--mark token.check=owner` while the token is still missing. Code 190 or 200 means the token is missing, expired or lacks the account: add it to the Owner's checklist rows; do not retry.
 7. Record `lead_delivery` in `config/accounts.md`: the round (g) answer (`Leads Center` by default), or `n/a (no instant forms)`.
-8. Update the console-steps rows the reads can show (portfolio, Page, ad account, MCP login, pixel, token, Instagram) in `config/accounts.md`.
+8. Update the console-steps rows the reads can show (portfolio, Page, ad account, MCP login, pixel, token, Instagram) in `config/accounts.md`, then regenerate the page: `node dashboard/setup-page.mjs --mark login.tools=done`.
 
 If the tools are not loaded, skip this step, leave the account fields as `{{...}}` placeholders, and say in the closing message that `/setup` must be run again in a new session to finish step 3.
 
@@ -160,7 +165,11 @@ Flag in capitals (`DO NOT SEND PAID TRAFFIC: lands on a sign-in screen`) any URL
 
 **No website:** nothing to fetch; the table keeps its one `none (no website)` row, console steps 6 and 10 are `n/a`, and the first flight uses click-to-WhatsApp or an instant form.
 
+When every page is recorded (or the no-website row is), `node dashboard/setup-page.mjs --mark setup.pages=done`.
+
 ## Step 5. Write the files
+
+After the files are written, regenerate the progress page (`node dashboard/setup-page.mjs`): from now on the written files drive it.
 
 1. For each `config/*.md` (`goals.md` included), replace every `{{FIELD}}` with the answer (or `not stated` / `none` / `open: ask the Owner`), remove every `<!-- setup: ... -->` hint, and set the header comment to `<!-- Written by /setup on <today>. Edit by hand or re-run /setup. -->`. Keep the headed field structure of the template exactly; add table rows, never new top-level sections. Quote copy verbatim in its language; consent and notice texts appear by id only.
 2. `memory.md` → "Current state": the account facts (ad account id, currency, Page, pixel, Instagram, upload check result, as last verified today), an empty campaigns table; "How to verify": the reads of step 3; "Decision rules": one dated line pointing to the money limits in `config/goals.md`; "Session log": nothing yet (step 8 adds it). Keep the fixed sections of TEMPLATE-SPEC §9 in order.
@@ -196,3 +205,4 @@ If yes: copy the whole repository to a scratch folder **outside** this folder (f
    - **Next steps:** `/health` now (checks the plumbing); `/morning` on the first day a flight runs and every working morning after; `/next-round` once a week when a cell has about a week of delivery; `/sync` at the end of every session.
    - **What the Owner still has to click:** the open `checklist.md` rows owned by the Owner, as a numbered click list; the full console steps, with URLs and pitfalls, are in `docs/meta-setup-guide.md`.
    - **What the wizard did not do:** it built nothing, activated nothing, spent nothing.
+4. Regenerate the progress page one last time (`node dashboard/setup-page.mjs --print`) and name its path (`dashboard/setup.html`) in the closing message: the Owner's open clicks show there as "your turn", and `/health`, `/morning` and `/sync` keep it current.

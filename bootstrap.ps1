@@ -287,6 +287,21 @@ Say '  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser whe
 Say '     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load.'
 Say '  4. Type /setup and answer the wizard.'
 Say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
+# The setup progress page (dashboard/setup.html): written and opened at the end of a real run, never under
+# -Check. The marks are this run's results: done when the tool was found or installed.
+$pageNode = Get-Version 'node'
+if (-not $Check -and $pageNode -and (Test-Path -LiteralPath 'dashboard/setup-page.mjs' -PathType Leaf)) {
+  $pageMajor = 0
+  if ($pageNode -match '^v?(\d+)\.') { $pageMajor = [int]$Matches[1] }
+  $markGit = if ((Get-Version 'git') -or ($Recheck -contains 'git')) { 'done' } else { 'todo' }
+  $markNode = if (($pageMajor -ge 20) -or ($Recheck -contains 'node')) { 'done' } else { 'todo' }
+  $markClaude = if ((Get-Version 'claude') -or ($Recheck -contains 'claude')) { 'done' } else { 'todo' }
+  Say ''
+  $global:LASTEXITCODE = 0
+  try { & node dashboard/setup-page.mjs --mark "install.git=$markGit" --mark "install.node=$markNode" --mark "install.claude=$markClaude" --open *> $null } catch { $global:LASTEXITCODE = 1 }
+  if ($LASTEXITCODE -eq 0) { Say 'A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html' }
+  else { Say 'The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later.' }
+}
 Say ''
 if ($Missing) { Say 'Result: something required is still missing (marked [missing] above).'; exit 1 }
 Say 'Result: everything required is in place.'

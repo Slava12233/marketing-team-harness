@@ -288,6 +288,21 @@ say "  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser whe
 say "     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load."
 say "  4. Type /setup and answer the wizard."
 say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
+# The setup progress page (dashboard/setup.html): written and opened at the end of a real run, never under
+# --check. The marks are this run's results: done when the tool was found or installed.
+if [ "$CHECK" != 1 ] && [ -n "$(node_v)" ] && [ -f dashboard/setup-page.mjs ]; then
+  ran() { case " $RECHECK " in *" $1 "*) return 0 ;; esac; return 1; }
+  pg_node=$(node_v); pg_major=${pg_node#v}; pg_major=${pg_major%%.*}
+  case "$pg_major" in ''|*[!0-9]*) pg_major=0 ;; esac
+  mark_git=todo; { [ -n "$(git_v)" ] || ran check_git; } && mark_git=done
+  mark_node=todo; { [ "$pg_major" -ge 20 ] || ran check_node; } && mark_node=done
+  mark_claude=todo; { [ -n "$(claude_v)" ] || ran check_claude; } && mark_claude=done
+  say ""
+  if node dashboard/setup-page.mjs --mark "install.git=$mark_git" --mark "install.node=$mark_node" \
+       --mark "install.claude=$mark_claude" --open >/dev/null 2>&1
+  then say "A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html"
+  else say "The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later."; fi
+fi
 say ""
 if [ "$MISSING" = 1 ]; then say "Result: something required is still missing (marked [missing] above)."; exit 1; fi
 say "Result: everything required is in place."
