@@ -1,0 +1,146 @@
+/* styles.css: mobile-first, no framework. Colours and font come from page.config.js (brand) through these
+   variables; the values below are only fallbacks. Logical properties (margin-inline, padding-inline, text-align: start)
+   make the same rules work for dir="ltr" and dir="rtl". */
+:root {
+  --color-primary: #1a56db;
+  --color-on-primary: #ffffff;
+  --color-bg: #ffffff;
+  --color-surface: #f3f4f6;
+  --color-text: #111827;
+  --color-muted: #4b5563;
+  --color-border: rgba(17, 24, 39, 0.14);
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Noto Sans Hebrew", "Noto Sans Arabic", sans-serif;
+  --radius: 12px;
+  --gutter: 16px;
+  --max: 1040px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
+  text-align: start;
+}
+body.has-consent-bar { padding-block-end: 200px; }
+img { max-width: 100%; height: auto; }
+h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5em; }
+h1 { font-size: clamp(1.9rem, 6vw, 3.1rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.45rem, 4vw, 2.1rem); font-weight: 800; }
+h3 { font-size: 1.12rem; font-weight: 700; }
+p { margin: 0 0 1em; }
+a { color: var(--color-primary); text-underline-offset: 2px; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
+
+.wrap { max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+.skip { position: absolute; inset-inline-start: -9999px; }
+.skip:focus { inset-inline-start: var(--gutter); top: 8px; background: var(--color-bg); padding: 8px 12px; z-index: 10; }
+
+/* Header */
+.site-header { border-block-end: 1px solid var(--color-border); }
+.site-header .wrap { display: flex; align-items: center; min-height: 60px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--color-text); text-decoration: none; font-weight: 800; font-size: 1.1rem; }
+.brand-logo { height: 32px; width: auto; }
+.brand-logo:not([hidden]) + .brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* Sections */
+section { padding-block: 48px; }
+@media (min-width: 720px) { section { padding-block: 72px; } }
+.hero { padding-block-start: 40px; }
+.hero h1 { max-width: 22ch; }
+.lead { font-size: 1.15rem; color: var(--color-muted); max-width: 60ch; }
+.cta-note { font-size: 0.95rem; color: var(--color-muted); margin-block-start: 12px; }
+
+/* Buttons: one primary action, at least 48 px high */
+.button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 52px; padding: 12px 28px;
+  background: var(--color-primary); color: var(--color-on-primary);
+  border: 2px solid var(--color-primary); border-radius: 999px;
+  font: inherit; font-weight: 700; font-size: 1.05rem; text-decoration: none; cursor: pointer;
+  width: 100%; max-width: 420px;
+}
+.button:hover { filter: brightness(1.08); }
+@media (min-width: 720px) { .button { width: auto; } }
+
+/* Benefits: three cards */
+.benefits { background: var(--color-surface); }
+.cards { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 16px; }
+@media (min-width: 720px) { .cards { grid-template-columns: repeat(3, 1fr); gap: 24px; } }
+.card { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 22px; }
+.card p { color: var(--color-muted); margin: 0; }
+
+/* How it works: three numbered steps */
+.step-list { list-style: none; margin: 24px 0 0; padding: 0; counter-reset: step; display: grid; gap: 20px; }
+@media (min-width: 720px) { .step-list { grid-template-columns: repeat(3, 1fr); gap: 32px; } }
+.step-list li { counter-increment: step; position: relative; padding-inline-start: 56px; }
+.step-list li::before {
+  content: counter(step); position: absolute; inset-inline-start: 0; top: 0;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--color-primary); color: var(--color-on-primary);
+  display: flex; align-items: center; justify-content: center; font-weight: 800;
+}
+.step-list p { color: var(--color-muted); margin: 0; }
+
+/* FAQ */
+.faq details { border-block-end: 1px solid var(--color-border); padding-block: 14px; }
+.faq details:first-of-type { margin-block-start: 16px; border-block-start: 1px solid var(--color-border); }
+.faq summary { cursor: pointer; font-weight: 700; font-size: 1.05rem; list-style-position: outside; padding-inline-end: 8px; }
+.faq details p { color: var(--color-muted); margin: 10px 0 0; }
+
+/* Closing CTA and the optional form */
+.closing { background: var(--color-surface); text-align: center; }
+.closing .lead { margin-inline: auto; }
+.lead-form { max-width: 420px; margin: 8px auto 0; text-align: start; }
+.field { margin-block-end: 14px; }
+.field label { display: block; font-weight: 600; margin-block-end: 6px; }
+.field input {
+  width: 100%; min-height: 48px; padding: 10px 14px;
+  font: inherit; font-size: 16px; /* 16 px floor: smaller inputs zoom the page on iOS */
+  color: var(--color-text); background: var(--color-bg);
+  border: 1px solid var(--color-muted); border-radius: 10px;
+}
+.form-notice { font-size: 0.9rem; color: var(--color-muted); }
+.lead-form .button { width: 100%; max-width: none; }
+
+/* Footer */
+.site-footer { padding-block: 32px 40px; border-block-start: 1px solid var(--color-border); font-size: 0.92rem; color: var(--color-muted); }
+.legal-lines { list-style: none; margin: 0 0 12px; padding: 0; }
+.legal-links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.linklike { background: none; border: 0; padding: 0; font: inherit; color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+/* Consent bar: fixed at the bottom, does not block the page; two equal buttons */
+.consent {
+  position: fixed; inset-inline: 0; bottom: 0; z-index: 20;
+  background: var(--color-surface); color: var(--color-text);
+  border-block-start: 1px solid var(--color-border);
+  box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.12);
+  padding-block: 14px calc(14px + env(safe-area-inset-bottom, 0px));
+}
+.consent-inner { display: grid; gap: 12px; }
+@media (min-width: 720px) { .consent-inner { grid-template-columns: 1fr auto; align-items: center; } }
+.consent p { margin: 0; font-size: 0.95rem; }
+.consent-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.button-equal { width: 100%; min-height: 48px; padding: 10px 18px; font-size: 1rem; }
+/* Accept and Decline look the same on purpose: equal prominence, nothing pre-selected. */
+.consent .button-equal { background: var(--color-bg); color: var(--color-text); border-color: var(--color-text); }
+
+.noscript { padding: var(--gutter); }
+
+/* Legal templates: the DRAFT banner on every block */
+.legal-page main { padding-block: 32px 56px; }
+.legal-page h1 { font-size: clamp(1.6rem, 5vw, 2.3rem); }
+.draft-top, .draft-label {
+  background: #ffd84d; color: #111111; border: 2px solid #111111;
+  font-weight: 800; padding: 8px 12px; border-radius: 8px; margin: 0 0 10px;
+}
+.draft-top { margin-block: 16px 24px; }
+.draft-block { border: 2px dashed #b45309; border-radius: 10px; padding: 14px; margin-block-end: 18px; }
+.draft-block h2 { font-size: 1.2rem; }
+.draft-block p:last-child { margin-block-end: 0; }

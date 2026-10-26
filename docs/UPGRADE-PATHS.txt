@@ -1,0 +1,138 @@
+# UPGRADE-PATHS.txt: which files an upgrade may write. Read by upgrade.sh and upgrade.ps1 (both read the copy
+# inside the NEW release, so a release always brings the list that matches its own files).
+#
+# Three sections, one path per line; '#' starts a comment.
+#   [replace]   harness-owned: overwritten from the release (the old file is backed up first)
+#   [add-only]  copied only when the file does not exist in the buyer's copy; an existing file is kept
+#   [never]     company-owned or per-machine: never written, even when the release carries the path
+#
+# Path forms (always forward slashes, relative to the harness folder):
+#   dir/          everything under that folder, at any depth
+#   path/file     that one file
+#   *  ?          any characters / one character inside one path segment (never across a '/')
+#   **/           any number of folders (including none)
+#   !path         under [never] only: an exception to [never] (the path then follows the other sections)
+#
+# Precedence: [never] wins over [add-only], which wins over [replace]. A path in no section is left alone and
+# shown as "not listed" in the plan: every new harness folder or root file must be added here in the same
+# release that introduces it (docs/TEMPLATE-SPEC.md §3 is the file map this list follows).
+
+[replace]
+# The rules, the docs and the scripts
+CLAUDE.md
+README.md
+ONBOARDING.md
+THIRD-PARTY.md
+LICENSE
+CHANGELOG.md
+docs/
+bootstrap.sh
+bootstrap.ps1
+release.sh
+release.ps1
+upgrade.sh
+upgrade.ps1
+skills-lock.json
+.mcp.json
+.env.example
+.gitattributes
+# Claude Code: agents, skills, hooks (.claude/settings.json is add-only, below)
+.claude/agents/
+.claude/skills/
+.claude/hooks/
+# The vault's machinery (the notes themselves are the company's)
+memory/README.md
+memory/tools/
+memory/templates/
+memory/bases/
+memory/maps/
+# Obsidian: the shared settings (the per-machine ones are under [never])
+.obsidian/app.json
+.obsidian/core-plugins.json
+# Creative tooling and the two site templates (each flight copies them into creatives/<flight>/)
+creatives/README.md
+creatives/tools/
+creatives/preview-template/
+creatives/landing-template/
+# The setup progress page generator and its smoke test
+dashboard/setup-page.mjs
+dashboard/setup-page.test.mjs
+# The control-room mod and the vendored video plugin
+control-room/
+vendor/
+
+[add-only]
+# New platform and craft learnings arrive; a learning the company already has is never overwritten
+memory/learnings/**
+# Folder descriptions, for a folder that is new in this release
+memory/**/_about.md
+# The append-only money records (the go log, the cost ledger): the empty ledgers arrive in a copy that
+# predates them; a ledger the company has written to is never overwritten
+memory/money/
+# The Owner's page and Inbox: only when missing (/setup has already kept one language as these names)
+memory/HOME.md
+memory/inbox/owner.md
+# Settings the buyer may have changed
+.claude/settings.json
+.gitignore
+.obsidian/appearance.json
+.obsidian/bookmarks.json
+.obsidian/templates.json
+# The fictional example company
+examples/
+# The company's configuration: a config file new in this release reaches an existing copy (with its
+# placeholders, for /setup to fill); a file the company has filled is never overwritten
+config/
+
+[never]
+# The company's secrets
+.env
+.env.*
+!.env.example
+# The company's notes in the vault
+memory/state/
+memory/business/
+memory/campaigns/
+memory/flights/
+memory/audiences/
+memory/experiments/
+memory/decisions/
+memory/sessions/
+memory/open/
+memory/reviews/
+memory/archive/
+memory/tooling/
+memory/inbox/proposals.md
+# /setup deleted the other language's twin (or renamed it over HOME.md / owner.md): never bring it back
+memory/HOME.en.md
+memory/inbox/owner.en.md
+# Generated per company
+memory/HOT.md
+memory/INDEX.md
+memory/capabilities/
+dashboard/state.json
+dashboard/state.local.json
+dashboard/setup.html
+dashboard/setup-progress.json
+dashboard/*.tmp
+# The company's work
+plans/
+reports/
+checklist.md
+memory.md
+creatives/src/
+creatives/briefs/
+creatives/uploads/
+# Every creatives/<flight>/ folder is the company's too: it is in no section, so it is left alone
+# Per-machine and local state
+.claude/settings.local.json
+.obsidian/workspace*
+.obsidian/cache/
+.obsidian/plugins/
+.trash/
+.vercel/
+.vscode/
+dist/
+**/node_modules/
+.git/
+.upgrade-backup/

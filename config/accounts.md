@@ -16,10 +16,13 @@ Ids are public identifiers, not secrets. Secrets (tokens, API keys) never go her
 | `pixel_id` (dataset) | {{PIXEL_ID}} |
 | `lead_form_ids` | {{LEAD_FORM_IDS}} |
 | `lead_delivery` | {{LEAD_DELIVERY}} |
+| `catalog_id` | {{CATALOG_ID}} |
+| `product_feed_ids` | {{PRODUCT_FEED_IDS}} |
+| `product_set_ids` | {{PRODUCT_SET_IDS}} |
 | `whatsapp_number_names` | {{WHATSAPP_NUMBER_NAMES}} |
 | `currency` | {{CURRENCY}} |
 | `min_daily_budget` | {{MIN_DAILY_BUDGET}} |
-<!-- setup: meta_ad_account_id = digits only, no act_ prefix (the same value goes in .env as META_AD_ACCOUNT_ID); page duplicates = other Pages the login sees that must never be used; instagram = "not linked for ads" is a valid value; pixel_id = "none (no website)" is a valid value when every funnel is click-to-WhatsApp or an instant form; lead_form_ids = id and name per form, from Business Suite's forms library; lead_delivery = how instant-form leads reach the person who answers them: Leads Center (default) / email notifications / CSV download / CRM: <name> / webhook (advanced; URL below), or "n/a (no instant forms)"; whatsapp_number_names = a label per number (never the number itself in a shared file if the Owner prefers); currency = the account currency (ISO code); min_daily_budget = as the account reports it, in the minor unit and the major unit -->
+<!-- setup: meta_ad_account_id = digits only, no act_ prefix (the same value goes in .env as META_AD_ACCOUNT_ID); page duplicates = other Pages the login sees that must never be used; instagram = "not linked for ads" is a valid value; pixel_id = "none (no website)" is a valid value when every funnel is click-to-WhatsApp or an instant form; lead_form_ids = id and name per form, from Business Suite's forms library; lead_delivery = how instant-form leads reach the person who answers them: Leads Center (default) / email notifications / CSV download / CRM: <name> / webhook (advanced; URL below), or "n/a (no instant forms)"; catalog_id, product_feed_ids, product_set_ids = "none" unless the company runs catalog ads; whatsapp_number_names = a label per number (never the number itself in a shared file if the Owner prefers); currency = the account currency (ISO code); min_daily_budget = as the account reports it, in the minor unit and the major unit -->
 
 ## Analytics and attribution
 

@@ -1,7 +1,7 @@
 ---
 type: map
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 status: active
 maintained_by: harness
 categories: [maps, build]
@@ -20,9 +20,11 @@ summary: "The Build lane map - media-buyer and the main session read every meta-
 ## The notes you touch
 - every campaign note in `memory/campaigns/` (one per campaign; ids, ad sets, ads, caps, dates)
 - every flight note in `memory/flights/` (fixed creative numbers, hashes, video ids)
-- the audience specs in `memory/audiences/`
+- the audience specs in `memory/audiences/` (one note per custom audience or lookalike, named as the audience: id, size and readiness with `as_of` and `source`) and the ladder plan `plans/<date>-audience-ladder.md`
+- the catalog, feed, event-source and product-set ids (the account facts of `memory/state/current.md` and the flight's plan) when the company runs catalog ads
 - [[funnels]] (destinations, conversion events, attribution) and [[business/product|product]] (the copy in use)
 - the ids in `config/accounts.md` (ad account, Page, pixel, forms, WhatsApp numbers by name, currency)
+- [[go-log]] (`memory/money/go-log.md`): at the go step, one row per go, the Owner's words quoted, in the same turn as the activation (shape in [[close]])
 
 ## Every Meta platform behaviour (read all before a build; the notes win over any summary)
 Every note under `learnings/meta-platform/`. The template ships these; add each new platform note here the day it is written.
@@ -76,3 +78,5 @@ Every note under `learnings/meta-platform/`. The template ships these; add each 
 
 ## Procedure
 - skill `meta-campaign-build` · `docs/meta-setup-guide.md` (the Owner's console steps) · `docs/meta-platform-notes.md` (the same platform knowledge as one page)
+- **Custom audiences and lookalikes:** `meta-campaign-build` "Custom audiences" (the `rule` JSON string, the templates, lookalikes, readiness, customer lists only on the Owner's ruling, deletes the Owner's), built only from the ladder plan `plans/<date>-audience-ladder.md` that `audience-research` "The retargeting ladder, built" writes (rungs, naming, minimum source size, exclusions, the special-ad-category table, consent per rung, the weekly check)
+- **Catalog and Advantage+ shopping:** skill `catalog-ads` (intake, order of work, compliance, the weekly health routine) → `meta-campaign-build` "Catalog and Advantage+ shopping campaigns" (catalog → feed → diagnostics clean → event source → product sets → `OUTCOME_SALES` PAUSED; `template_data` field names from `ads_get_field_context`; the weekly catalog health check)

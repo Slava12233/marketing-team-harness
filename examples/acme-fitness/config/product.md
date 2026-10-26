@@ -41,3 +41,15 @@
 | Class photos | 40 real class photos from the three gyms, with signed model releases | held by the web team | yes |
 | Gym tour video | One 30-second tour (16:9) and its 9:16 cut, no voice-over, no music | held by the web team | yes |
 | App screenshots | Booking screen, plan screen, door pass | the app's store listing | yes |
+
+## Product feed (optional)
+
+**Feed platform:** none (no product feed: Acme sells memberships, not catalogued products)
+
+**Feed URL owner:** n/a
+
+**Feed credential name:** n/a
+
+**Feed currency:** n/a
+
+**Product count:** none

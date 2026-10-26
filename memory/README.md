@@ -1,7 +1,7 @@
 ---
 type: contract
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 status: active
 maintained_by: harness
 categories: [memory]
@@ -27,6 +27,7 @@ The vault works without Obsidian: every tool and hook reads and writes plain Mar
 | `flights/` | One note per creative flight: the numbered creatives table, hashes and video ids, preview site, winners | main session | English |
 | `audiences/` | One note per audience or targeting idea: spec, ids, size with `as_of`, where used, verdicts | main session | English |
 | `open/` | One note per open item (`owner:` owner, operator, harness, product-team or lawyer; `status: open` until done); HOT and HOME list them by owner | main session | English |
+| `money/` | Two append-only ledgers (type `ledger`, newest row last, a correction is a new row): `ledger.md`, what running the harness cost, `\| date \| item \| kind \| amount \| currency \| source \| as_of \| note \|` (kind: fal, claude usage, media, tool, hours, other; ad spend is read live from Meta, never kept here), appended at `/sync`; `go-log.md`, every go the Owner gave, `\| date \| time (tz) \| channel \| the Owner's words, quoted \| objects (ids) \| daily \| cap \| end \| who executed \|` (channel: chat, WhatsApp quoted, email quoted), appended at the go step of `meta-campaign-build`. The frontmatter `as_of` is the newest row's time | main session | English |
 | `experiments/` | One note per experiment: frozen hypothesis, variable, metric, decision rule, dates, verdict | main session | English |
 | `decisions/` | One note per ruling by the Owner, `YYYY-MM-DD-slug.md`; never edited, superseded by a newer note | main session | English |
 | `learnings/` | One fact per note under `meta-platform/`, `creative/`, `audiences/`, `tooling/`, `money/`; never edited, superseded | main session | English |
@@ -69,7 +70,7 @@ The Owner-facing notes (HOME, the Inbox, the weekly review, the bases' labels) a
 
 ```yaml
 ---
-type: campaign            # contract | state | business | campaign | flight | audience | experiment | decision | learning | open | session | review | inbox | capability | tooling | map | report | plan | archive
+type: campaign            # contract | state | business | campaign | flight | audience | experiment | decision | learning | open | session | review | inbox | capability | tooling | map | report | plan | archive | ledger (memory/money/, added 2026-10-27)
 created: 2026-10-26
 updated: 2026-10-26       # the last edit by the harness; generated notes carry generated_at instead
 status: active            # active | paused | done | superseded | draft | confirmed | hint | open | archived (see the type's template)
@@ -121,7 +122,7 @@ Rules: every figure in a note carries `as_of` and `source`; a figure is re-read 
 
 ## 8. Who writes what, and when
 
-- **One writer.** Only the main session writes canonical notes (`state/`, `business/`, `campaigns/`, `flights/`, `audiences/`, `open/`, `experiments/`, `decisions/`, `learnings/`, `sessions/`, `reviews/`, `maps/`, `tooling/`, HOME's generated block). Sub-agents write their own outputs (`reports/`, `plans/`, briefs) with full frontmatter and append to `inbox/proposals.md`. No two writers on one note.
+- **One writer.** Only the main session writes canonical notes (`state/`, `business/`, `campaigns/`, `flights/`, `audiences/`, `open/`, `experiments/`, `decisions/`, `learnings/`, `sessions/`, `reviews/`, `maps/`, `tooling/`, `money/`, HOME's generated block). Sub-agents write their own outputs (`reports/`, `plans/`, briefs) with full frontmatter and append to `inbox/proposals.md`. No two writers on one note.
 - **At once.** A state change rewrites the entity note's `## Current state`, appends to its `## Log` and to today's session note. A ruling creates a decision note. A finding creates a learning note after a grep of `INDEX.md` for an existing one.
 - **`/setup`.** Fills `business/*.md` and `state/current.md` from `config/` and the live check (§2), keeps the HOME and Inbox of the chat language (§3), then runs `build-capabilities.mjs`, `build-hot.mjs` and `lint.mjs`.
 - **`/morning`.** Reads and answers `inbox/owner.md`, files facts, live read, report, `node memory/tools/build-hot.mjs`.

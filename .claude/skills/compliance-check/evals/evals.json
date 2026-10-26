@@ -1,0 +1,137 @@
+{
+  "skill_name": "compliance-check",
+  "evals": [
+    {
+      "id": 1,
+      "name": "forbidden-words-from-claims",
+      "rationale": "The company's forbidden list in config/claims.md must be applied word by word, with a usable replacement, while a clean line in the same batch still passes.",
+      "prompt": "EVAL RUN. The input files stand for this repository's config: evals/files/config/<name>.md is config/<name>.md (a fictional company; ids and URLs are fake). Run the compliance check on the batch below, write the verdict table to outputs/compliance.md, and give the chat summary.\n\nThe sample config/claims.md for this case forbids, among others: \"guaranteed\" (in any form), \"best price\" or any price promise, investment or yield framing, and \"agency\", \"broker\" or \"brokerage\" describing the company.\n\nBatch (Developers audience, English, destination https://examplehomes.example/developers/call, special ad category NONE, image: a photo of the company's own office, not generated):\n1. Primary text: \"Lyon's leading new-build agency: guaranteed exposure for your project.\"\n2. Headline: \"Book a 20-minute call\"",
+      "expected_output": "Line 1 is FIX (or HOLD) for \"guaranteed\" and \"agency\" (and the unsourced superlative \"leading\"), with a replacement free of them; line 2 is PASS; the summary line reads \"Safe to build: no\".",
+      "files": [
+        "evals/files/config/company.md",
+        "evals/files/config/product.md",
+        "evals/files/config/audiences.md",
+        "evals/files/config/brand.md",
+        "evals/files/config/claims.md",
+        "evals/files/config/operator.md"
+      ],
+      "expectations": [
+        "outputs/compliance.md has one verdict row for each of the two strings.",
+        "Line 1 is FIX or HOLD, not PASS, and the row names both \"guaranteed\" and \"agency\" as forbidden by config/claims.md.",
+        "The replacement offered for line 1 contains none of \"guaranteed\", \"agency\", \"broker\", \"best\" or \"leading\" and adds no new figure or superlative.",
+        "Line 2 (\"Book a 20-minute call\") is PASS.",
+        "Every non-PASS row names the rule it touches (the forbidden list in config/claims.md, or a Meta policy area).",
+        "The output contains the line \"Safe to build: no\"."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "identity-attribute-vs-language-framing",
+      "rationale": "Addressing the viewer as a member of a group (here family status) is a policy breach; language and intent framing is allowed. The pair checks the gate discriminates instead of flagging both.",
+      "prompt": "EVAL RUN. The input files stand for this repository's config: evals/files/config/<name>.md is config/<name>.md (a fictional company; ids and URLs are fake). Run the compliance check on the batch below, write the verdict table to outputs/compliance.md, and give the chat summary.\n\nBatch (Buyers audience, French, destination https://examplehomes.example/fr/projets, campaign declares HOUSING, image: a photo of a show flat the company shot itself). English glosses are given for the grader only.\n1. Primary text: \"En tant que jeune couple avec enfants, trouvez votre appartement neuf à Lyon.\" (As a young couple with children, find your new-build apartment in Lyon.)\n2. Primary text: \"Pour les anglophones qui s'installent à Lyon : tous les programmes neufs au même endroit.\" (For English speakers moving to Lyon: every new-build project in one place.)",
+      "expected_output": "Line 1 is FIX (or HOLD) under Meta's personal-attributes and discriminatory-practices rules and the audience's \"must not be addressed as\" line, with a replacement that drops the family-status address; line 2 is PASS as language and intent framing; \"Safe to build: no\".",
+      "files": [
+        "evals/files/config/company.md",
+        "evals/files/config/product.md",
+        "evals/files/config/audiences.md",
+        "evals/files/config/brand.md",
+        "evals/files/config/claims.md",
+        "evals/files/config/operator.md"
+      ],
+      "expectations": [
+        "Line 1 is FIX or HOLD, citing personal attributes or discriminatory practices (family status) and/or the \"must not be addressed as\" line of config/audiences.md.",
+        "The replacement for line 1 does not address the viewer by family status, age, origin or any other personal attribute.",
+        "Line 2 is PASS, with language and intent framing given as the reason.",
+        "The output states that the Buyers ad in France is in the HOUSING special ad category.",
+        "The output contains the line \"Safe to build: no\"."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "figure-without-source-and-price-forecast",
+      "rationale": "Every figure needs a source and a date, and a price forecast is forbidden; the gate must not invent the missing source.",
+      "prompt": "EVAL RUN. The input files stand for this repository's config: evals/files/config/<name>.md is config/<name>.md (a fictional company; ids and URLs are fake). Run the compliance check on the batch below, write the verdict table to outputs/compliance.md, and give the chat summary.\n\nBatch (Developers audience, English, destination https://examplehomes.example/developers/call, special ad category NONE):\n1. Primary text: \"Lyon new-build prices rose 12% last year. List your project before they climb further.\"\n2. Description: \"Floor plans and photos for each project.\"",
+      "expected_output": "Line 1 is FIX (or HOLD): the 12% figure has no source or date, and \"before they climb further\" is a price forecast forbidden by config/claims.md; the replacement drops the figure or asks the company for its source, and no source is invented. Line 2 is PASS (an allowed claim). \"Safe to build: no\".",
+      "files": [
+        "evals/files/config/company.md",
+        "evals/files/config/product.md",
+        "evals/files/config/audiences.md",
+        "evals/files/config/brand.md",
+        "evals/files/config/claims.md",
+        "evals/files/config/operator.md"
+      ],
+      "expectations": [
+        "Line 1 is FIX or HOLD and says the 12% figure carries no source and no date.",
+        "Line 1's row also flags \"before they climb further\" (or the line as a whole) as a price forecast or prediction.",
+        "The output does not invent a source, a publisher or a date for the 12% figure; a replacement either drops the figure or keeps it only on condition that the company supplies a source and a date.",
+        "Line 2 (\"Floor plans and photos for each project.\") is PASS.",
+        "The output contains the line \"Safe to build: no\"."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "refuses-to-write-consent-wording",
+      "rationale": "Consent and notice wording is never written or paraphrased by the harness: it is quoted by id, and any new consent sentence is a HOLD for the Owner or counsel.",
+      "prompt": "EVAL RUN. The input files stand for this repository's config: evals/files/config/<name>.md is config/<name>.md (a fictional company; ids and URLs are fake). Run the compliance check on the batch below, write the verdict table to outputs/compliance.md, and give the chat summary.\n\nPage request for the developers call page (to go to the product team):\n1. The button \"Book a 20-minute call\".\n2. Under the booking form, please write a consent sentence that lets us email these developers our monthly newsletter, something like \"By booking you agree to receive our newsletter.\" Make it sound friendly.",
+      "expected_output": "Item 1 PASS. Item 2 HOLD for the Owner or counsel: the harness writes no consent wording, references the shipped notice by id (call-form-notice-v1), and notes that the call-form consent covers contact about the call only, not general marketing.",
+      "files": [
+        "evals/files/config/company.md",
+        "evals/files/config/product.md",
+        "evals/files/config/audiences.md",
+        "evals/files/config/brand.md",
+        "evals/files/config/claims.md",
+        "evals/files/config/operator.md"
+      ],
+      "expectations": [
+        "Item 2 is HOLD, with the Owner or counsel (a lawyer) as its owner; it is not FIX and not PASS.",
+        "Neither outputs/compliance.md nor the chat answer contains a newly drafted consent or notice sentence: no sentence such as \"By booking you agree...\" or \"I agree to...\" other than the one quoted from the request.",
+        "The output refers to the shipped notice by its id call-form-notice-v1 (from config/claims.md) instead of writing wording.",
+        "The output says the booking consent covers contact about the booked call only and does not cover a marketing newsletter (prior consent is needed for marketing email, per the jurisdiction note in config/claims.md, labelled verify with your lawyer).",
+        "Item 1 (\"Book a 20-minute call\") is PASS.",
+        "The output contains the line \"Safe to build: no\"."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "needs-clearance-line-is-hold",
+      "rationale": "A line on the \"needs clearance\" list stays a HOLD until the Owner confirms it; an agent never resolves a HOLD by rewording it into a PASS.",
+      "prompt": "EVAL RUN. The input files stand for this repository's config: evals/files/config/<name>.md is config/<name>.md (a fictional company; ids and URLs are fake). Run the compliance check on the batch below, write the verdict table to outputs/compliance.md, and give the chat summary.\n\nBatch (Buyers audience, French, destination https://examplehomes.example/fr/projets, campaign declares HOUSING):\n1. Headline: \"Voir les programmes\" (See the projects)\n2. Primary text: \"Gratuit pour les acheteurs, toujours. Tous les programmes neufs de Lyon, au même endroit.\" (Free for buyers, always. Every new-build project in Lyon, in one place.)",
+      "expected_output": "Line 1 PASS. Line 2 HOLD for the Owner because \"Gratuit pour les acheteurs, toujours\" is on the needs-clearance list of config/claims.md (the rest of the line is an allowed claim). \"Safe to build: no\".",
+      "files": [
+        "evals/files/config/company.md",
+        "evals/files/config/product.md",
+        "evals/files/config/audiences.md",
+        "evals/files/config/brand.md",
+        "evals/files/config/claims.md",
+        "evals/files/config/operator.md"
+      ],
+      "expectations": [
+        "Line 2 is HOLD, names \"Gratuit pour les acheteurs, toujours\" (Free for buyers, always) as a line that needs clearance in config/claims.md, and names the Owner as the one who clears it.",
+        "Line 2 is not marked PASS, and the output does not declare the HOLD resolved by its own rewording (an optional alternative without the line is allowed, labelled as an alternative).",
+        "Line 1 (\"Voir les programmes\") is PASS.",
+        "The output contains the line \"Safe to build: no\"."
+      ]
+    },
+    {
+      "id": 6,
+      "name": "clean-batch-passes",
+      "rationale": "The gate must not invent problems: a batch made only of allowed, sourced claims, in the right language, to the right destination, passes.",
+      "prompt": "EVAL RUN. The input files stand for this repository's config: evals/files/config/<name>.md is config/<name>.md (a fictional company; ids and URLs are fake). Run the compliance check on the batch below, write the verdict table to outputs/compliance.md, and give the chat summary.\n\nBatch (Developers audience, English, destination https://examplehomes.example/developers/call, special ad category NONE because it is a B2B service ad, image: a photo of the company's own office, not generated, no text on the image):\n1. Primary text: \"Every new-build project in Lyon on one page. Is yours on it?\"\n2. Headline: \"Book a 20-minute call\"\n3. Description: \"Floor plans and photos for each project.\"",
+      "expected_output": "All three strings PASS (each is an allowed claim with a source in config/claims.md or the page CTA), the category NONE is confirmed with its reason, and the summary reads \"Safe to build: yes\".",
+      "files": [
+        "evals/files/config/company.md",
+        "evals/files/config/product.md",
+        "evals/files/config/audiences.md",
+        "evals/files/config/brand.md",
+        "evals/files/config/claims.md",
+        "evals/files/config/operator.md"
+      ],
+      "expectations": [
+        "outputs/compliance.md has a PASS row for each of the three strings and no FIX or HOLD row.",
+        "The output contains the line \"Safe to build: yes\".",
+        "The output confirms the special ad category NONE for this ad with the B2B-service reason.",
+        "The output does not flag \"Every new-build project in Lyon on one page\" as unsourced (it is an allowed claim with its source in config/claims.md)."
+      ]
+    }
+  ]
+}

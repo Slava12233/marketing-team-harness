@@ -1,15 +1,23 @@
 # release.ps1: the maintainer's release step for the Marketing Team Harness (buyers never run it).
-# Usage: powershell -ExecutionPolicy Bypass -File .\release.ps1 vX.Y.Z      (macOS: bash release.sh vX.Y.Z)
+# Usage: powershell -ExecutionPolicy Bypass -File .\release.ps1 vX.Y.Z [-SkipTests]      (macOS: bash release.sh vX.Y.Z [--skip-tests])
+#        powershell -ExecutionPolicy Bypass -File .\release.ps1 -Manifest   (only rewrites docs/release-manifest.txt and
+#        exits 0; stage new files with git add first so they are listed, then commit the manifest)
 # Each step is printed, and every check runs before the tag is made:
 #   (a) the working tree is clean (git status --porcelain), no .env file is tracked, no file under vendor\ is
 #       hidden by an ignore rule (it would be missing from the zip), dist\ is ignored
 #   (b) docs/scrub-check.sh, run with Git for Windows' bash (Git Bash), prints "scrub gate: clean"
+#   (b2) the node test suites pass, one after the other, each given at most 300 s and stopped (with its process
+#        tree) past that: memory/tools/tools.test.mjs, dashboard/setup-page.test.mjs,
+#        .claude/hooks/account-guard.test.mjs and every creatives/tools/*.test.mjs; -SkipTests bypasses them
+#        with a printed warning (then run docs/regression-run.md before publishing)
+#   (b3) docs/release-manifest.txt ("<sha256>  <path>" for every tracked file but itself, LF) matches the tree;
+#        a missing or stale manifest refuses the release with the command that rewrites it (-Manifest)
 #   (c) CHANGELOG.md has a "## [X.Y.Z]" heading for this version
 #   (d) the annotated tag vX.Y.Z is created (refused when the tag or the zip already exists)
 #   (e) dist\marketing-team-harness-vX.Y.Z.zip is built from that tag with git archive
 #   (f) the zip's path and size are printed, with the push command to run by hand
 # This script never pushes. Exit codes: 0 released, 1 refused or failed, 2 usage.
-param([string]$Tag = '')
+param([string]$Tag = '', [switch]$SkipTests, [switch]$Manifest)
 Set-StrictMode -Version 2
 $ErrorActionPreference = 'Continue'
 
@@ -26,8 +34,9 @@ function Find-GitBash {   # Git for Windows' bash.exe (never the WSL launcher in
   return ''
 }
 
-if ($Tag -notmatch '^v\d+\.\d+\.\d+$') { Write-Host 'Usage: powershell -ExecutionPolicy Bypass -File .\release.ps1 vX.Y.Z   (for example: v1.0.0)'; exit 2 }
-$version = $Tag.Substring(1)
+if ($Manifest -and $Tag) { Write-Host 'Usage: powershell -ExecutionPolicy Bypass -File .\release.ps1 -Manifest   (no version: it only rewrites docs/release-manifest.txt)'; exit 2 }
+if (-not $Manifest -and $Tag -notmatch '^v\d+\.\d+\.\d+$') { Write-Host 'Usage: powershell -ExecutionPolicy Bypass -File .\release.ps1 vX.Y.Z [-SkipTests]   (for example: v1.0.0), or .\release.ps1 -Manifest'; exit 2 }
+$version = if ($Tag) { $Tag.Substring(1) } else { '' }
 $root = $PSScriptRoot
 if (-not $root) { Write-Host 'Run this file as a script: powershell -ExecutionPolicy Bypass -File .\release.ps1 vX.Y.Z'; exit 2 }
 $G = @('-C', $root)
@@ -37,6 +46,32 @@ if (-not (Get-Command git -CommandType Application -ErrorAction SilentlyContinue
 & git @G rev-parse --is-inside-work-tree *> $null
 if ($LASTEXITCODE -ne 0) { Refuse 'this folder is not a git repository.' }
 if (-not (Test-Path -LiteralPath (Join-Path $root 'docs\scrub-check.sh'))) { Refuse 'docs/scrub-check.sh was not found: run this from the harness repository.' }
+
+$manifestRel = 'docs/release-manifest.txt'
+$manifestPath = Join-Path $root 'docs\release-manifest.txt'
+# "<sha256>  <path>" for every tracked file except the manifest itself, in git's order, LF line endings:
+# the same text as release.sh writes. Returns $null (with a message) when a file cannot be hashed.
+function Get-ManifestText {
+  $files = @(& git @G -c core.quotepath=off ls-files -- . ":(exclude)$manifestRel")
+  if ($LASTEXITCODE -ne 0) { Write-Host 'git ls-files failed.'; return $null }
+  $sb = New-Object System.Text.StringBuilder
+  foreach ($f in $files) {
+    $full = Join-Path $root $f
+    if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { Write-Host "tracked but missing from the disk: $f"; return $null }
+    $h = (Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash.ToLowerInvariant()
+    [void]$sb.Append($h).Append('  ').Append($f).Append("`n")
+  }
+  return $sb.ToString()
+}
+if ($Manifest) {
+  Step 'manifest' "Rewrite $manifestRel from the tracked files (nothing else runs)"
+  $text = Get-ManifestText
+  if ($null -eq $text) { Refuse 'the manifest could not be computed (see above).' }
+  [System.IO.File]::WriteAllText($manifestPath, $text, (New-Object System.Text.UTF8Encoding($false)))
+  $n = ($text.Split("`n") | Where-Object { $_ -ne '' }).Count
+  Write-Host "ok: $n files listed in $manifestRel. Commit it, then run the release."
+  exit 0
+}
 
 Step 'a' 'The working tree is clean, no .env file is tracked, every file under vendor/ is tracked, and dist/ is ignored'
 $dirty = @(& git @G status --porcelain)
@@ -67,6 +102,41 @@ $rc = $LASTEXITCODE
 Pop-Location
 $gate | ForEach-Object { Write-Host $_ }
 if ($rc -ne 0 -or -not (($gate -join "`n") -match 'scrub gate: clean')) { Refuse 'the scrub gate is not clean (see above).' }
+
+Step 'b2' 'Node test suites (one after the other, each bounded at 300 s)'
+if ($SkipTests) {
+  Write-Host 'WARNING: -SkipTests was given: the node test suites were NOT run. Run them by hand (docs/regression-run.md) before you publish this zip.'
+} else {
+  $node = Get-Command node -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+  if (-not $node) { Refuse 'node was not found: install Node.js 20 or newer (or pass -SkipTests, not recommended).' }
+  $suites = @('memory/tools/tools.test.mjs', 'dashboard/setup-page.test.mjs', '.claude/hooks/account-guard.test.mjs')
+  foreach ($s in $suites) { if (-not (Test-Path -LiteralPath (Join-Path $root $s))) { Refuse "the test suite $s is missing." } }
+  $toolsDir = Join-Path $root 'creatives\tools'
+  if (Test-Path -LiteralPath $toolsDir) {
+    $suites += @(Get-ChildItem -LiteralPath $toolsDir -Filter '*.test.mjs' -File | Sort-Object Name | ForEach-Object { 'creatives/tools/' + $_.Name })
+  }
+  foreach ($s in $suites) {
+    Write-Host "-> node --test $s   (at most 300 s)"
+    $p = Start-Process -FilePath $node.Path -ArgumentList @('--test', ('"' + $s + '"')) -WorkingDirectory $root -NoNewWindow -PassThru
+    $null = $p.Handle   # keeps the exit code readable after the process ends
+    if (-not $p.WaitForExit(300000)) {
+      try { $p.Kill($true) } catch { & taskkill /PID $p.Id /T /F *> $null }   # the whole tree: the test runner starts child processes
+      Refuse "$s did not finish within 300 s and was stopped. Check that no node process is left over (tasklist) before running again."
+    }
+    $p.WaitForExit()
+    if ($p.ExitCode -ne 0) { Refuse "$s failed (exit $($p.ExitCode)): see the output above." }
+  }
+  Write-Host "ok: $($suites.Count) suites passed"
+}
+
+Step 'b3' "Release manifest ($manifestRel matches the tracked files)"
+$expected = Get-ManifestText
+if ($null -eq $expected) { Refuse 'the release manifest could not be computed (see above).' }
+$current = if (Test-Path -LiteralPath $manifestPath -PathType Leaf) { [System.IO.File]::ReadAllText($manifestPath) } else { $null }
+if ($null -eq $current -or -not [string]::Equals($current, $expected, [System.StringComparison]::Ordinal)) {
+  Refuse 'docs/release-manifest.txt is stale: run `bash release.sh --manifest` (or `-Manifest`) to rewrite it, commit, and run the release again'
+}
+Write-Host ('ok: ' + ($expected.Split("`n") | Where-Object { $_ -ne '' }).Count + ' files')
 
 Step 'c' "CHANGELOG.md has a heading for $version"
 $log = Join-Path $root 'CHANGELOG.md'

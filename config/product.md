@@ -39,3 +39,16 @@
 |---|---|---|---|
 | {{ASSET_NAME}} | {{ASSET_DESCRIPTION}} | {{ASSET_LOCATION}} | {{ASSET_CLEARED_YES_NO}} |
 <!-- setup: films, images, screen recordings, brand files, print, demos; location is a path inside this repo or a URL; "cleared" = rights, music licence, real names and AI-voice questions answered -->
+
+## Product feed (optional)
+
+**Feed platform:** {{FEED_PLATFORM}}
+
+**Feed URL owner:** {{FEED_URL_OWNER}}
+
+**Feed credential name:** {{FEED_CREDENTIAL_NAME}}
+
+**Feed currency:** {{FEED_CURRENCY}}
+
+**Product count:** {{PRODUCT_COUNT}}
+<!-- setup: "none" when the company sells no catalogued products; names only for credentials -->

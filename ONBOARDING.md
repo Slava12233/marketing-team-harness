@@ -199,7 +199,7 @@ The go checklist stays `checklist.md` (§8); it is not a vault note.
 
 **Nothing for the Owner to click** (`/health` checks it in its last lines):
 - **The vault and Obsidian's command line** are set up by `obsidian-setup.mjs` (above). The command line lets Claude search the vault and move or rename notes with their links kept; Claude calls it by its full path, so nothing is added to your terminal. Without Obsidian everything still works, through the files.
-- **The hooks:** two small scripts that load the summary (`memory/HOT.md`) into every new session and save a checkpoint into the day's note before a long chat is compacted. They ship turned on in `.claude/settings.json`; the one yes you give when Claude Code asks whether to trust the folder is all. If that file is deleted or replaced, `docs/hooks-paste-block.md` holds the block to restore.
+- **The hooks:** three small scripts. Two load the summary (`memory/HOT.md`) into every new session and save a checkpoint into the day's note before a long chat is compacted. A third, the account guard (`.claude/hooks/account-guard.mjs`), checks every Meta call before it is sent and refuses any call on an ad account other than the one in `config/accounts.md`. They ship turned on in `.claude/settings.json`; the one yes you give when Claude Code asks whether to trust the folder is all. If that file is deleted or replaced, `docs/hooks-paste-block.md` holds the block to restore.
 - **Your only Obsidian action is to use it:** HOME and the Inbox.
 
 **When Claude says it will not edit a note:** the note is the Owner's (the part of HOME below the line, the Inbox lines) or a dated ruling or lesson that is only ever replaced. Edit your own part yourself; for a ruling or lesson, say what changed and Claude writes a new note that replaces the old one.
@@ -213,6 +213,7 @@ The go checklist stays `checklist.md` (§8); it is not a vault note.
 | `config/` | Your company's facts, written by `/setup` (§4), including `config/goals.md` (budgets, targets, caps); `config/README.md` explains each file | `/setup`, or you by hand |
 | `memory/` | The memory vault (§8a): HOME, the Inbox, state, business notes, campaigns, flights, audiences, experiments, decisions, learnings, day notes, weekly reviews; the rulebook for it is `memory/README.md` | Claude (the main session only); you write below HOME's marked line and in the Inbox |
 | `.obsidian/` | Obsidian's settings for this folder (core plugins only; `creatives/`, `.claude/` and `dashboard/` hidden) | Obsidian |
+| `memory/money/` | The cost ledger (`ledger.md`: what running the harness cost, never ad spend) and the go log (`go-log.md`: every go the Owner gave, quoted, with the amounts) | Claude, appended at the go and at `/sync` |
 | `checklist.md` | The go checklist (§8) | Claude and the team |
 | `ONBOARDING.md` | This manual | Claude, on request |
 | `plans/` | Living plans with every id, spec, copy table and decision; requests to the product team | Claude |
@@ -228,9 +229,11 @@ The go checklist stays `checklist.md` (§8); it is not a vault note.
 | `README.md`, `LICENSE`, `THIRD-PARTY.md` | What this is and the quick start; the licence (a single-company draft); the third-party skills and their licences | the repository owner |
 | `CHANGELOG.md`, `release.ps1`, `release.sh` | What changed in each release; the script that cuts a release | whoever publishes releases |
 | `docs/` | The template contract, the Owner's Meta setup guide (`docs/meta-setup-guide.md`), the Obsidian guide (`docs/obsidian-guide.md`), the hooks block to restore (`docs/hooks-paste-block.md`), and the older notes on how Meta's server behaves (superseded by `memory/learnings/meta-platform/`) | Claude |
+| `docs/client-intake.md`, `docs/meta-graph.md`, `docs/scheduling.md`, `docs/upgrade.md`, `docs/regression-run.md`, `docs/channels-roadmap.md` | The intake pack a new client fills before `/setup`; the Graph tool guide (lead forms, targeting, insights breakdowns, rules); running `/morning` and the client report on a schedule; upgrading to a new release; the maintainer's pre-release check; why the harness is Meta-only for now | Claude |
+| `upgrade.ps1`, `upgrade.sh` | Upgrade this copy to a new release without touching your company's files (§12) | you run them; nobody edits them |
 | `.claude/skills/` | The procedures, one folder each (§10) | Claude |
 | `.claude/agents/` | The specialists (§11) | Claude |
-| `.claude/settings.json` | The memory hooks, shipped turned on; Claude Code asks once to trust the folder | nobody; it ships as is |
+| `.claude/settings.json` | The memory hooks and the account guard, shipped turned on; Claude Code asks once to trust the folder | nobody; it ships as is |
 | `dashboard/state.json`, `control-room/` | The optional control room and its data file | Claude; installing the mod is the Owner's |
 | `examples/acme-fitness/` | A fully filled fictional configuration to look at | nobody; reference only |
 
@@ -264,6 +267,11 @@ Commands you type: `/setup`, `/morning`, `/health`, `/next-round`, `/sync`, `/co
 | `compliance-check` | The gate: Meta policy, the legal notes in `config/claims.md`, the harness rules |
 | `landing-page-cro` | Audits of the pages the ads send to; requests to the product team |
 | `signals-audit` | Pixel, consent gating, events, attribution, and lead delivery (Leads Center by default, or email, CSV or a CRM; a lead webhook only when a product team runs one) |
+| `catalog-ads` | For a shop with a product feed: the catalog, the feed, product sets and a sales campaign built PAUSED, and the weekly catalog health check |
+| `client-report` | The one-page weekly report for the client, in their language (`config/reporting.md`), as HTML and PDF; the harness never sends it, the Operator does |
+| `lead-response-kit` | What happens after someone writes or sends a form: the WhatsApp first message, greeting, off-hours reply, short scripts, reply time; the Owner approves every line |
+| `lead-quality` | Your weekly counts (leads, qualified, booked, closed) turned into the cost per qualified lead; the harness never reads a lead's details |
+| `landing-page-build` | A one-page landing site when the company has no page that fits the ad; legal pages stay drafts until your lawyer replaces them; published only on the Owner's go |
 | `ab-test-design` | Experiments with pre-registered decision rules |
 | `offer-design`, `scaling-playbook`, `marketing-psychology`, `competitor-research` | What each funnel offers; how to scale and pause; principles for copy; Ad Library scans |
 | Third-party: `ad-creative`, `image`, `banner-design`, `frontend-design`, `viral-reverse-engineering`, `find-skills`, `grill-me`, `grilling` | Craft references (sources in `THIRD-PARTY.md`); the harness rules win on any conflict |
@@ -301,6 +309,8 @@ Claude delegates to these when a task is big or needs a second, independent read
 | HOME shows yesterday's numbers | The summary was not regenerated (a skipped `/morning`, or the script failed) | Type `/morning`, or ask Claude to run `build-hot`; `/health` line 17 shows it |
 | A new session does not seem to know the state | Claude Code was started from another folder, the folder was not trusted, or `.claude/settings.json` was deleted or replaced, so the summary is not loaded | Claude reads `memory/HOT.md` itself; start Claude Code from the harness folder and trust it; if `/health` shows the hooks red, restore the block from `docs/hooks-paste-block.md` (§8a) |
 | Obsidian opens on its start screen, or its command line does not answer | The setup tool has not run on this computer, or Obsidian was open while it ran | In the harness folder run `node memory/tools/obsidian-setup.mjs`, then close and reopen Obsidian once |
+
+**When a new version comes out.** You do not reinstall. Download the new zip, close Claude Code, open a terminal in the harness folder and run `bash upgrade.sh <the zip>` (macOS) or `powershell -ExecutionPolicy Bypass -File .\upgrade.ps1 <the zip>` (Windows); drag the zip into the window to fill in its path. It first shows a plan of what it will replace and add, and asks once; pressing Enter alone means no. Your settings in `config/`, your `.env`, your memory notes, plans, reports and creatives are never changed. Everything it overwrites is saved in `.upgrade-backup/` first, so you can always go back. Afterwards open a new session and run `/health`; once it is green you may delete the backup folder. If the plan lists a file as "CHANGED IN THIS COPY", read `docs/upgrade.md` before you say yes.
 
 ## 13. Glossary
 

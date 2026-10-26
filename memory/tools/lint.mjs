@@ -31,7 +31,9 @@ import { readHomeBlock, HOT_REL, HOT_MAX_LINES, HOT_MAX_BYTES } from './build-ho
 const NOTE_MAX = 300;
 const HOME_MAX = 150;
 const FIGURE_RE = /(?:[£$€₪¥₹]|\b[A-Z]{3}\b)\s?\d|\d[\d,.]*\s?(?:[£$€₪¥₹]|\b[A-Z]{3}\b)(?![A-Za-z])|\d+(?:\.\d+)?\s?%/;
-const FACT_TYPES = new Set(['state', 'business', 'campaign', 'flight', 'audience', 'experiment', 'learning', 'review']);
+// 'ledger' (memory/money/ledger.md and go-log.md, added 2026-10-27): amounts appended row by row, so the note's
+// frontmatter as_of (the newest row's time) is required like any other fact note's.
+const FACT_TYPES = new Set(['state', 'business', 'campaign', 'flight', 'audience', 'experiment', 'learning', 'review', 'ledger']);
 
 const stripFences = body => body.replace(/^\s*(```|~~~)[\s\S]*?^\s*\1.*$/gm, '');
 

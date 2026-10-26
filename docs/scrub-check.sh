@@ -31,7 +31,8 @@ done <<< "$TERMS"
 
 # Warning class (does not fail): an uppercase {{FIELD}} placeholder outside config/, examples/ and docs/
 # usually means a generalised file still carries a template token instead of a config reference.
-PH=$(grep -r -n -E "${EXCL[@]}" --exclude-dir=config --exclude-dir=examples --exclude-dir=docs -e '\{\{[A-Z][A-Z_]+\}\}' "$ROOT" 2>/dev/null \
+# creatives/landing-template/ is skipped too: its page.config.js carries intended placeholders.
+PH=$(grep -r -n -E "${EXCL[@]}" --exclude-dir=config --exclude-dir=examples --exclude-dir=docs --exclude-dir=landing-template -e '\{\{[A-Z][A-Z_]+\}\}' "$ROOT" 2>/dev/null \
   | grep -v -E '(CLAUDE|README|ONBOARDING)\.md:|SKILL\.md:')
 if [ -n "$PH" ]; then echo "== warning: {{FIELD}} placeholders outside config/, examples/, docs/:"; echo "$PH" | head -20; fi
 

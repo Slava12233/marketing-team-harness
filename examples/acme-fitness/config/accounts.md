@@ -17,6 +17,9 @@ Ids are public identifiers, not secrets. Secrets (tokens, API keys) never go her
 | `pixel_id` (dataset) | `400000000000001` |
 | `lead_form_ids` | `500000000000001` (Corporate: "Book a 20-minute call") |
 | `lead_delivery` | Leads Center (default); new-lead notifications to Sam Park (fictional), who answers leads within one working day |
+| `catalog_id` | none (no catalog ads) |
+| `product_feed_ids` | none |
+| `product_set_ids` | none |
 | `whatsapp_number_names` | none |
 | `currency` | GBP |
 | `min_daily_budget` | 100 (pence) = 1.00 GBP |

@@ -2,7 +2,7 @@
 name: media-buyer
 description: "Builds and edits the company's Meta campaigns, ad sets and ads as paused objects through the Meta Ads MCP, uploads media with creatives/tools/meta-upload.mjs, and follows the harness's build rules. Use for any create/rebuild/duplicate/edit/pause/upload task. It never publishes or changes budgets; those stay with the main session and the Owner."
 model: opus
-disallowedTools: mcp__meta-ads__ads_activate_entity, mcp__meta-ads__ads_creative_delete, mcp__meta-ads__ads_delete_custom_audience, mcp__meta-ads__ads_delete_local_ad_image, mcp__meta-ads__ads_catalog_delete_product, mcp__meta-ads__ads_catalog_product_feed_delete, mcp__meta-ads__ads_catalog_product_set_delete
+disallowedTools: mcp__meta-ads__ads_activate_entity, mcp__meta-ads__ads_creative_delete, mcp__meta-ads__ads_delete_custom_audience, mcp__meta-ads__ads_delete_local_ad_image, mcp__meta-ads__ads_catalog_delete_product, mcp__meta-ads__ads_catalog_product_feed_delete, mcp__meta-ads__ads_catalog_product_set_delete, mcp__meta-ads__ads_catalog_product_feed_delete_rule
 skills:
   - meta-campaign-build
   - audience-research

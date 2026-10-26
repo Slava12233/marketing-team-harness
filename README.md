@@ -10,7 +10,8 @@ It was cut from a harness that ran real campaigns, so its rules carry what was l
 
 - **A team, not a chat.** Ten agents in five lanes (measure, create, gate, build, close) and about twenty skills, each a written procedure; fourteen third-party craft skills alongside them.
 - **Six commands with fixed outputs:** `/setup` (the onboarding wizard), `/health` (a green/yellow/red plumbing table), `/morning` (the daily report), `/next-round` (the weekly creative round and a numbered recap to pick from), `/sync` (the session closer), `/consolidate` (the weekly memory tidy).
-- **A memory vault you can open.** The folder is an Obsidian vault (Obsidian is installed by the bootstrap; everything also works as plain files): `memory/HOME.md` is the Owner's page (money against the caps, open items by owner, campaigns), `memory/inbox/owner.md` is an Inbox you write in and the harness answers (it never acts on it without a go in chat), a weekly review lands in `memory/reviews/`, and one note per campaign, flight, decision and lesson keeps the history. Two hooks, shipped turned on in `.claude/settings.json`, load the summary into every new session and save a checkpoint before a long chat is compacted. Nothing to click in Obsidian and nothing to paste: the bootstrap registers the folder as a vault, turns on Obsidian's command line and opens the app on HOME (`memory/tools/obsidian-setup.mjs`). The guide is `docs/obsidian-guide.md`.
+- **A memory vault you can open.** The folder is an Obsidian vault (Obsidian is installed by the bootstrap; everything also works as plain files): `memory/HOME.md` is the Owner's page (money against the caps, open items by owner, campaigns), `memory/inbox/owner.md` is an Inbox you write in and the harness answers (it never acts on it without a go in chat), a weekly review lands in `memory/reviews/`, and one note per campaign, flight, decision and lesson keeps the history. Three hooks (the HOT loader, the compaction checkpoint and the account guard that keeps every Meta call inside the one ad account in `config/accounts.md`), shipped turned on in `.claude/settings.json`, load the summary into every new session, save a checkpoint before a long chat is compacted, and refuse any Meta call on another ad account. Nothing to click in Obsidian and nothing to paste: the bootstrap registers the folder as a vault, turns on Obsidian's command line and opens the app on HOME (`memory/tools/obsidian-setup.mjs`). The guide is `docs/obsidian-guide.md`.
+- **More than the MCP alone:** lead forms, targeting search, audience estimates, insights breakdowns and pause-only rules through the Graph tool (`creatives/tools/meta-graph.mjs`, guide `docs/meta-graph.md`); a one-page client report in the client's language; a landing page when the company has none (`creatives/landing-template/`).
 - **A setup progress page** (`dashboard/setup.html`) that ticks itself as the wizard confirms each step and shows the Owner's own clicks as "your turn".
 - **Money rules that hold:** budgets inside the band and below the caps in `config/goals.md`, everything built PAUSED, nothing activated without the Owner's go in the same message.
 
@@ -41,18 +42,29 @@ New Operators: read `ONBOARDING.md`. A fully filled fictional configuration is i
 CLAUDE.md                 the rules; imports config/*.md
 config/                   your company, written by /setup (see config/README.md)
 config/goals.md           budget band, target costs, caps, the first funnel (round (i) of /setup)
+config/reporting.md       the client report's language, cadence, recipient, channel and sections
 memory/                   the memory vault: HOME, the Inbox, state, business notes, campaigns, decisions, learnings, day notes, weekly reviews; the contract is memory/README.md
+memory/money/             the cost ledger and the go log (every go the Owner gave, quoted)
 .obsidian/                Obsidian's settings for the vault
 checklist.md              the go checklist
 plans/, reports/          dated Markdown, YYYY-MM-DD-<topic>.md
 creatives/                sources, finished files, tools, the preview-site template
+creatives/tools/meta-graph.mjs  Graph API reads and safe writes the MCP lacks (lead forms, targeting, insights breakdowns, rules)
+creatives/landing-template/  a one-page landing site for paid traffic, copied per flight
 docs/                     the template spec, the Obsidian guide, the hooks block to restore, the older Meta platform notes
 docs/meta-setup-guide.md  the Owner's Meta console steps, in order, with what the harness checks
+docs/client-intake.md     the intake pack a new client fills before /setup
+docs/meta-graph.md        the Graph tool: subcommands, the Owner's token steps, specs
+docs/scheduling.md        running /morning and the client report on a schedule with the machine's own scheduler
+docs/upgrade.md           upgrading to a new release, the backup, rolling back
+docs/regression-run.md    the maintainer's pre-release regression and sign-off
+docs/channels-roadmap.md  why Meta only for now, and the order other channels would come in
 .claude/agents, skills    the ten agents and the skills
-.claude/settings.json     the memory hooks, shipped; Claude Code asks once to trust the folder
+.claude/settings.json     the memory hooks and the account guard, shipped; Claude Code asks once to trust the folder
 .mcp.json                 the two MCP servers (meta-ads, fal) Claude Code asks you to approve
 bootstrap.ps1, .sh        first-run check and install (Windows, macOS)
-release.ps1, .sh          cuts a release: scrub gate, version tag, zip (for whoever publishes releases)
+upgrade.ps1, .sh          upgrade this copy to a new release without touching the company's files (Windows, macOS)
+release.ps1, .sh          cuts a release: scrub gate, test suites, release manifest, version tag, zip (for whoever publishes releases); upgrade.ps1, .sh bring a working copy up to a new release
 CHANGELOG.md              what changed in each release
 LICENSE, THIRD-PARTY.md   the licence; the third-party skills and their licences
 control-room/, dashboard/ the optional status pane, its data file, and setup-page.mjs (the setup progress page)
@@ -67,6 +79,14 @@ examples/                 a filled example company
 - **No secrets.** Tokens live in `.env` (never committed) and Claude Code's credential store; chat, memory, plans and reports carry names only.
 - **No PII.** Lead, sign-up and customer rows never enter the repository; the harness works with counts by source and ref.
 - **No made-up numbers.** "No data" is an acceptable answer; every figure in an ad carries a source and a date.
+
+## Updating
+
+A new release never touches your company's files. Download the new zip, close Claude Code, and run in the harness folder `powershell -ExecutionPolicy Bypass -File .\upgrade.ps1 <path to the zip>` (Windows) or `bash upgrade.sh <path to the zip>` (macOS); add `-Check` / `--check` first to see the plan without changing anything. The upgrade replaces the harness's own files (rules, skills, agents, tools, docs), adds what is new (a new `config/` file included; a filled one is never overwritten), and never writes `.env`, your vault notes, plans, reports or creatives; every file it overwrites is backed up in `.upgrade-backup/<date-time>/`. Then open a new session and run `/health`. The full guide, including how to roll back, is `docs/upgrade.md`.
+
+## Quality gates
+
+A release is checked before it ships. The release scripts refuse to tag a version unless the working tree is clean, the scrub gate finds no leaked name or id, the node test suites pass, each with a time limit, and the release manifest matches the files. The three skills that touch money and policy (`meta-campaign-build`, `compliance-check`, `meta-performance-report`) carry evals in `.claude/skills/<skill>/evals/`: dry-run cases on a fictional company that check, among other things, that everything is built PAUSED, that nothing is activated without the Owner's go in the same message, that a forbidden claim or a consent sentence is stopped, and that a report writes "no data" instead of a guess. The account guard (`.claude/hooks/account-guard.mjs`) refuses, before anything is sent, any Meta call on an ad account other than the one in `config/accounts.md`. Before each release the maintainer runs `docs/regression-run.md` on the example company and on a demo ad account, and signs it off. The harness is Meta-only for now; `docs/channels-roadmap.md` says when and in what order other channels would come.
 
 ## Connections needed
 

@@ -1,0 +1,78 @@
+<!doctype html>
+<!-- TEMPLATE, NOT LEGAL ADVICE. This page is a structure for the company's lawyer, not a cookie policy.
+     The harness never writes legal or consent wording. Every block carries a visible DRAFT banner; the lawyer replaces
+     each block's bracketed instruction with the real text and removes its banner (and the top banner) when done.
+     check.mjs keeps reporting "legal drafts not yet replaced" while any DRAFT banner is left. -->
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cookie policy (draft)</title>
+<meta name="description" content="">
+<meta name="color-scheme" content="light">
+<link rel="stylesheet" href="../styles.css">
+<script src="../page.config.js" defer></script>
+<script src="../pixel.js" defer></script>
+<script src="../consent.js" defer></script>
+<script src="../page.js" defer></script>
+</head>
+<body class="legal-page" data-legal-page="cookies">
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../index.html"><span class="brand-name" data-text="site.companyName"></span></a>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+    <h1>Cookie policy</h1>
+    <p class="draft-top">DRAFT: your lawyer must review and replace this text before the page goes live</p>
+
+    <div class="draft-block">
+      <p class="draft-label">DRAFT: your lawyer must review and replace this text before the page goes live</p>
+      <h2>What this page stores on your device</h2>
+      <p>[As built, the page itself stores one item in the browser's local storage: the visitor's choice in the cookie bar (key "landing-consent-v1" unless page.config.js changes it). Whether that item needs consent is the lawyer's call.]</p>
+    </div>
+
+    <div class="draft-block">
+      <p class="draft-label">DRAFT: your lawyer must review and replace this text before the page goes live</p>
+      <h2>Meta pixel cookies</h2>
+      <p>[The cookies the Meta pixel sets (as built: first-party cookies named _fbp and, after an ad click, _fbc), who sets them, their purpose and duration as the provider currently documents them, and that they are set only after the visitor accepts, if that is the setup.]</p>
+    </div>
+
+    <div class="draft-block">
+      <p class="draft-label">DRAFT: your lawyer must review and replace this text before the page goes live</p>
+      <h2>How to change your choice</h2>
+      <p>[How to accept or decline and change the choice later: the "Cookie settings" link at the bottom of every page reopens the bar; declining after accepting removes the pixel cookies on this site. Mention browser settings as well.]</p>
+    </div>
+
+    <div class="draft-block">
+      <p class="draft-label">DRAFT: your lawyer must review and replace this text before the page goes live</p>
+      <h2>Contact and changes</h2>
+      <p>[An address for questions, the date of this version and how changes are announced.]</p>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <ul class="legal-lines" data-list="footer.legalLines"></ul>
+    <nav class="legal-links" aria-label="Legal">
+      <a href="privacy.html" data-legal="privacy" data-text="footer.privacyLabel"></a>
+      <a href="cookies.html" data-legal="cookies" data-text="footer.cookiesLabel"></a>
+      <button type="button" class="linklike" id="consent-settings" data-text="footer.cookieSettingsLabel" hidden></button>
+    </nav>
+  </div>
+</footer>
+
+<div id="consent-bar" class="consent" role="region" aria-labelledby="consent-text" hidden>
+  <div class="wrap consent-inner">
+    <p id="consent-text"><span data-text="consent.text"></span> <a href="cookies.html" data-legal="cookies" data-text="footer.cookiesLabel"></a></p>
+    <div class="consent-actions">
+      <button type="button" class="button button-equal" id="consent-decline" data-text="consent.decline"></button>
+      <button type="button" class="button button-equal" id="consent-accept" data-text="consent.accept"></button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

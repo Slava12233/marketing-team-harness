@@ -1,0 +1,126 @@
+<!doctype html>
+<!-- lang and dir are set from page.config.js (lang, dir) by page.js; the values here are only the fallback. -->
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Landing page</title>
+<meta name="description" content="">
+<meta name="color-scheme" content="light">
+<!-- Meta domain verification, meta-tag method (DNS TXT is preferred; see README.md). Uncomment and paste the code Meta shows:
+<meta name="facebook-domain-verification" content="PASTE_THE_CODE_META_SHOWS">
+-->
+<!-- Fonts: system fonts by default. Google Fonts sends every visitor's IP address to Google before any consent; in some
+     markets (for example the EU) that is a question for the Owner's lawyer. Prefer font files in assets/ with @font-face.
+     If the Owner chooses Google Fonts anyway, uncomment, then set brand.fontFamily in page.config.js:
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap">
+-->
+<link rel="stylesheet" href="styles.css">
+<!-- Order matters: config first, then the pixel loader, the consent bar, and page.js (which fills the page and starts consent). -->
+<script src="page.config.js" defer></script>
+<script src="pixel.js" defer></script>
+<script src="consent.js" defer></script>
+<script src="page.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#top" id="top">
+      <img class="brand-logo" data-src="site.logo" alt="" hidden>
+      <span class="brand-name" data-text="site.companyName"></span>
+    </a>
+  </div>
+</header>
+
+<main id="main">
+  <!-- Hero: the H1 repeats the ad's promise (message match). One CTA. -->
+  <section class="hero" aria-labelledby="hero-h1">
+    <div class="wrap">
+      <h1 id="hero-h1" data-text="hero.h1"></h1>
+      <p class="lead" data-text="hero.sub"></p>
+      <a class="button" href="#" data-cta data-text="hero.ctaLabel"></a>
+      <p class="cta-note" data-text="hero.ctaNote"></p>
+    </div>
+  </section>
+
+  <!-- Proof / benefits: three cards, each claim from config/claims.md (allowed claims) only. -->
+  <section class="benefits" aria-labelledby="benefits-h2">
+    <div class="wrap">
+      <h2 id="benefits-h2" data-text="benefits.heading"></h2>
+      <ul class="cards">
+        <li class="card"><h3 data-text="benefits.items.0.title"></h3><p data-text="benefits.items.0.body"></p></li>
+        <li class="card"><h3 data-text="benefits.items.1.title"></h3><p data-text="benefits.items.1.body"></p></li>
+        <li class="card"><h3 data-text="benefits.items.2.title"></h3><p data-text="benefits.items.2.body"></p></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- How it works: three steps. -->
+  <section class="steps" aria-labelledby="steps-h2">
+    <div class="wrap">
+      <h2 id="steps-h2" data-text="steps.heading"></h2>
+      <ol class="step-list">
+        <li><h3 data-text="steps.items.0.title"></h3><p data-text="steps.items.0.body"></p></li>
+        <li><h3 data-text="steps.items.1.title"></h3><p data-text="steps.items.1.body"></p></li>
+        <li><h3 data-text="steps.items.2.title"></h3><p data-text="steps.items.2.body"></p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- FAQ: four questions, answered from config/product.md (what it does and does not do). -->
+  <section class="faq" aria-labelledby="faq-h2">
+    <div class="wrap">
+      <h2 id="faq-h2" data-text="faq.heading"></h2>
+      <details><summary data-text="faq.items.0.q"></summary><p data-text="faq.items.0.a"></p></details>
+      <details><summary data-text="faq.items.1.q"></summary><p data-text="faq.items.1.a"></p></details>
+      <details><summary data-text="faq.items.2.q"></summary><p data-text="faq.items.2.a"></p></details>
+      <details><summary data-text="faq.items.3.q"></summary><p data-text="faq.items.3.a"></p></details>
+    </div>
+  </section>
+
+  <!-- Closing CTA. When cta.type is "form-post", the button is replaced by the form below. -->
+  <section class="closing" aria-labelledby="closing-h2">
+    <div class="wrap">
+      <h2 id="closing-h2" data-text="closing.heading"></h2>
+      <p class="lead" data-text="closing.sub"></p>
+      <a class="button" href="#" data-cta data-text="closing.ctaLabel"></a>
+      <!-- A static site cannot store anything: the form POSTs to an endpoint the company owns (cta.form.action).
+           page.js builds the fields and the hidden ref / utm_* inputs. -->
+      <form id="lead-form" class="lead-form" method="post" hidden>
+        <div class="fields"></div>
+        <p class="form-notice" data-text="cta.form.notice"></p>
+        <button class="button" type="submit" data-text="cta.form.submitLabel"></button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <ul class="legal-lines" data-list="footer.legalLines"></ul>
+    <nav class="legal-links" aria-label="Legal">
+      <a href="legal/privacy.html" data-legal="privacy" data-text="footer.privacyLabel"></a>
+      <a href="legal/cookies.html" data-legal="cookies" data-text="footer.cookiesLabel"></a>
+      <button type="button" class="linklike" id="consent-settings" data-text="footer.cookieSettingsLabel" hidden></button>
+    </nav>
+  </div>
+</footer>
+
+<!-- Consent bar: hidden until consent.js decides. Two equal buttons, nothing pre-selected; Decline loads nothing. -->
+<div id="consent-bar" class="consent" role="region" aria-labelledby="consent-text" hidden>
+  <div class="wrap consent-inner">
+    <p id="consent-text"><span data-text="consent.text"></span> <a href="legal/cookies.html" data-legal="cookies" data-text="footer.cookiesLabel"></a></p>
+    <div class="consent-actions">
+      <button type="button" class="button button-equal" id="consent-decline" data-text="consent.decline"></button>
+      <button type="button" class="button button-equal" id="consent-accept" data-text="consent.accept"></button>
+    </div>
+  </div>
+</div>
+<noscript><p class="noscript">This page needs JavaScript to show its text.</p></noscript>
+<!-- No <noscript> pixel beacon: it would fire before consent. -->
+</body>
+</html>

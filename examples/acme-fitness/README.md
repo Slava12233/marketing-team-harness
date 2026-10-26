@@ -7,6 +7,8 @@ It shows what a harness looks like after `/setup` (2026-10-26, nothing built), o
 | Path | What it shows |
 |---|---|
 | `config/company.md`, `product.md`, `audiences.md`, `brand.md`, `claims.md`, `accounts.md`, `operator.md`, `product-team.md`, `goals.md` | Every `config/` template filled: same bold field labels, headings, table headers and order as `config/*.md`, hints removed |
+| `config/reporting.md` | The client report's settings filled for Acme: report language and direction, cadence, recipient role, channel, sections, comparison, currency format |
+| `config/intake.md`, `memory/money/` | The intake pack Acme returned before /setup; the cost ledger (one hours row) and the go log (one go not executed: no cap stated) |
 | `memory.md` | A pointer; the memory after the build session is the example vault in `memory/` (HOT, current state, two paused campaigns, one learning, the decision rules, two session-log entries (`/setup`, then the build), "Next session should" |
 | `checklist.md` | The go checklist: the fictional console steps by owner (the row names of `config/accounts.md`), the Leads Center gate, and two sync-log lines |
 | `plans/2026-10-26-first-flight-plan.md` | The first flight plan the `/setup` wizard drafts, updated with the ids after the build, budgets left as "Needs the Owner's go" |

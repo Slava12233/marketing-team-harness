@@ -55,3 +55,14 @@ reports/**/*.mp4
 .obsidian/cache/
 .obsidian/plugins/*/data.json
 .trash/
+
+# The account guard's record of object ids a Meta read or create returned (ids only; rebuilt by use)
+memory/state/known-objects.json
+
+# Backups written by upgrade.sh / upgrade.ps1 before a file is replaced
+.upgrade-backup/
+
+# CSV exports of meta-graph.mjs insights (campaign names and figures, kept on this machine)
+reports/data/
+# Rendered client reports (report-render.mjs); the Markdown is the source
+reports/**/*.html
