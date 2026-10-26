@@ -26,7 +26,7 @@
 // (the files are still written so they can be inspected). Page errors or failed requests abort with exit 1.
 //
 // Dependencies: playwright-core (or playwright) resolvable from the repository root
-// (npm install --no-save --no-package-lock playwright-core; the bootstrap offers it) or from the folder in
+// (npm install --no-save --no-package-lock playwright-core; the bootstrap installs it by default) or from the folder in
 // $PLAYWRIGHT_MODULE_DIR. Browser: --browser, else $CHROME_PATH, else an installed Chrome or Edge at the usual
 // Windows, macOS or Linux path, else Playwright's own Chromium (npx playwright install chromium).
 import path from "node:path";

@@ -168,7 +168,7 @@ Apache License 2.0. The full text is in `.claude/skills/frontend-design/LICENSE.
 
 ## HyperFrames plugin (vendored)
 
-The HyperFrames Claude Code plugin by HeyGen is copied into `vendor/hyperframes/` so that it installs from the template's own files: `claude plugin marketplace add ./vendor/hyperframes`, then `claude plugin install hyperframes@hyperframes` (the bootstrap offers both as one optional item). What was copied, what was left out and how to refresh it: `vendor/hyperframes/VENDOR.md`.
+The HyperFrames Claude Code plugin by HeyGen is copied into `vendor/hyperframes/` so that it installs from the template's own files: `claude plugin marketplace add ./vendor/hyperframes`, then `claude plugin install hyperframes@hyperframes` (the bootstrap runs both by default after its one confirmation). What was copied, what was left out and how to refresh it: `vendor/hyperframes/VENDOR.md`.
 
 | | |
 |---|---|

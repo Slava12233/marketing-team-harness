@@ -1,31 +1,41 @@
 # bootstrap.ps1: the first command for a new copy of the Marketing Team Harness, for Windows (Windows
 # PowerShell 5.1 or PowerShell 7). On macOS, bootstrap.sh does the same steps.
 # Run it from the harness folder (the one that contains CLAUDE.md and .mcp.json):
-#   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1          check, and offer to install what is missing
-#   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check   report only: no questions, no installs
-#   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Yes     yes to every missing REQUIRED item
+#   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1          check everything, list what is missing, then one question installs all of it
+#   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Ask     ask per item: one y/N question before each install
+#   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Yes     install everything that is missing, with no question at all
+#   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check   report only: no questions, no installs, nothing changed
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Help    show the usage
+# The one install takes every missing item, required and optional alike (Git, Node.js, Claude Code,
+# playwright-core, FFmpeg, the HyperFrames video plugin from vendor\hyperframes), copies .env.example to .env
+# and opens the setup progress page. Enter at its question means Yes; Enter at an -Ask question means No.
 # Tags: [ok] already there, [installed] put in place by this run, [missing] not there, [skipped] an optional
-# item left out. Exit codes: 0 everything required is present, 1 something required is missing, 2 wrong
-# folder or unknown option. It never asks for, reads or prints a token: .env is only copied from .env.example.
-param([switch]$Check, [switch]$Yes, [switch]$Help)
+# item left out. Exit codes: 0 everything required is present, 1 something required is missing or the
+# install was declined, 2 wrong folder or unknown option. It never asks for, reads or prints a token: .env is
+# only copied from .env.example.
+param([switch]$Check, [switch]$Ask, [switch]$Yes, [switch]$Help)
 Set-StrictMode -Version 2
 $ErrorActionPreference = 'Continue'
 
 $Missing = $false; $Recheck = @(); $Done = $false; $Agreed = $false
+$Plan = @(); $EnvTodo = $false; $PageTodo = $false; $Go = $false; $Declined = $false; $NoAnswer = $false
 function Say([string]$text) { Write-Host $text }
 function Note([string]$text) { Write-Host ('        ' + $text) }
 function Show-Usage {
-  Say 'Usage: powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 [-Check] [-Yes] [-Help]'
-  Say '  (no option)  check, and offer to install what is missing (one y/N question per item; Enter means No)'
+  Say 'Usage: powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 [-Ask | -Yes | -Check] [-Help]'
+  Say '  (no option)  check, list what is missing, then one question installs all of it (Enter means Yes)'
+  Say '  -Ask         ask per item: one y/N question before each install (Enter means No)'
+  Say '  -Yes         install everything that is missing, required and optional, with no question'
   Say '  -Check       report only: no questions, no installs, nothing changed'
-  Say '  -Yes         yes to every missing required item; optional items are skipped'
   Say '  -Help        show this text'
+  Say 'Given together, the more careful option wins: -Check, then -Ask, then -Yes.'
   Say 'Run it from the harness folder (the one that contains CLAUDE.md and .mcp.json).'
 }
 if ($args.Count -gt 0) { Say ('Unknown option: ' + ($args -join ' ')); Show-Usage; exit 2 }
 if ($Help) { Show-Usage; exit 0 }
 if ([Environment]::OSVersion.Platform -ne 'Win32NT') { Say 'bootstrap.ps1 is for Windows. On macOS, run: bash bootstrap.sh'; exit 2 }
+$Mode = 'all'
+if ($Check) { $Mode = 'check' } elseif ($Ask) { $Mode = 'ask' }
 
 if (-not ((Test-Path -LiteralPath 'CLAUDE.md' -PathType Leaf) -and (Test-Path -LiteralPath '.mcp.json' -PathType Leaf))) {
   Say 'This is not the harness folder: it must contain CLAUDE.md and .mcp.json.'
@@ -39,26 +49,44 @@ if (-not ((Test-Path -LiteralPath 'CLAUDE.md' -PathType Leaf) -and (Test-Path -L
   exit 2
 }
 
-# Ask <question> <required>: true for yes. Enter, or no answer at all, means No.
-function Ask([string]$question, [bool]$required) {
-  if ($Yes) {
-    if ($required) { Note "$question [y/N]: yes (-Yes)"; return $true }
-    return $false
-  }
-  $answer = ''
-  try { $answer = Read-Host ('        ' + $question + ' [y/N]') } catch { $answer = '' }
-  return ($answer -match '^\s*(y|yes)\s*$')
+# Read-Answer: one typed line with the spaces taken out, or $null when nothing could be read (the input is
+# closed, or PowerShell runs non-interactive). When the input is not a console, Read-Host itself prints the
+# line after the question, so the log shows it.
+function Read-Answer {
+  $line = $null
+  try { $line = Read-Host } catch { $line = $null }
+  if ($null -eq $line) { Write-Host ''; return $null }
+  return ($line -replace '\s', '')
 }
 
-# Offer <name> <required> <what it downloads> <command as shown> <scriptblock>: states the download, asks once,
-# runs the command. Callers invoke Offer as a plain statement, never inside an expression, so an installer's
-# own prompts reach the console. Sets $script:Agreed on a yes and $script:Done when the command succeeded.
+# Ask-Item <question>: one -Ask question; true for yes. Enter, or no answer at all, means No.
+function Ask-Item([string]$question) {
+  Write-Host ('        ' + $question + ' [y/N]: ') -NoNewline
+  return ((Read-Answer) -match '^(y|yes)$')
+}
+
+# Confirm-All <question>: the one question of a default run; true for yes. Enter means Yes; no answer at all
+# (the input is closed) means No and sets $script:NoAnswer.
+function Confirm-All([string]$question) {
+  Write-Host ($question + ' [Y/n]: ') -NoNewline
+  $answer = Read-Answer
+  if ($null -eq $answer) { $script:NoAnswer = $true; return $false }
+  return ($answer -match '^(y|yes)?$')
+}
+
+# Offer <name> <required> <what it downloads> <command as shown> <scriptblock>: runs one install. Under -Ask it
+# first states the download and asks; in the one-question install (a default run after its yes, or -Yes) it
+# runs at once, the plan having named the source. Callers invoke Offer as a plain statement, never inside an
+# expression, so an installer's own prompts reach the console. Sets $script:Agreed when the install goes ahead
+# and $script:Done when the command succeeded.
 function Offer([string]$name, [bool]$required, [string]$from, [string]$shown, [scriptblock]$run) {
   $script:Done = $false; $script:Agreed = $false
-  Note "This downloads $from."
-  if (-not (Ask "Install $name now?" $required)) {
-    if ($required) { Note 'Not installed. Run this script again when you are ready.' }
-    return
+  if ($Mode -eq 'ask') {
+    Note "This downloads $from."
+    if (-not (Ask-Item "Install $name now?")) {
+      if ($required) { Note 'Not installed. Run this script again when you are ready.' }
+      return
+    }
   }
   $script:Agreed = $true
   Note "Running: $shown"
@@ -68,15 +96,22 @@ function Offer([string]$name, [bool]$required, [string]$from, [string]$shown, [s
   $script:Done = $true
 }
 
+# Get-PkgFrom: where Install-Pkg installs from, in the plan's words; '' when winget is missing.
+function Get-PkgFrom {
+  if (Get-Command winget -ErrorAction SilentlyContinue) { return 'the winget catalogue (the Windows Package Manager)' }
+  return ''
+}
+# Show-PkgHint <name> <download page>: what to do instead when winget is missing.
+function Show-PkgHint([string]$name, [string]$page) {
+  Note 'winget (the Windows Package Manager) was not found. Get App Installer from the Microsoft Store:'
+  Note "https://apps.microsoft.com/detail/9NBLGGH4NNS1 , or download $name from $page"
+}
 # Install-Pkg <name> <winget id> <download page> [<required, $true by default>]: installs one package with winget.
 function Install-Pkg([string]$name, [string]$id, [string]$page, [bool]$required = $true) {
   $script:Done = $false; $script:Agreed = $false
-  if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Note 'winget (the Windows Package Manager) was not found. Get App Installer from the Microsoft Store:'
-    Note "https://apps.microsoft.com/detail/9NBLGGH4NNS1 , or download $name from $page"
-    return
-  }
-  Offer $name $required "$name from the winget catalogue (the Windows Package Manager)" "winget install --id $id -e --source winget" ({ & winget install --id $id -e --source winget }.GetNewClosure())
+  $from = Get-PkgFrom
+  if (-not $from) { Show-PkgHint $name $page; return }
+  Offer $name $required "$name from $from" "winget install --id $id -e --source winget" ({ & winget install --id $id -e --source winget }.GetNewClosure())
 }
 
 # Adds the Machine and User PATH entries an installer just wrote to this window's PATH (nothing is removed).
@@ -137,9 +172,9 @@ function Install-Claude {
   $script:Done = ($LASTEXITCODE -eq 0)
 }
 
-# Fix <name> <item>: after a [missing] line, installs unless -Check, and queues the item for the re-check.
-function Fix([string]$name, [string]$item) {
-  if ($Check) { $script:Missing = $true; return }
+# Put <name> <item>: installs one required item: [installed] and a re-check at the end when it worked,
+# otherwise it stays missing.
+function Put([string]$name, [string]$item) {
   if ($item -eq 'git') { Install-Pkg 'Git' 'Git.Git' 'https://git-scm.com/downloads' }
   elseif ($item -eq 'node') { Install-Pkg 'Node.js' 'OpenJS.NodeJS.LTS' 'https://nodejs.org/en/download' }
   else { Install-Claude }
@@ -149,20 +184,30 @@ function Fix([string]$name, [string]$item) {
     $script:Recheck += $item
   } else { $script:Missing = $true }
 }
+# Need <name> <item> [<download page>]: after the [missing] line of a required item. -Check records it, -Ask
+# installs it now (one question), and the one-question install adds it to the plan, or says why this script
+# cannot install it here.
+function Need([string]$name, [string]$item, [string]$page = '') {
+  if ($Mode -eq 'check') { $script:Missing = $true; return }
+  if ($Mode -eq 'ask') { Put $name $item; return }
+  if (($item -eq 'claude') -or (Get-PkgFrom)) { $script:Plan += $item; return }
+  Show-PkgHint $name $page; $script:Missing = $true
+}
 
 Say 'Marketing Team Harness: first-time setup'
 Say ('Folder: ' + (Get-Location).Path)
-if ($Check) { Say 'Mode: check only. Nothing is installed or changed.' }
-elseif ($Yes) { Say 'Mode: yes to every missing required item. Optional items are skipped.' }
-else { Say 'Mode: one question before each install. Enter means No.' }
+if ($Mode -eq 'check') { Say 'Mode: check only. Nothing is installed or changed.' }
+elseif ($Mode -eq 'ask') { Say 'Mode: one question before each install. Enter means No.' }
+elseif ($Yes) { Say 'Mode: check everything, then install all that is missing, with no question (-Yes).' }
+else { Say 'Mode: check everything, then one question installs all that is missing. Enter means Yes.' }
 Say 'No token or password is ever asked for here.'
 
 Say ''
 Say 'Required'
-if ((Test-Git) -ne 0) { Fix 'Git' 'git' }
-if ((Test-Node) -ne 0) { Fix 'Node.js' 'node' }
+if ((Test-Git) -ne 0) { Need 'Git' 'git' 'https://git-scm.com/downloads' }
+if ((Test-Node) -ne 0) { Need 'Node.js' 'node' 'https://nodejs.org/en/download' }
 $rc = Test-Claude
-if ($rc -eq 1) { Fix 'Claude Code' 'claude' } elseif ($rc -eq 2) { $Missing = $true }
+if ($rc -eq 1) { Need 'Claude Code' 'claude' } elseif ($rc -eq 2) { $Missing = $true }
 
 $browser = ''
 foreach ($base in @(${env:ProgramFiles(x86)}, $env:ProgramFiles)) {
@@ -176,27 +221,32 @@ else {
   Note 'Download one: https://www.microsoft.com/edge/download or https://www.google.com/chrome/'
 }
 
-if (Test-Path -LiteralPath '.env' -PathType Leaf) { Say '[ok] .env exists (contents never shown).' }
-elseif (-not (Test-Path -LiteralPath '.env.example' -PathType Leaf)) { Say '[missing] .env.example is missing, so .env cannot be created. Unzip the harness again.'; $Missing = $true }
-elseif ($Check) { Say '[missing] .env does not exist yet. Run this script without -Check to create it from .env.example.'; $Missing = $true }
-else {
+function Copy-Env {   # copies .env.example to .env; an .env that exists by now is left as it is
+  if (Test-Path -LiteralPath '.env' -PathType Leaf) { Say '[ok] .env exists (contents never shown).'; return }
   try {
     Copy-Item -LiteralPath '.env.example' -Destination '.env' -ErrorAction Stop
     Say '[installed] .env created from .env.example (contents never shown).'
     Note 'Later the Owner pastes the Meta System User token into .env with a text editor, never into the chat.'
-  } catch { Say '[missing] .env could not be created. Copy .env.example to .env by hand.'; $Missing = $true }
+  } catch { Say '[missing] .env could not be created. Copy .env.example to .env by hand.'; $script:Missing = $true }
 }
+if (Test-Path -LiteralPath '.env' -PathType Leaf) { Say '[ok] .env exists (contents never shown).' }
+elseif (-not (Test-Path -LiteralPath '.env.example' -PathType Leaf)) { Say '[missing] .env.example is missing, so .env cannot be created. Unzip the harness again.'; $Missing = $true }
+elseif ($Mode -eq 'check') { Say '[missing] .env does not exist yet. Run this script without -Check to create it from .env.example.'; $Missing = $true }
+elseif ($Mode -eq 'ask') { Copy-Env }
+else { Say '[missing] .env does not exist yet.'; $EnvTodo = $true }
 
 Say ''
 Say 'Optional'
+function Invoke-Playwright {   # installs playwright-core into node_modules here (after its question under -Ask)
+  Offer 'playwright-core' $false 'playwright-core (a few megabytes) from the npm registry into node_modules in this folder' 'npm install --no-save --no-package-lock playwright-core' { & npm install --no-save --no-package-lock playwright-core }
+  if ($script:Done) { Say '[installed] playwright-core.' } else { Say '[skipped] playwright-core. Install it later with: npm install --no-save --no-package-lock playwright-core' }
+}
 if (Test-Path -LiteralPath 'node_modules\playwright-core\package.json') { Say '[ok] playwright-core is installed (for the still renderer).' }
-elseif ($Check) { Say '[skipped] playwright-core is not installed (optional: only the still renderer needs it).' }
-elseif ($Yes) { Say '[skipped] playwright-core is not installed (optional items are skipped under -Yes).' }
-elseif (-not (Get-Command npm -ErrorAction SilentlyContinue)) { Say '[skipped] playwright-core needs Node.js first (optional: only the still renderer needs it).' }
+elseif ($Mode -eq 'check') { Say '[skipped] playwright-core is not installed (optional: only the still renderer needs it).' }
+elseif (-not (Get-Command npm -ErrorAction SilentlyContinue) -and -not ($Plan -contains 'node')) { Say '[skipped] playwright-core needs Node.js first (optional: only the still renderer needs it).' }
 else {
   Say '[missing] playwright-core is not installed (optional: only the still renderer needs it).'
-  Offer 'playwright-core' $false 'playwright-core (a few megabytes) from the npm registry into node_modules in this folder' 'npm install --no-save --no-package-lock playwright-core' { & npm install --no-save --no-package-lock playwright-core }
-  if ($Done) { Say '[installed] playwright-core.' } else { Say '[skipped] playwright-core. Install it later with: npm install --no-save --no-package-lock playwright-core' }
+  if ($Mode -eq 'all') { $Plan += 'playwright' } else { Invoke-Playwright }
 }
 
 # The HyperFrames video plugin (Apache-2.0, by HeyGen) ships in this folder, in vendor\hyperframes: the script
@@ -214,15 +264,22 @@ function Get-FFmpegVersion {   # first line of "ffmpeg -version" without its cop
   if ($LASTEXITCODE -ne 0 -or $out.Count -eq 0) { return '' }
   return (([string]$out[0]) -replace ' Copyright.*$', '').Trim()
 }
-function Test-FFmpeg {   # FFmpeg for the video plugin: reports it, and offers it (optional) unless -Check or -Yes
-  $v = Get-FFmpegVersion
-  if ($v) { Say "[ok] FFmpeg is installed for the video plugin ($v)."; return }
-  if ($Check) { Say '[skipped] FFmpeg is not installed (optional: the video plugin needs it to render).'; return }
-  if ($Yes) { Say '[skipped] FFmpeg is not installed (optional items are skipped under -Yes).'; return }
-  Say '[missing] FFmpeg is not installed (optional: the video plugin needs it to render).'
+function Invoke-FFmpeg {   # installs FFmpeg (after its question under -Ask)
   Install-Pkg 'FFmpeg' 'Gyan.FFmpeg' 'https://ffmpeg.org/download.html' $false
   if ($script:Done) { Update-SessionPath; Say '[installed] FFmpeg. A new terminal window may be needed before the command is found.' }
   else { Say '[skipped] FFmpeg. The video plugin cannot render until it is installed.' }
+}
+function Test-FFmpeg {   # FFmpeg for the video plugin: reports it; -Ask offers it, the one-question install plans it
+  $v = Get-FFmpegVersion
+  if ($v) { Say "[ok] FFmpeg is installed for the video plugin ($v)."; return }
+  if ($Mode -eq 'check') { Say '[skipped] FFmpeg is not installed (optional: the video plugin needs it to render).'; return }
+  if (($Mode -eq 'all') -and -not (Get-PkgFrom)) {
+    Say '[skipped] FFmpeg is not installed (optional: the video plugin needs it to render).'
+    Show-PkgHint 'FFmpeg' 'https://ffmpeg.org/download.html'; return
+  }
+  Say '[missing] FFmpeg is not installed (optional: the video plugin needs it to render).'
+  if ($Mode -eq 'all') { $script:Plan += 'ffmpeg'; return }
+  Invoke-FFmpeg
 }
 function Install-Hyperframes {   # adds the vendored marketplace (one that already exists is fine), then installs
   $script:Done = $false
@@ -242,8 +299,8 @@ function Install-Hyperframes {   # adds the vendored marketplace (one that alrea
 $hfNode = Get-Version 'node'; $hfMajor = 0
 if ($hfNode -match '^v?(\d+)\.') { $hfMajor = [int]$Matches[1] }
 $hfFound = if ($hfNode) { $hfNode } else { 'none found' }
-if (-not (Get-Version 'claude')) { Say '[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads).' }
-elseif ($hfMajor -lt 22) {
+if (-not (Get-Version 'claude') -and -not ($Plan -contains 'claude')) { Say '[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads).' }
+elseif (($hfMajor -lt 22) -and -not ($Plan -contains 'node')) {
   if (Test-Hyperframes) { Say "[ok] The HyperFrames video plugin is installed, but it needs Node.js 22 or newer to render ($hfFound)." }
   else { Say "[skipped] The HyperFrames video plugin needs Node.js 22 or newer ($hfFound; the harness itself needs 20 or newer)." }
   Note 'Install the current Node.js LTS (https://nodejs.org/en/download), then run this script again.'
@@ -252,14 +309,84 @@ else {
   Test-FFmpeg
   if (Test-Hyperframes) { Say '[ok] The HyperFrames video plugin is installed.' }
   elseif (-not (Test-Path -LiteralPath 'vendor\hyperframes\.claude-plugin\marketplace.json' -PathType Leaf)) { Say "[skipped] The HyperFrames video plugin's files are missing from vendor/hyperframes. Unzip the harness again to get them." }
-  elseif ($Check) { Say '[skipped] The HyperFrames video plugin is not installed (optional: only for silent video ads).' }
-  elseif ($Yes) { Say '[skipped] The HyperFrames video plugin is not installed (optional items are skipped under -Yes).' }
+  elseif ($Mode -eq 'check') { Say '[skipped] The HyperFrames video plugin is not installed (optional: only for silent video ads).' }
   else {
     Say '[missing] The HyperFrames video plugin is not installed (optional: only for silent video ads).'
-    Note "The plugin's files are in this folder (vendor/hyperframes); the renderer itself (npx hyperframes) is fetched from the npm registry the first time a video is made."
-    $Done = $false
-    if (Ask 'Install the HyperFrames video plugin now?' $false) { Install-Hyperframes }
-    if ($Done) { Say '[installed] The HyperFrames video plugin. Start a new Claude Code session so it loads.' } else { Say '[skipped] The HyperFrames video plugin. Install it later with the two lines in vendor/hyperframes/VENDOR.md.' }
+    if ($Mode -eq 'all') { $Plan += 'hyperframes' }
+    else {
+      Note "The plugin's files are in this folder (vendor/hyperframes); the renderer itself (npx hyperframes) is fetched from the npm registry the first time a video is made."
+      $Done = $false
+      if (Ask-Item 'Install the HyperFrames video plugin now?') { Install-Hyperframes }
+      if ($Done) { Say '[installed] The HyperFrames video plugin. Start a new Claude Code session so it loads.' } else { Say '[skipped] The HyperFrames video plugin. Install it later with the two lines in vendor/hyperframes/VENDOR.md.' }
+    }
+  }
+}
+
+# The one-question install (a default run, or -Yes): the plan, one question, then every planned item in the
+# order of the table above, with no further question. The items that need an earlier one (playwright-core needs
+# npm; the plugin needs Claude Code and Node.js 22 or newer) look for it again first.
+function Show-PlanLine([string]$item) {   # one line of the plan: the item and where it comes from
+  if ($item -eq 'git') { Say ('  - Git, from ' + (Get-PkgFrom)) }
+  elseif ($item -eq 'node') { Say ('  - Node.js LTS, from ' + (Get-PkgFrom)) }
+  elseif ($item -eq 'claude') { Say '  - Claude Code, from claude.ai (the official installer; the npm registry if that fails)' }
+  elseif ($item -eq 'playwright') { Say '  - playwright-core (a few megabytes), from the npm registry into node_modules in this folder' }
+  elseif ($item -eq 'ffmpeg') { Say ('  - FFmpeg, from ' + (Get-PkgFrom)) }
+  else { Say '  - The HyperFrames video plugin, from vendor/hyperframes in this folder (its renderer comes from npm on first use)' }
+}
+function Install-PlaywrightNow {
+  Update-SessionPath
+  if (Get-Command npm -ErrorAction SilentlyContinue) { Invoke-Playwright; return }
+  Say '[skipped] playwright-core needs Node.js first (optional: only the still renderer needs it).'
+  Note 'Open a new terminal window in this folder and run this script again to add it.'
+}
+function Install-HyperframesNow {
+  Update-SessionPath
+  $v = Get-Version 'node'; $m = 0
+  if ($v -match '^v?(\d+)\.') { $m = [int]$Matches[1] }
+  $found = 'none found'; if ($v) { $found = $v }
+  if (-not (Get-Version 'claude')) { Say '[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads).' }
+  elseif ($m -lt 22) { Say "[skipped] The HyperFrames video plugin needs Node.js 22 or newer ($found; the harness itself needs 20 or newer)." }
+  else {
+    Install-Hyperframes
+    if ($script:Done) { Say '[installed] The HyperFrames video plugin. Start a new Claude Code session so it loads.' }
+    else { Say '[skipped] The HyperFrames video plugin. Install it later with the two lines in vendor/hyperframes/VENDOR.md.' }
+    return
+  }
+  Note 'Open a new terminal window in this folder and run this script again to add it.'
+}
+if ($Mode -eq 'all') {
+  if ((Test-Path -LiteralPath 'dashboard/setup-page.mjs' -PathType Leaf) -and ((Get-Version 'node') -or ($Plan -contains 'node'))) { $PageTodo = $true }
+  Say ''
+  if ($Plan.Count -eq 0) {
+    if ($Missing) { Say 'Nothing for this script to install here: for what is marked [missing] above, follow the step on its line or in its note.' }
+    else { Say 'Nothing to install: every tool this script can install is in place.' }
+    $Go = $true
+  } else {
+    Say 'This will install:'
+    foreach ($item in $Plan) { Show-PlanLine $item }
+    if ($EnvTodo -or $PageTodo) {
+      Say 'and will:'
+      if ($EnvTodo) { Say '  - copy .env.example to .env (its contents are never shown)' }
+      if ($PageTodo) { Say '  - open the setup progress page (dashboard/setup.html) in your browser' }
+    }
+    if (($Plan -contains 'git') -or ($Plan -contains 'node') -or ($Plan -contains 'ffmpeg')) { Say 'winget may still show its own agreement prompts while it installs; answer them in this window.' }
+    if ($Yes) { Say 'Install all of the above now? [Y/n]: yes (-Yes)'; $Go = $true }
+    elseif (Confirm-All 'Install all of the above now?') { $Go = $true }
+    else {
+      $Declined = $true
+      if ($NoAnswer) { Say 'No answer could be read, so nothing was installed. Run this script in a terminal window and press Enter at the question.' }
+      else { Say 'Nothing was installed.' }
+    }
+  }
+  if ($Go) {
+    if ($Plan.Count -gt 0) { Say ''; Say 'Installing' }
+    if ($Plan -contains 'git') { Put 'Git' 'git' }
+    if ($Plan -contains 'node') { Put 'Node.js' 'node' }
+    if ($Plan -contains 'claude') { Put 'Claude Code' 'claude' }
+    if ($EnvTodo) { Copy-Env }
+    if ($Plan -contains 'playwright') { Install-PlaywrightNow }
+    if ($Plan -contains 'ffmpeg') { Invoke-FFmpeg }
+    if ($Plan -contains 'hyperframes') { Install-HyperframesNow }
   }
 }
 
@@ -277,8 +404,9 @@ if ($Recheck.Count -gt 0) {
 
 Say ''
 Say 'What remains'
-if ($Missing) {
-  if ($Check) { Say '  First: run this script without -Check to install what is marked [missing] above.' }
+if ($Declined) { Say '  First: run this script again and press Enter at the question to install what is marked [missing] above.' }
+elseif ($Missing) {
+  if ($Mode -eq 'check') { Say '  First: run this script without -Check to install what is marked [missing] above.' }
   else { Say '  First: install what is marked [missing] above (run this script again, or install it by hand).' }
 }
 Say '  1. Open this folder in Claude Code: type claude in this folder (or open the folder in the Claude desktop app).'
@@ -287,22 +415,28 @@ Say '  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser whe
 Say '     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load.'
 Say '  4. Type /setup and answer the wizard.'
 Say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
-# The setup progress page (dashboard/setup.html): written and opened at the end of a real run, never under
-# -Check. The marks are this run's results: done when the tool was found or installed.
-$pageNode = Get-Version 'node'
-if (-not $Check -and $pageNode -and (Test-Path -LiteralPath 'dashboard/setup-page.mjs' -PathType Leaf)) {
-  $pageMajor = 0
-  if ($pageNode -match '^v?(\d+)\.') { $pageMajor = [int]$Matches[1] }
-  $markGit = if ((Get-Version 'git') -or ($Recheck -contains 'git')) { 'done' } else { 'todo' }
-  $markNode = if (($pageMajor -ge 20) -or ($Recheck -contains 'node')) { 'done' } else { 'todo' }
-  $markClaude = if ((Get-Version 'claude') -or ($Recheck -contains 'claude')) { 'done' } else { 'todo' }
-  Say ''
-  $global:LASTEXITCODE = 0
-  try { & node dashboard/setup-page.mjs --mark "install.git=$markGit" --mark "install.node=$markNode" --mark "install.claude=$markClaude" --open *> $null } catch { $global:LASTEXITCODE = 1 }
-  if ($LASTEXITCODE -eq 0) { Say 'A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html' }
-  else { Say 'The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later.' }
+# The setup progress page (dashboard/setup.html): written and opened at the end of a run that went ahead,
+# never under -Check or after a No. The marks are this run's results: done when the tool was found or installed.
+if (($Mode -ne 'check') -and -not $Declined -and (Test-Path -LiteralPath 'dashboard/setup-page.mjs' -PathType Leaf)) {
+  $pageNode = Get-Version 'node'
+  if ($pageNode) {
+    $pageMajor = 0
+    if ($pageNode -match '^v?(\d+)\.') { $pageMajor = [int]$Matches[1] }
+    $markGit = if ((Get-Version 'git') -or ($Recheck -contains 'git')) { 'done' } else { 'todo' }
+    $markNode = if (($pageMajor -ge 20) -or ($Recheck -contains 'node')) { 'done' } else { 'todo' }
+    $markClaude = if ((Get-Version 'claude') -or ($Recheck -contains 'claude')) { 'done' } else { 'todo' }
+    Say ''
+    $global:LASTEXITCODE = 0
+    try { & node dashboard/setup-page.mjs --mark "install.git=$markGit" --mark "install.node=$markNode" --mark "install.claude=$markClaude" --open *> $null } catch { $global:LASTEXITCODE = 1 }
+    if ($LASTEXITCODE -eq 0) { Say 'A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html' }
+    else { Say 'The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later.' }
+  } elseif ($PageTodo) {
+    Say ''
+    Say 'The progress page needs Node.js, which this window does not find yet; /setup opens it later.'
+  }
 }
 Say ''
+if ($Declined) { Say 'Result: nothing was installed; run this script again when you are ready.'; exit 1 }
 if ($Missing) { Say 'Result: something required is still missing (marked [missing] above).'; exit 1 }
 Say 'Result: everything required is in place.'
 exit 0

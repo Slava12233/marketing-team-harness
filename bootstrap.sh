@@ -2,32 +2,41 @@
 # bootstrap.sh: the first command for a new copy of the Marketing Team Harness, for macOS. It also runs in
 # Git Bash on Windows and on Linux; on Windows, bootstrap.ps1 does the same steps in PowerShell.
 # Run it from the harness folder (the one that contains CLAUDE.md and .mcp.json):
-#   bash bootstrap.sh            check, and offer to install what is missing (one y/N question per item)
+#   bash bootstrap.sh            check everything, list what is missing, then one question installs all of it
+#   bash bootstrap.sh --ask      ask per item: one y/N question before each install
+#   bash bootstrap.sh --yes      install everything that is missing, with no question at all
 #   bash bootstrap.sh --check    report only: no questions, no installs, nothing changed
-#   bash bootstrap.sh --yes      yes to every missing REQUIRED item; optional items are skipped
 #   bash bootstrap.sh --help     show the usage
+# The one install takes every missing item, required and optional alike (Git, Node.js, Claude Code,
+# playwright-core, FFmpeg, the HyperFrames video plugin from vendor/hyperframes), copies .env.example to .env
+# and opens the setup progress page. Enter at its question means Yes; Enter at an --ask question means No.
 # Tags: [ok] already there, [installed] put in place by this run, [missing] not there, [skipped] an optional
-# item left out. Exit codes: 0 everything required is present, 1 something required is missing, 2 wrong
-# folder or unknown option. It never asks for, reads or prints a token: .env is only copied from .env.example.
+# item left out. Exit codes: 0 everything required is present, 1 something required is missing or the
+# install was declined, 2 wrong folder or unknown option. It never asks for, reads or prints a token: .env is
+# only copied from .env.example.
 set -u
 
-CHECK=0; YES=0; MISSING=0; RECHECK=""; AGREED=0
+MODE=all; CHECK=0; YES=0; ASKEACH=0; MISSING=0; RECHECK=""; AGREED=0
+PLAN=""; ENV_TODO=0; PAGE_TODO=0; GO=0; DECLINED=0; NOANSWER=0; ANSWER=""
 say()  { printf '%s\n' "$*"; }
 note() { printf '        %s\n' "$*"; }
 usage() {
-  say "Usage: bash bootstrap.sh [--check] [--yes] [--help]"
-  say "  (no option)  check, and offer to install what is missing (one y/N question per item; Enter means No)"
+  say "Usage: bash bootstrap.sh [--ask | --yes | --check] [--help]"
+  say "  (no option)  check, list what is missing, then one question installs all of it (Enter means Yes)"
+  say "  --ask        ask per item: one y/N question before each install (Enter means No)"
+  say "  --yes        install everything that is missing, required and optional, with no question"
   say "  --check      report only: no questions, no installs, nothing changed"
-  say "  --yes        yes to every missing required item; optional items are skipped"
   say "  --help       show this text"
+  say "Given together, the more careful option wins: --check, then --ask, then --yes."
   say "Run it from the harness folder (the one that contains CLAUDE.md and .mcp.json)."
 }
 for a in "$@"; do
   case "$a" in
-    --check) CHECK=1 ;;  --yes) YES=1 ;;  --help|-h) usage; exit 0 ;;
+    --check) CHECK=1 ;;  --ask) ASKEACH=1 ;;  --yes) YES=1 ;;  --help|-h) usage; exit 0 ;;
     *) say "Unknown option: $a"; usage; exit 2 ;;
   esac
 done
+if [ "$CHECK" = 1 ]; then MODE=check; elif [ "$ASKEACH" = 1 ]; then MODE=ask; fi
 case "$(uname -s 2>/dev/null)" in
   Darwin) OS=mac ;;  Linux) OS=linux ;;  MINGW*|MSYS*|CYGWIN*) OS=win ;;  *) OS=other ;;
 esac
@@ -44,24 +53,43 @@ if [ ! -f CLAUDE.md ] || [ ! -f .mcp.json ]; then
   exit 2
 fi
 
-# ask <question> <1 = required item>: returns 0 for yes. Enter, or no answer at all, means No.
-ask() {
-  if [ "$YES" = 1 ]; then
-    if [ "$2" = 1 ]; then note "$1 [y/N]: yes (--yes)"; return 0; fi
-    return 1
-  fi
-  printf '        %s [y/N]: ' "$1"
-  local ans=""; read -r ans || echo
-  case "$ans" in [yY]|[yY][eE][sS]) return 0 ;; *) return 1 ;; esac
+# answer: reads one typed line into ANSWER, spaces taken out; returns 1 when nothing could be read (the input
+# is closed). When the input is not a terminal, the line is printed after the question so the log shows it.
+answer() {
+  local got=0; ANSWER=""
+  IFS= read -r ANSWER && got=1
+  ANSWER=${ANSWER%$'\r'}
+  if [ ! -t 0 ]; then printf '%s\n' "$ANSWER"; elif [ "$got" = 0 ]; then echo; fi
+  ANSWER=${ANSWER//[[:space:]]/}
+  [ "$got" = 1 ] || [ -n "$ANSWER" ]
 }
 
-# offer <name> <1 = required> <what it downloads> <command>: states the download, asks once, runs the
-# command. Sets AGREED=1 on a yes; returns 0 when the command succeeded.
+# ask <question>: one --ask question; returns 0 for yes. Enter, or no answer at all, means No.
+ask() {
+  printf '        %s [y/N]: ' "$1"
+  answer
+  case "$ANSWER" in [yY]|[yY][eE][sS]) return 0 ;; *) return 1 ;; esac
+}
+
+# confirm <question>: the one question of a default run; returns 0 for yes. Enter means Yes; no answer at all
+# (the input is closed) means No and sets NOANSWER=1.
+confirm() {
+  printf '%s [Y/n]: ' "$1"
+  if ! answer; then NOANSWER=1; return 1; fi
+  case "$ANSWER" in ''|[yY]|[yY][eE][sS]) return 0 ;; *) return 1 ;; esac
+}
+
+# offer <name> <1 = required> <what it downloads> <command>: runs one install. Under --ask it first states the
+# download and asks; in the one-question install (a default run after its yes, or --yes) it runs at once, the
+# plan having named the source. Sets AGREED=1 when the install goes ahead; returns 0 when the command succeeded.
 offer() {
-  AGREED=0; note "This downloads $3."
-  if ! ask "Install $1 now?" "$2"; then
-    [ "$2" = 1 ] && note "Not installed. Run this script again when you are ready."
-    return 1
+  AGREED=0
+  if [ "$MODE" = ask ]; then
+    note "This downloads $3."
+    if ! ask "Install $1 now?"; then
+      [ "$2" = 1 ] && note "Not installed. Run this script again when you are ready."
+      return 1
+    fi
   fi
   AGREED=1; note "Running: $4"
   bash -c "set -o pipefail; $4"; local rc=$?
@@ -73,28 +101,32 @@ BREW=""; command -v brew >/dev/null 2>&1 && BREW=brew
 for b in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
   [ -z "$BREW" ] && [ -x "$b" ] && BREW="$b"; done
 
-# pkg <name> <Homebrew formula> <winget id> <download page> [<1 = required (the default), 0 = optional>]:
-# installs with winget (Windows) or Homebrew.
-pkg() {
-  local req="${5:-1}"
+# pkg_from: where pkg installs from on this machine, in the plan's words; nothing when it has no installer here.
+pkg_from() {
   if [ "$OS" = win ]; then
-    if ! command -v winget >/dev/null 2>&1; then
-      note "winget (the Windows Package Manager) was not found. Get App Installer from the Microsoft Store:"
-      note "https://apps.microsoft.com/detail/9NBLGGH4NNS1 , or download $1 from $4"
-      return 1
-    fi
-    offer "$1" "$req" "$1 from the winget catalogue (the Windows Package Manager)" "winget install --id $3 -e --source winget"
-  elif [ -n "$BREW" ]; then
-    offer "$1" "$req" "$1 from Homebrew" "$BREW install $2"
+    if command -v winget >/dev/null 2>&1; then say "the winget catalogue (the Windows Package Manager)"; fi
+  elif [ -n "$BREW" ]; then say "Homebrew"; fi
+}
+# pkg_hint <name> <download page>: what to do instead when pkg has no installer here.
+pkg_hint() {
+  if [ "$OS" = win ]; then
+    note "winget (the Windows Package Manager) was not found. Get App Installer from the Microsoft Store:"
+    note "https://apps.microsoft.com/detail/9NBLGGH4NNS1 , or download $1 from $2"
   elif [ "$OS" = mac ]; then
     note "Homebrew, the installer this script uses on a Mac, is not installed. Install it first with this"
     note "line from https://brew.sh (it asks for your Mac password), then open a new terminal window:"
     note '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
-    return 1
   else
-    note "Install $1 with your system's package manager (or from $4), then run this script again."
-    return 1
+    note "Install $1 with your system's package manager (or from $2), then run this script again."
   fi
+}
+# pkg <name> <Homebrew formula> <winget id> <download page> [<1 = required (the default), 0 = optional>]:
+# installs with winget (Windows) or Homebrew.
+pkg() {
+  local from; from=$(pkg_from)
+  if [ -z "$from" ]; then pkg_hint "$1" "$4"; return 1; fi
+  if [ "$OS" = win ]; then offer "$1" "${5:-1}" "$1 from $from" "winget install --id $3 -e --source winget"
+  else offer "$1" "${5:-1}" "$1 from $from" "$BREW install $2"; fi
 }
 
 git_v() {   # Git's version line, or nothing when Git is absent
@@ -150,27 +182,40 @@ install_claude() {
   npm install -g @anthropic-ai/claude-code
 }
 
-# fix <name> <install function> <check function>: after a [missing] line, installs unless --check.
-fix() {
-  if [ "$CHECK" = 1 ]; then MISSING=1; return; fi
+# put <name> <install function> <check function>: installs one required item: [installed] and a re-check
+# at the end when it worked, otherwise it stays missing.
+put() {
   if ! "$2"; then MISSING=1; return; fi
   say "[installed] $1. A new terminal window may be needed before the command is found."
   RECHECK="$RECHECK $3"
 }
+# need <item> <name> <install function> <check function> [<download page>]: after the [missing] line of a
+# required item. --check records it, --ask installs it now (one question), and the one-question install adds it
+# to the plan, or says why this script cannot install it here.
+need() {
+  case "$MODE" in
+    check) MISSING=1 ;;
+    ask) put "$2" "$3" "$4" ;;
+    *) if [ "$1" = claude ] || [ -n "$(pkg_from)" ]; then PLAN="$PLAN $1"
+       else pkg_hint "$2" "${5:-}"; MISSING=1; fi ;;
+  esac
+}
+in_plan() { case " $PLAN " in *" $1 "*) return 0 ;; esac; return 1; }
 
 say "Marketing Team Harness: first-time setup"
 say "Folder: $(pwd)"
-if [ "$CHECK" = 1 ]; then say "Mode: check only. Nothing is installed or changed."
-elif [ "$YES" = 1 ]; then say "Mode: yes to every missing required item. Optional items are skipped."
-else say "Mode: one question before each install. Enter means No."; fi
+if [ "$MODE" = check ]; then say "Mode: check only. Nothing is installed or changed."
+elif [ "$MODE" = ask ]; then say "Mode: one question before each install. Enter means No."
+elif [ "$YES" = 1 ]; then say "Mode: check everything, then install all that is missing, with no question (--yes)."
+else say "Mode: check everything, then one question installs all that is missing. Enter means Yes."; fi
 say "No token or password is ever asked for here."
 
 say ""
 say "Required"
-check_git || fix "Git" install_git check_git
-check_node || fix "Node.js" install_node check_node
+check_git || need git "Git" install_git check_git https://git-scm.com/downloads
+check_node || need node "Node.js" install_node check_node https://nodejs.org/en/download
 check_claude; rc=$?
-if [ "$rc" -eq 1 ]; then fix "Claude Code" install_claude check_claude
+if [ "$rc" -eq 1 ]; then need claude "Claude Code" install_claude check_claude
 elif [ "$rc" -eq 2 ]; then MISSING=1; fi
 
 browser=""
@@ -192,26 +237,33 @@ else
   note "Download one: https://www.microsoft.com/edge/download or https://www.google.com/chrome/"
 fi
 
+copy_env() {   # copies .env.example to .env; an .env that exists by now is left as it is
+  if [ -f .env ]; then say "[ok] .env exists (contents never shown)."; return; fi
+  if cp .env.example .env; then
+    chmod 600 .env 2>/dev/null
+    say "[installed] .env created from .env.example (contents never shown)."
+    note "Later the Owner pastes the Meta System User token into .env with a text editor, never into the chat."
+  else say "[missing] .env could not be created. Copy .env.example to .env by hand."; MISSING=1; fi
+}
 if [ -f .env ]; then say "[ok] .env exists (contents never shown)."
 elif [ ! -f .env.example ]; then say "[missing] .env.example is missing, so .env cannot be created. Unzip the harness again."; MISSING=1
-elif [ "$CHECK" = 1 ]; then say "[missing] .env does not exist yet. Run this script without --check to create it from .env.example."; MISSING=1
-elif cp .env.example .env; then
-  chmod 600 .env 2>/dev/null
-  say "[installed] .env created from .env.example (contents never shown)."
-  note "Later the Owner pastes the Meta System User token into .env with a text editor, never into the chat."
-else say "[missing] .env could not be created. Copy .env.example to .env by hand."; MISSING=1; fi
+elif [ "$MODE" = check ]; then say "[missing] .env does not exist yet. Run this script without --check to create it from .env.example."; MISSING=1
+elif [ "$MODE" = ask ]; then copy_env
+else say "[missing] .env does not exist yet."; ENV_TODO=1; fi
 
 say ""
 say "Optional"
-if [ -f node_modules/playwright-core/package.json ]; then say "[ok] playwright-core is installed (for the still renderer)."
-elif [ "$CHECK" = 1 ]; then say "[skipped] playwright-core is not installed (optional: only the still renderer needs it)."
-elif [ "$YES" = 1 ]; then say "[skipped] playwright-core is not installed (optional items are skipped under --yes)."
-elif ! command -v npm >/dev/null 2>&1; then say "[skipped] playwright-core needs Node.js first (optional: only the still renderer needs it)."
-else
-  say "[missing] playwright-core is not installed (optional: only the still renderer needs it)."
+do_playwright() {   # installs playwright-core into node_modules here (after its question under --ask)
   if offer "playwright-core" 0 "playwright-core (a few megabytes) from the npm registry into node_modules in this folder" "npm install --no-save --no-package-lock playwright-core"
   then say "[installed] playwright-core."
   else say "[skipped] playwright-core. Install it later with: npm install --no-save --no-package-lock playwright-core"; fi
+}
+if [ -f node_modules/playwright-core/package.json ]; then say "[ok] playwright-core is installed (for the still renderer)."
+elif [ "$MODE" = check ]; then say "[skipped] playwright-core is not installed (optional: only the still renderer needs it)."
+elif ! command -v npm >/dev/null 2>&1 && ! in_plan node; then say "[skipped] playwright-core needs Node.js first (optional: only the still renderer needs it)."
+else
+  say "[missing] playwright-core is not installed (optional: only the still renderer needs it)."
+  if [ "$MODE" = all ]; then PLAN="$PLAN playwright"; else do_playwright; fi
 fi
 
 # The HyperFrames video plugin (Apache-2.0, by HeyGen) ships in this folder, in vendor/hyperframes: the script
@@ -221,16 +273,23 @@ HF_DIR="$(pwd)/vendor/hyperframes"
 if [ "$OS" = win ] && command -v cygpath >/dev/null 2>&1; then HF_DIR=$(cygpath -m "$HF_DIR"); fi
 hf_installed() { claude plugin list 2>/dev/null | grep -qi hyperframes; }
 ffmpeg_v() { command -v ffmpeg >/dev/null 2>&1 && ffmpeg -version 2>/dev/null | head -n 1 | sed 's/ Copyright.*//'; }
-check_ffmpeg() {   # FFmpeg for the video plugin: reports it, and offers it (optional) unless --check or --yes
-  local v; v=$(ffmpeg_v)
-  if [ -n "$v" ]; then say "[ok] FFmpeg is installed for the video plugin ($v)."; return 0; fi
-  if [ "$CHECK" = 1 ]; then say "[skipped] FFmpeg is not installed (optional: the video plugin needs it to render)."; return 1; fi
-  if [ "$YES" = 1 ]; then say "[skipped] FFmpeg is not installed (optional items are skipped under --yes)."; return 1; fi
-  say "[missing] FFmpeg is not installed (optional: the video plugin needs it to render)."
+do_ffmpeg() {   # installs FFmpeg (after its question under --ask)
   if pkg "FFmpeg" ffmpeg Gyan.FFmpeg https://ffmpeg.org/download.html 0; then
     hash -r; say "[installed] FFmpeg. A new terminal window may be needed before the command is found."; return 0
   fi
   say "[skipped] FFmpeg. The video plugin cannot render until it is installed."; return 1
+}
+check_ffmpeg() {   # FFmpeg for the video plugin: reports it; --ask offers it, the one-question install plans it
+  local v; v=$(ffmpeg_v)
+  if [ -n "$v" ]; then say "[ok] FFmpeg is installed for the video plugin ($v)."; return 0; fi
+  if [ "$MODE" = check ]; then say "[skipped] FFmpeg is not installed (optional: the video plugin needs it to render)."; return 1; fi
+  if [ "$MODE" = all ] && [ -z "$(pkg_from)" ]; then
+    say "[skipped] FFmpeg is not installed (optional: the video plugin needs it to render)."
+    pkg_hint "FFmpeg" https://ffmpeg.org/download.html; return 1
+  fi
+  say "[missing] FFmpeg is not installed (optional: the video plugin needs it to render)."
+  if [ "$MODE" = all ]; then PLAN="$PLAN ffmpeg"; return 1; fi
+  do_ffmpeg
 }
 install_hyperframes() {   # adds the vendored marketplace (one that already exists is fine), then installs
   local out rc
@@ -247,8 +306,8 @@ install_hyperframes() {   # adds the vendored marketplace (one that already exis
 }
 hf_node=$(node_v); hf_major=${hf_node#v}; hf_major=${hf_major%%.*}
 case "$hf_major" in ''|*[!0-9]*) hf_major=0 ;; esac
-if [ -z "$(claude_v)" ]; then say "[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads)."
-elif [ "$hf_major" -lt 22 ]; then
+if [ -z "$(claude_v)" ] && ! in_plan claude; then say "[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads)."
+elif [ "$hf_major" -lt 22 ] && ! in_plan node; then
   if hf_installed; then say "[ok] The HyperFrames video plugin is installed, but it needs Node.js 22 or newer to render (${hf_node:-none found})."
   else say "[skipped] The HyperFrames video plugin needs Node.js 22 or newer (${hf_node:-none found}; the harness itself needs 20 or newer)."; fi
   note "Install the current Node.js LTS (https://nodejs.org/en/download), then run this script again."
@@ -257,14 +316,82 @@ else
   if hf_installed; then say "[ok] The HyperFrames video plugin is installed."
   elif [ ! -f vendor/hyperframes/.claude-plugin/marketplace.json ]; then
     say "[skipped] The HyperFrames video plugin's files are missing from vendor/hyperframes. Unzip the harness again to get them."
-  elif [ "$CHECK" = 1 ]; then say "[skipped] The HyperFrames video plugin is not installed (optional: only for silent video ads)."
-  elif [ "$YES" = 1 ]; then say "[skipped] The HyperFrames video plugin is not installed (optional items are skipped under --yes)."
+  elif [ "$MODE" = check ]; then say "[skipped] The HyperFrames video plugin is not installed (optional: only for silent video ads)."
   else
     say "[missing] The HyperFrames video plugin is not installed (optional: only for silent video ads)."
-    note "The plugin's files are in this folder (vendor/hyperframes); the renderer itself (npx hyperframes) is fetched from the npm registry the first time a video is made."
-    if ask "Install the HyperFrames video plugin now?" 0 && install_hyperframes
-    then say "[installed] The HyperFrames video plugin. Start a new Claude Code session so it loads."
-    else say "[skipped] The HyperFrames video plugin. Install it later with the two lines in vendor/hyperframes/VENDOR.md."; fi
+    if [ "$MODE" = all ]; then PLAN="$PLAN hyperframes"
+    else
+      note "The plugin's files are in this folder (vendor/hyperframes); the renderer itself (npx hyperframes) is fetched from the npm registry the first time a video is made."
+      if ask "Install the HyperFrames video plugin now?" && install_hyperframes
+      then say "[installed] The HyperFrames video plugin. Start a new Claude Code session so it loads."
+      else say "[skipped] The HyperFrames video plugin. Install it later with the two lines in vendor/hyperframes/VENDOR.md."; fi
+    fi
+  fi
+fi
+
+# The one-question install (a default run, or --yes): the plan, one question, then every planned item in the
+# order of the table above, with no further question. The items that need an earlier one (playwright-core needs
+# npm; the plugin needs Claude Code and Node.js 22 or newer) look for it again first.
+plan_line() {   # one line of the plan: the item and where it comes from
+  case "$1" in
+    git)         say "  - Git, from $(pkg_from)" ;;
+    node)        if [ "$OS" = win ]; then say "  - Node.js LTS, from $(pkg_from)"; else say "  - Node.js, from $(pkg_from)"; fi ;;
+    claude)      say "  - Claude Code, from claude.ai (the official installer; the npm registry if that fails)" ;;
+    playwright)  say "  - playwright-core (a few megabytes), from the npm registry into node_modules in this folder" ;;
+    ffmpeg)      say "  - FFmpeg, from $(pkg_from)" ;;
+    hyperframes) say "  - The HyperFrames video plugin, from vendor/hyperframes in this folder (its renderer comes from npm on first use)" ;;
+  esac
+}
+playwright_now() {
+  hash -r
+  if command -v npm >/dev/null 2>&1; then do_playwright; return; fi
+  say "[skipped] playwright-core needs Node.js first (optional: only the still renderer needs it)."
+  note "Open a new terminal window in this folder and run this script again to add it."
+}
+hyperframes_now() {
+  local v m; hash -r; v=$(node_v); m=${v#v}; m=${m%%.*}
+  case "$m" in ''|*[!0-9]*) m=0 ;; esac
+  if [ -z "$(claude_v)" ]; then say "[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads)."
+  elif [ "$m" -lt 22 ]; then say "[skipped] The HyperFrames video plugin needs Node.js 22 or newer (${v:-none found}; the harness itself needs 20 or newer)."
+  elif install_hyperframes; then say "[installed] The HyperFrames video plugin. Start a new Claude Code session so it loads."; return
+  else say "[skipped] The HyperFrames video plugin. Install it later with the two lines in vendor/hyperframes/VENDOR.md."; return; fi
+  note "Open a new terminal window in this folder and run this script again to add it."
+}
+if [ "$MODE" = all ]; then
+  [ -f dashboard/setup-page.mjs ] && { [ -n "$(node_v)" ] || in_plan node; } && PAGE_TODO=1
+  say ""
+  if [ -z "$PLAN" ]; then
+    if [ "$MISSING" = 1 ]; then say "Nothing for this script to install here: for what is marked [missing] above, follow the step on its line or in its note."
+    else say "Nothing to install: every tool this script can install is in place."; fi
+    GO=1
+  else
+    say "This will install:"
+    for i in $PLAN; do plan_line "$i"; done
+    if [ "$ENV_TODO" = 1 ] || [ "$PAGE_TODO" = 1 ]; then
+      say "and will:"
+      [ "$ENV_TODO" = 1 ] && say "  - copy .env.example to .env (its contents are never shown)"
+      [ "$PAGE_TODO" = 1 ] && say "  - open the setup progress page (dashboard/setup.html) in your browser"
+    fi
+    if [ "$OS" = win ] && { in_plan git || in_plan node || in_plan ffmpeg; }; then
+      say "winget may still show its own agreement prompts while it installs; answer them in this window."
+    fi
+    if [ "$YES" = 1 ]; then say "Install all of the above now? [Y/n]: yes (--yes)"; GO=1
+    elif confirm "Install all of the above now?"; then GO=1
+    else
+      DECLINED=1
+      if [ "$NOANSWER" = 1 ]; then say "No answer could be read, so nothing was installed. Run this script in a terminal window and press Enter at the question."
+      else say "Nothing was installed."; fi
+    fi
+  fi
+  if [ "$GO" = 1 ]; then
+    if [ -n "$PLAN" ]; then say ""; say "Installing"; fi
+    in_plan git && put "Git" install_git check_git
+    in_plan node && put "Node.js" install_node check_node
+    in_plan claude && put "Claude Code" install_claude check_claude
+    [ "$ENV_TODO" = 1 ] && copy_env
+    in_plan playwright && playwright_now
+    in_plan ffmpeg && do_ffmpeg
+    in_plan hyperframes && hyperframes_now
   fi
 fi
 
@@ -278,8 +405,9 @@ fi
 
 say ""
 say "What remains"
-if [ "$MISSING" = 1 ]; then
-  if [ "$CHECK" = 1 ]; then say "  First: run this script without --check to install what is marked [missing] above."
+if [ "$DECLINED" = 1 ]; then say "  First: run this script again and press Enter at the question to install what is marked [missing] above."
+elif [ "$MISSING" = 1 ]; then
+  if [ "$MODE" = check ]; then say "  First: run this script without --check to install what is marked [missing] above."
   else say "  First: install what is marked [missing] above (run this script again, or install it by hand)."; fi
 fi
 say "  1. Open this folder in Claude Code: type claude in this folder (or open the folder in the Claude desktop app)."
@@ -288,22 +416,28 @@ say "  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser whe
 say "     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load."
 say "  4. Type /setup and answer the wizard."
 say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
-# The setup progress page (dashboard/setup.html): written and opened at the end of a real run, never under
-# --check. The marks are this run's results: done when the tool was found or installed.
-if [ "$CHECK" != 1 ] && [ -n "$(node_v)" ] && [ -f dashboard/setup-page.mjs ]; then
-  ran() { case " $RECHECK " in *" $1 "*) return 0 ;; esac; return 1; }
-  pg_node=$(node_v); pg_major=${pg_node#v}; pg_major=${pg_major%%.*}
-  case "$pg_major" in ''|*[!0-9]*) pg_major=0 ;; esac
-  mark_git=todo; { [ -n "$(git_v)" ] || ran check_git; } && mark_git=done
-  mark_node=todo; { [ "$pg_major" -ge 20 ] || ran check_node; } && mark_node=done
-  mark_claude=todo; { [ -n "$(claude_v)" ] || ran check_claude; } && mark_claude=done
-  say ""
-  if node dashboard/setup-page.mjs --mark "install.git=$mark_git" --mark "install.node=$mark_node" \
-       --mark "install.claude=$mark_claude" --open >/dev/null 2>&1
-  then say "A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html"
-  else say "The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later."; fi
+# The setup progress page (dashboard/setup.html): written and opened at the end of a run that went ahead,
+# never under --check or after a No. The marks are this run's results: done when the tool was found or installed.
+if [ "$MODE" != check ] && [ "$DECLINED" = 0 ] && [ -f dashboard/setup-page.mjs ]; then
+  if [ -n "$(node_v)" ]; then
+    ran() { case " $RECHECK " in *" $1 "*) return 0 ;; esac; return 1; }
+    pg_node=$(node_v); pg_major=${pg_node#v}; pg_major=${pg_major%%.*}
+    case "$pg_major" in ''|*[!0-9]*) pg_major=0 ;; esac
+    mark_git=todo; { [ -n "$(git_v)" ] || ran check_git; } && mark_git=done
+    mark_node=todo; { [ "$pg_major" -ge 20 ] || ran check_node; } && mark_node=done
+    mark_claude=todo; { [ -n "$(claude_v)" ] || ran check_claude; } && mark_claude=done
+    say ""
+    if node dashboard/setup-page.mjs --mark "install.git=$mark_git" --mark "install.node=$mark_node" \
+         --mark "install.claude=$mark_claude" --open >/dev/null 2>&1
+    then say "A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html"
+    else say "The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later."; fi
+  elif [ "$PAGE_TODO" = 1 ]; then
+    say ""
+    say "The progress page needs Node.js, which this window does not find yet; /setup opens it later."
+  fi
 fi
 say ""
+if [ "$DECLINED" = 1 ]; then say "Result: nothing was installed; run this script again when you are ready."; exit 1; fi
 if [ "$MISSING" = 1 ]; then say "Result: something required is still missing (marked [missing] above)."; exit 1; fi
 say "Result: everything required is in place."
 exit 0

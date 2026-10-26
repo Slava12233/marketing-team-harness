@@ -44,7 +44,7 @@ claude plugin marketplace add ./vendor/hyperframes
 claude plugin install hyperframes@hyperframes
 ```
 
-If Claude Code refuses the relative path, give the path of this folder instead: the full path of the repository followed by `/vendor/hyperframes`. `bootstrap.sh` and `bootstrap.ps1` offer the same two lines (an optional item, one y/N question) and compute that full path themselves. If Claude Code answers that a marketplace named `hyperframes` already exists, one was added before (perhaps from GitHub) and the second line installs from it. Start a new Claude Code session afterwards so the skills load; the entry skill is `hyperframes:hyperframes`. If you move the repository folder, run the two lines again.
+If Claude Code refuses the relative path, give the path of this folder instead: the full path of the repository followed by `/vendor/hyperframes`. `bootstrap.sh` and `bootstrap.ps1` run the same two lines by default (installed with everything else after the one confirmation; `--ask` makes it a separate question) and compute that full path themselves. If Claude Code answers that a marketplace named `hyperframes` already exists, one was added before (perhaps from GitHub) and the second line installs from it. Start a new Claude Code session afterwards so the skills load; the entry skill is `hyperframes:hyperframes`. If you move the repository folder, run the two lines again.
 
 ## Refresh it to a newer upstream release
 
