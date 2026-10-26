@@ -1,0 +1,5 @@
+{
+  "name": "marketing-harness",
+  "owner": { "name": "Marketing harness template" },
+  "plugins": [{ "name": "marketing-team", "source": "./marketing-team" }]
+}

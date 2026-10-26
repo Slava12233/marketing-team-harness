@@ -1,0 +1,81 @@
+---
+name: meta-campaign-build
+description: "Build or change the company's Meta campaigns, ad sets, ads and lead-form ads through the Meta Ads MCP, following every rule learned about draft mode, creatives, targeting, special ad categories, uploads and publishing. Use when asked to create, rebuild, duplicate, edit, pause or publish campaigns."
+---
+
+# Meta campaign build
+
+**Output:** PAUSED objects in the ad account; every id, hash and video id in the flight's plan file (`plans/`) and `memory.md` "Current state"; upload ledgers in `creatives/uploads/`. **Language:** files in English; ad copy in the ad's language as written in the plan; anything said in chat in the chat language from `config/operator.md`.
+
+## Account constants (read, never hard-code)
+From `config/accounts.md`: `meta_ad_account_id`, `business_portfolio_id`, `page_id` (and the duplicate Pages to avoid), `instagram_account_id` (may be none), `pixel_id`, `lead_form_ids`, `whatsapp_number_names`, `currency` and its minor unit (budgets are sent in minor units), `min_daily_budget`, the attribution parameters (`ref`, `utm_*`), the conversion domain (the host of the website in `config/company.md`). From `config/product.md`: the funnels and the destination pages. From `config/claims.md`: the special ad category per market and the forbidden words. From `config/brand.md`: the languages, their direction, the AI-imagery disclosure rule. From `config/operator.md`: the timezone and the exact phrasing of a go.
+
+**Draft mode depends on the account.** On some accounts every write creates a real object in status PAUSED (no draft staging; `object_state: draft` reads answer "being gradually rolled out"): paused objects spend nothing, edits to them are ordinary live edits, and only `ads_activate_entity` makes anything run. On others, writes are staged as Ads Manager DRAFTS (see `docs/meta-platform-notes.md`). Record which one this account is in `memory.md` "Learnings" on the first build and follow that branch.
+
+There is no lead-form tool (forms are built in Meta Business Suite; the id is read in its forms library) and no targeting search (ids from the account's own earlier ad sets or the Ads Manager editor).
+
+**Gate before any build:** `ads_get_ad_accounts` and `ads_get_user_pages` must show the account and the Page named in `config/accounts.md` and `memory.md`. If they show other assets only, stop and report the blocker (wrong login).
+
+## Non-negotiables
+1. **Money gate.** Never call `ads_activate_entity`, raise a budget, extend a schedule or create an experiment that changes delivery without an explicit go from the Owner in the same message (phrased as in `config/operator.md`). Before asking, state the daily spend and the cap for the schedule (Meta lets a daily budget spend up to 7× per Sunday–Saturday week, prorated; state the worst case). Activation runs in the main session only; `media-buyer` never activates.
+2. **Create, don't update, structure.** Set `targeting`, budgets, schedule, optimization and `special_ad_categories` at creation. **Never update `targeting` on a draft ad set** with `ads_update_entity`: the draft vanishes from the Ads Manager table and its editor hangs while the MCP still reports VALIDATED. Scalar updates (name, start_time, status) are safe. To change a draft's targeting, the Owner discards the draft and the harness recreates it. (On an account without draft staging, targeting edits to PAUSED real objects are ordinary live edits.)
+3. **Inline creatives only.** Build ads with `object_story_spec` inside `ads_create_ad`. Never use `ads_create_creative` with a headline (the tool adds the deprecated `call_to_action.value.link_title`; Ads Manager rejects the ad with #1815589 even though the MCP says VALIDATED and the preview renders).
+4. **No `standard_enhancements`** (deprecated, publisher error 3858504, not caught by the MCP validator). Opt out of the eleven individual features in `degrees_of_freedom_spec.creative_features_spec`: image_brightness_and_contrast, enhance_cta, text_optimizations, image_templates, inline_comment, image_touchups, image_uncrop, image_background_gen, add_text_overlay, site_extensions, video_auto_crop.
+5. **AI self-disclosure.** Whenever any asset is generated or altered, add at the creative root `"generative_asset_spec":{"transparency_metadata":{"self_disclosure":{"enroll_status":"OPT_IN"}}}` (an object; the bare string `"OPT_IN"` is rejected with code 100 "must be a JSON object"), and apply the visible disclosure rule in `config/brand.md`.
+6. **Verify after every publish.** `ads_activate_entity` returns PUBLISHING even when the publisher rejects objects; nothing reports it back. Re-read live (`ads_get_ad_entities`, level ad/adset) and, on a draft account, the draft; run `ads_get_errors`; Ads Manager → "Review and publish" → details shows what stayed behind. Publishing only the listed `object_ids` leaves the rest in the draft.
+7. **Special ad category.** Declare at campaign creation the category `config/claims.md` sets for the market and `config/audiences.md` sets for the audience (NONE / HOUSING / CREDIT / EMPLOYMENT / ISSUES_ELECTIONS_POLITICS). Where Meta applies a category in a geo and the config is unsure, confirm in Ads Manager before building; when in doubt declare it (it restricts age, gender, postcode and lookalike targeting). A B2B service ad that does not offer the regulated thing is not in the category.
+8. **Compliance gate.** Copy and creatives have passed `compliance-check`. None of the forbidden words or claims in `config/claims.md`; lines that need clearance only once cleared; no consent or notice wording of our own (quote the ids in `config/claims.md`).
+9. **Creatives are immutable.** `ads_update_entity` refuses `creative` and `creative_id`, so a one-word change to a primary text means new ads (`ads_create_ad`, same media hashes) plus `status: DELETED` on the old ones (which sticks on PAUSED real objects; read back DELETED). Record the old ids and strings in the plan first. A new creative is a new ad, never an edit.
+
+## Standard build sequence
+1. Read `memory.md` and the relevant plan. Confirm the Page, the pixel, image hashes or video ids (`ads_get_ad_images`, `ads_get_ad_videos`) and the copy to use. New files: upload them first (see "Media uploads") and record the hashes and ids in the plan's media table before any ad is created. Media the plan marks as superseded never go in an ad.
+2. `ads_create_campaign`: objective per funnel (below), AUCTION, `special_ad_categories` per rule 7, no campaign budget (ABO) unless the Owner asked for CBO. Name `<YYYY-MM>-<objective>-<market>_<audience>_<lang>-<variant>`, for example `2026-11-LEADS-XX_Buyers_EN-SignUp_A`.
+3. `ads_create_ad_set` per arm: `daily_budget` in the currency's minor units (not below `min_daily_budget`), ISO start/end with the UTC offset of the account timezone at that date, `targeting` with geo + language + signals as suggestions, `location_types` set explicitly to `["home","recent"]` (omitting it stores the removed `["home"]`, which makes the editor show "Your audience contains a location targeting option that has been removed" and stop re-estimating; click-to-WhatsApp sets keep `frequently_in`), `targeting_as_signal` 3 where Advantage+ audience is used (under Advantage+ audience, locations, languages, minimum age and excluded custom audiences are controls and hold; `age_max` is only a suggestion), `promoted_object` per objective, destination WEBSITE, lead form or WhatsApp.
+4. `ads_create_ad` per creative: name `CREATIVE_<number> | <arm>` (the creative's fixed flight number), inline creative (link with `ref` and UTMs, message, name = headline, `image_hash` or `video_id`, `call_to_action` with the same link), the eleven feature opt-outs (rule 4), OPT_IN when anything is generated (rule 5), `tracking_specs` `[{"action.type":["offsite_conversion"],"fb_pixel":["<pixel_id>"]}]`, `conversion_domain` the company's domain. Click-to-WhatsApp ads: `page_welcome_message` (see below).
+5. Read the objects back live by id (`ads_get_ad_entities` with `object_ids`; on a no-draft account they are PAUSED live objects). Status PAUSED, the budget, schedule and targeting as sent. Run `ads_get_errors`.
+6. Check rendering: `ads_get_ad_preview` → `creatives/tools/ad-shots.sh` → images to the Owner (never a browser pane). In Ads Manager (when the Owner asks for a browser check) the ad sets and ads tables show rows with thumbnails; allow about 20 s for MCP-made objects to render. When a language in `config/brand.md` is RTL, check the preview reads right-to-left with no clipped currency sign or digits. Read the ad set's audience panel before trusting its spec.
+7. Record every id in the plan file and update `memory.md` (and `checklist.md` if a gate moved).
+8. Ask for the publish go with the spend statement. On go: `ads_activate_entity` with `object_ids` = all ids to run (ads, ad sets, campaign). A sequence that works: a scalar `start_time` edit on the ad set, then activate the ads, the ad set and the campaign; ads still `IN_PROCESS` at activation go active once review passes (minutes), and a set whose `start_time` is ahead reads `scheduled` until it ticks. Then verify (rule 6).
+9. For an A/B test: create the experiment after publish with `ads_experiment_abtest_create_test` (cells = ad set ids, start = tomorrow in the account timezone, end = schedule end, primary KPI per funnel), on the Owner's go.
+
+## Click-to-WhatsApp ads
+- Pass `page_welcome_message` at the `object_story_spec` level of the inline creative (a JSON string, VISUAL_EDITOR v2, `autofill_message`), in the language of the ad's audience from `config/brand.md` / `config/audiences.md`; inside `link_data` the MCP returns a bare INTERNAL error. Without it the chat opens with Meta's English default. Ice-breakers: up to four, 80 characters each.
+- The MCP cannot set or change an ad set's WhatsApp number (`promoted_object` updates return INTERNAL). A number is connected in Page settings → Linked accounts → WhatsApp, only once it lives on the WhatsApp Business app, and selected per ad set in the editor: the Owner's click. A second number must not become the Page's primary (sets without an explicit choice follow the primary). Number names only, from `config/accounts.md`.
+- Detailed targeting is not available for click-to-WhatsApp; Advantage+ detailed targeting is applied to conversation-optimised sets.
+
+## Media uploads
+- Default: `node creatives/tools/meta-upload.mjs <files...> [--title-prefix "<flight>"]` from the repo root; the account id comes from `META_AD_ACCOUNT_ID` in `.env`. Images → `image_hash` (Meta deduplicates by content, so re-uploading returns the existing hash); videos → `video_id` after the script has waited for `video_status` `ready` (about 30 s for a short clip; `--no-wait` skips the wait, and then `ads_get_ad_videos` must show `ready` before the ad is built). Results print as a table and land in `creatives/uploads/<date>-meta-upload.json`; copy them into the plan's media table with the date.
+- `--check` first in a new session (prints the token holder, the account and read access, names only). `--dry-run <files>` lists what would go where without network.
+- The token is `META_MARKETING_TOKEN` in the repo-root `.env`: a System User token with `ads_management` + `ads_read`, the Owner's to generate, rotate or revoke in Business Settings → System users. Never open, print or paste the value; never put it in a URL or a report. On code 190 (invalid token) or 200 (permissions) stop and report; the fix is the Owner's click.
+- Fallback when the script cannot run: a public URL through `ads_creative_upload_media` (`upload_source` URL); when the fal MCP is loaded, its CDN can host the file (`mcp__fal__upload_file` prepare → curl PUT → `file_url`), which needs fal credits. `ads_creative_upload_local_image` is rolled out to some accounts only.
+- Videos above 40 MB go through Meta's chunked start/transfer/finish protocol automatically (`--chunk-mb` changes the threshold). Keep upload files out of the preview site (it carries compressed copies only).
+
+## Objectives and events per funnel type
+Map each funnel in `config/product.md` to one row; confirm field names with `ads_get_field_context`.
+| Funnel type | Objective | Optimization | Why |
+|---|---|---|---|
+| Website sign-up with no pixel event on success | OUTCOME_TRAFFIC | LANDING_PAGE_VIEWS until the product team ships a (consent-gated) result event | Without an event Meta cannot optimise for the result; switch to OUTCOME_LEADS once it fires |
+| Website sign-up with a pixel `Lead` (or other standard) event | OUTCOME_LEADS on the pixel event | OFFSITE_CONVERSIONS, `custom_event_type` per the event | When the pixel fires only after consent, reported counts undercount |
+| Instant form (lead ad) | OUTCOME_LEADS with an instant form on the company's Page | LEAD_GENERATION | Needs Lead Ads terms accepted and, if leads reach a webhook, the developer app and the `leadgen` subscription carrying the form id (the Owner's console steps in `config/accounts.md`); instant-form buttons are APPLY_NOW, DOWNLOAD, GET_QUOTE, LEARN_MORE, SIGN_UP, SUBSCRIBE (expect CONTACT_US to be refused) |
+| Tracker-free page (booking, contact) | OUTCOME_TRAFFIC | LANDING_PAGE_VIEWS | Results are counted in the app by `ref`, not by the pixel |
+| Click-to-WhatsApp | messaging destination WhatsApp | conversations | The result is `messaging_conversation_started_7d`, counted only after the person sends the pre-filled message, with a reporting delay of up to a few hours |
+
+## Destinations and link convention
+Destinations are the URLs in the `config/product.md` destination pages table, matched to the ad's language. Never send paid traffic to a host or page that table marks as not for paid traffic (for example a sign-in screen).
+`?ref=<prefix>-<yyyymm>-<audience>-<arm>-c<number>&utm_source=meta&utm_medium=paid_social&utm_campaign=<campaign_slug>&utm_content=creative<number>&utm_term=<arm>` on every link. The `ref` format and what reaches the database are in `config/accounts.md` (typically lower-case letters, digits, `_`, `-`, max 64 characters); the `utm_*` set is for analytics. Example `ref=mt-202611-buyers-a-c01`.
+
+## Changing a live campaign
+- Pause: `ads_update_entity` status PAUSED (free, no go needed; the harness pauses when the Owner asks in chat), then `ads_activate_entity` with that object id to apply the staged edit where the account stages edits.
+- Schedule or name on live ad sets: update, then activate with `object_ids` of those ad sets. A campaign `spend_cap` (minor units) is a live scalar edit, on the Owner's go when it raises spend.
+- New creative on a live ad set: create the ad, activate it alone with `object_ids` = that ad id. Old ads: pause, or DELETED on real objects; a draft ad under a live ad set cannot be set DELETED (error 1487839), PAUSED works; draft ad sets cannot be deleted (error 1487246); draft campaigns are discarded only in Ads Manager by the Owner.
+- Budget: only on the Owner's go; +20 % per step, 48–72 h apart.
+- A switch day (launch, destination change): a CTA or page that disappears on that day means the ad sets that point at it end on the schedule set at creation; the follow-up campaign is built PAUSED in advance as a separate campaign.
+
+## Reads that mislead
+- `last_7d` / `last_14d` / `last_30d` exclude today; a campaign that started today shows an empty row under them (use `today` or `maximum`).
+- On WhatsApp ads `clicks` (all) includes Page-name and "see more" taps; `link_click` is the WhatsApp open.
+- A campaign whose ad sets have different optimisation goals shows "Multiple conversions" or "—" as its campaign-level result.
+- After approval and before first impressions, `delivery` reads `pending` / `preparing` and `ads_get_errors` stays empty: normal warm-up.
+
+## Targeting signal ids
+None verified until the first build. Look names and sizes up in the Ads Manager editor (an empty PAUSED ad set is a safe sizing sandbox; sizes shown beside search suggestions are worldwide), add one through the UI, read it back with the MCP to get the ids, and record them in the plan and here only as a pointer to the plan (see `audience-research`).

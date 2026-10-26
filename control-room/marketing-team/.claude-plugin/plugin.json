@@ -1,0 +1,6 @@
+{
+  "name": "marketing-team",
+  "version": "0.1.0",
+  "description": "Control room for the marketing harness: an always-on pane, a band above the prompt, a status line and a prompt hint with the working agents, the next task, the next routine, the launch countdown, money and campaigns, and the team by lane, read from dashboard/state.json",
+  "types": "./types/index.d.ts"
+}

@@ -1,0 +1,21 @@
+{
+  "company": null,
+  "generatedAt": null,
+  "launch": null,
+  "routines": {
+    "timezone": null,
+    "items": []
+  },
+  "working": [],
+  "tasks": [],
+  "money": {
+    "currency": null,
+    "dailySpend": null,
+    "caps": [],
+    "liveToday": null,
+    "nextGo": null
+  },
+  "campaigns": [],
+  "team": {},
+  "skillsUsed": []
+}

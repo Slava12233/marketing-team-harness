@@ -1,0 +1,17 @@
+# Secrets
+.env
+.env.*
+!.env.example
+.env.local
+
+# Upload ledgers (ids and hashes of a real account)
+creatives/uploads/*.json
+
+# Media and build output
+creatives/**/media/*
+!creatives/**/media/.gitkeep
+node_modules/
+*.log
+
+# Local control-room state
+dashboard/state.local.json

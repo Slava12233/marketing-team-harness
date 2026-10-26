@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<title>Campaign plan</title>
+<style>
+  :root { --bg:#F6F7F9; --card:#FFFFFF; --text:#101418; --muted:#5B6470; --line:#DCE0E5; --accent:#2F5BEA; --accent-ink:#FFFFFF; --soft:#EEF1F5; --good:#137333; --warn:#B06000; --shadow:0 1px 3px rgba(16,20,24,.08); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#111418; --card:#1A1E24; --text:#E8EBEF; --muted:#9AA3AE; --line:#2C323A; --soft:#232931; --shadow:none; } }
+  :root[data-theme="dark"] { --bg:#111418; --card:#1A1E24; --text:#E8EBEF; --muted:#9AA3AE; --line:#2C323A; --soft:#232931; --shadow:none; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans", "Noto Sans Hebrew", "Noto Sans Arabic", sans-serif; font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  bdi { unicode-bidi: isolate; }
+  button, input { font: inherit; color: inherit; }
+  .top { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); }
+  .top .bar { max-width: 1040px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .top b { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; max-width: 60%; }
+  .top nav a { flex: 0 0 auto; font-size: 13px; color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 999px; background: var(--soft); }
+  .top nav a:hover { color: var(--text); }
+  .theme { width: 34px; height: 34px; border-radius: 50%; background: var(--soft); border: 0; cursor: pointer; flex: 0 0 auto; }
+  main { max-width: 1040px; margin: 0 auto; padding: 16px 16px 64px; }
+  section { padding: 28px 0 8px; scroll-margin-top: 64px; }
+  section.hidden { display: none; }
+  h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.15; margin: 8px 0 8px; letter-spacing: -.01em; }
+  h2 { font-size: 22px; margin: 0 0 14px; }
+  .eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
+  .lede { font-size: 18px; color: var(--muted); max-width: 720px; margin: 0; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 20px; }
+  .fact, .box { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .fact span { display: block; font-size: 12px; color: var(--muted); }
+  .fact b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; counter-reset: st; }
+  .flow .box { position: relative; }
+  .flow .box::before { counter-increment: st; content: counter(st); display: inline-flex; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 13px; align-items: center; justify-content: center; margin-bottom: 8px; }
+  .flow .box b { display: block; margin-bottom: 4px; }
+  .flow .box p, .sets p, .rules p { margin: 0; color: var(--muted); font-size: 14px; }
+  .sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .thumbs { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .thumbs img, .thumbs .ph { width: 56px; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; background: var(--soft); display: block; }
+  .count { font-size: 12px; color: var(--muted); }
+  ul.plain { margin: 0; padding-inline-start: 20px; }
+  ul.plain li { margin: 4px 0; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tabs button { border: 0; cursor: pointer; padding: 6px 12px; border-radius: 999px; background: var(--soft); font-size: 13px; font-weight: 600; color: var(--muted); }
+  .tabs button.on { background: var(--accent); color: var(--accent-ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .ad { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+  .ad .m { aspect-ratio: 4 / 5; background: #000; position: relative; }
+  .ad .m img, .ad .m video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ad .m .n { position: absolute; top: 8px; inset-inline-start: 8px; background: rgba(0,0,0,.7); color: #fff; font-weight: 700; font-size: 12px; border-radius: 6px; padding: 1px 7px; }
+  .ad .b { padding: 10px 12px 12px; font-size: 14px; }
+  .ad .b .h { font-weight: 600; }
+  .ad .b .p { color: var(--muted); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; margin-top: 4px; }
+  .ad .b .tag { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .timeline { list-style: none; margin: 0; padding: 0; border-inline-start: 2px solid var(--line); }
+  .timeline li { position: relative; padding: 0 0 14px 0; padding-inline-start: 18px; }
+  .timeline li::before { content: ""; position: absolute; inset-inline-start: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+  .timeline time { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: block; }
+  .calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .calc label { display: grid; grid-template-columns: 1fr 120px; gap: 8px; align-items: center; margin: 8px 0; font-size: 14px; }
+  .calc input { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-variant-numeric: tabular-nums; }
+  .calc .out div { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .calc .out b { font-variant-numeric: tabular-nums; }
+  .note { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .rules .box b { display: block; margin-bottom: 4px; }
+  .owners { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .empty { color: var(--muted); }
+  footer { max-width: 1040px; margin: 0 auto; padding: 0 16px 40px; font-size: 12px; color: var(--muted); }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <b id="toptitle"></b>
+    <nav id="nav"></nav>
+    <button class="theme" id="theme" aria-label="Dark or light">◐</button>
+  </div>
+</header>
+
+<main>
+  <section id="hero">
+    <div class="eyebrow" id="eyebrow">Campaign plan</div>
+    <h1 id="h1"></h1>
+    <p class="lede" id="lede"></p>
+    <div class="facts" id="facts"></div>
+  </section>
+  <section id="flow" data-nav="Flow"><h2>From the feed to the result</h2><div class="flow" id="flowgrid"></div></section>
+  <section id="sets" data-nav="Ad sets"><h2>Ad sets</h2><div class="sets" id="setgrid"></div></section>
+  <section id="audience" data-nav="Audience"><h2>Who sees the ads</h2><div class="box"><ul class="plain" id="audlist"></ul></div></section>
+  <section id="ads" data-nav="Ads"><h2>The ads</h2><div class="tabs" id="adtabs"></div><div class="grid" id="adgrid"></div></section>
+  <section id="timeline" data-nav="Timeline"><h2>Timeline</h2><ol class="timeline" id="tl"></ol></section>
+  <section id="forecast" data-nav="Forecast">
+    <h2>Rough forecast</h2>
+    <div class="calc">
+      <div class="box" id="ctrl"></div>
+      <div class="box out" id="out"></div>
+    </div>
+    <p class="note" id="fsrc"></p>
+  </section>
+  <section id="rules" data-nav="Rules"><h2>What we do when something happens</h2><div class="rules" id="rulegrid"></div></section>
+  <section id="owners" data-nav="Owners"><h2>Who does what</h2><div class="owners" id="ownergrid"></div></section>
+</main>
+<footer>The ads as they will look in the feed: <a href="index.html">the preview</a>. Every number on this page comes from the flight's plan file; nothing here is live until the Owner gives the go.</footer>
+
+<script src="ads.js"></script>
+<script>
+(() => {
+  const META = window.ADS_META || {};
+  const ADS = (window.ADS || []).slice().sort((a, b) => a.n - b.n);
+  const SETS = window.SETS || [];
+  const ROLES = window.ROLES || {};
+  const P = window.PLAN || {};
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const hide = (id, cond) => { if (cond) $("#" + id).classList.add("hidden"); };
+  const has = (v) => v !== null && v !== undefined && v !== "";
+  const cur = (P.budget && P.budget.currency) || "";
+  const money = (v) => has(v) ? `${Number(v).toLocaleString(META.lang || undefined)}${cur ? " " + cur : ""}` : "not set";
+
+  document.documentElement.dir = META.dir === "rtl" ? "rtl" : "ltr";
+  if (META.lang) document.documentElement.lang = META.lang;
+  if (META.accent) document.documentElement.style.setProperty("--accent", META.accent);
+  const title = P.title || META.title || "Campaign plan";
+  document.title = title;
+  $("#toptitle").textContent = title;
+  $("#h1").textContent = title;
+  $("#lede").textContent = P.subtitle || P.objective || "";
+  $("#theme").addEventListener("click", () => { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark ? "light" : "dark"; });
+
+  // hero facts
+  const d = P.dates || {}, b = P.budget || {};
+  const facts = [
+    ["Objective", P.objective && P.subtitle ? P.objective : null],
+    ["Start", d.start], ["End", d.end],
+    ["Daily budget", has(b.daily) ? money(b.daily) : null],
+    ["Cap", has(b.cap) ? money(b.cap) : null],
+    ["Ads", ADS.length || null], ["Ad sets", SETS.length || null],
+  ].filter(([, v]) => has(v));
+  $("#facts").innerHTML = facts.map(([k, v]) => `<div class="fact"><span>${esc(k)}</span><b><bdi>${esc(v)}</bdi></b></div>`).join("");
+
+  // flow
+  const flow = P.flow || [];
+  $("#flowgrid").innerHTML = flow.map(s => `<div class="box"><b>${esc(s.title)}</b><p>${esc(s.text || "")}</p></div>`).join("");
+  hide("flow", !flow.length);
+
+  // sets with launch thumbnails
+  const thumb = (a) => { const m = a.media || {}; const src = m.type === "video" ? m.poster : m.src; return src ? `<img src="${esc(src)}" alt="#${esc(a.n)}" title="#${esc(a.n)}">` : `<span class="ph" title="#${esc(a.n)}"></span>`; };
+  $("#setgrid").innerHTML = SETS.map(s => {
+    const mine = ADS.filter(a => a.set === s.id);
+    const launch = mine.filter(a => a.role === "launch");
+    return `<div class="box"><b>${esc(s.label)}</b> <span class="count">${mine.length} ads</span><p>${esc(s.intro || "")}</p><div class="thumbs">${(launch.length ? launch : mine.slice(0, 6)).map(thumb).join("")}</div></div>`;
+  }).join("");
+  hide("sets", !SETS.length);
+
+  // audience
+  const aud = P.audience || [];
+  $("#audlist").innerHTML = aud.map(l => `<li>${esc(l)}</li>`).join("");
+  hide("audience", !aud.length);
+
+  // ads by role
+  const roleIds = [...new Set(ADS.map(a => a.role).filter(Boolean))];
+  const tabs = [{ id: "all", label: `All (${ADS.length})` }, ...roleIds.map(r => ({ id: r, label: `${ROLES[r] || r} (${ADS.filter(a => a.role === r).length})` }))];
+  let tab = "all";
+  const adCard = (a) => {
+    const m = a.media || {};
+    const media = m.type === "video" && m.src ? `<video src="${esc(m.src)}"${m.poster ? ` poster="${esc(m.poster)}"` : ""} muted playsinline loop preload="metadata"></video>` : (m.src ? `<img src="${esc(m.src)}" alt="">` : "");
+    return `<article class="ad"><div class="m">${media}<span class="n">#${esc(a.n)}</span></div><div class="b"><div class="h">${esc(a.headline)}</div><div class="p">${esc(a.primary)}</div><div class="tag"><bdi>${esc(a.id || "")}</bdi>${a.status ? " · " + esc(a.status) : ""}${a.role && ROLES[a.role] ? " · " + esc(ROLES[a.role]) : ""}</div></div></article>`;
+  };
+  const drawAds = () => {
+    $("#adtabs").innerHTML = roleIds.length ? tabs.map(t => `<button data-t="${esc(t.id)}" class="${t.id === tab ? "on" : ""}">${esc(t.label)}</button>`).join("") : "";
+    $("#adgrid").innerHTML = ADS.filter(a => tab === "all" || a.role === tab).map(adCard).join("");
+  };
+  $("#adtabs").addEventListener("click", (e) => { const bt = e.target.closest("button"); if (!bt) return; tab = bt.dataset.t; drawAds(); });
+  drawAds();
+  hide("ads", !ADS.length);
+
+  // timeline
+  const tl = P.timeline || [];
+  $("#tl").innerHTML = tl.map(t => `<li><time><bdi>${esc(t.date)}</bdi></time>${esc(t.label)}</li>`).join("");
+  hide("timeline", !tl.length);
+
+  // forecast: the visitor's own assumptions; defaults only from the plan, never invented
+  const F = P.forecast || {};
+  const fields = [
+    ["daily", "Daily budget" + (cur ? ` (${cur})` : ""), b.daily], ["days", "Days", null],
+    ["cpm", "CPM" + (cur ? ` (${cur})` : ""), F.cpm], ["ctr", "Link CTR (%)", F.ctr], ["cvr", "Result rate after the click (%)", F.cvr],
+  ];
+  if (d.start && d.end) { const n = Math.round((Date.parse(d.end) - Date.parse(d.start)) / 86400000) + 1; if (n > 0) fields[1][2] = n; }
+  $("#ctrl").innerHTML = fields.map(([k, l, v]) => `<label><span>${esc(l)}</span><input type="number" min="0" step="any" data-k="${k}" value="${has(v) ? esc(v) : ""}" placeholder="enter"></label>`).join("");
+  const calc = () => {
+    const v = {}; document.querySelectorAll("#ctrl input").forEach(i => { v[i.dataset.k] = i.value === "" ? null : Number(i.value); });
+    const ok = (...ks) => ks.every(k => v[k] !== null && !Number.isNaN(v[k]));
+    const spend = ok("daily", "days") ? v.daily * v.days : null;
+    const impr = spend !== null && ok("cpm") && v.cpm > 0 ? spend / v.cpm * 1000 : null;
+    const clicks = impr !== null && ok("ctr") ? impr * v.ctr / 100 : null;
+    const results = clicks !== null && ok("cvr") ? clicks * v.cvr / 100 : null;
+    const fmt = (x, dgt = 0) => x === null ? "—" : x.toLocaleString(META.lang || undefined, { maximumFractionDigits: dgt });
+    $("#out").innerHTML = [
+      ["Spend", spend === null ? "—" : money(spend)], ["Impressions", fmt(impr)], ["Link clicks", fmt(clicks)],
+      ["Results", fmt(results, 1)], ["Cost per result", results ? money(Math.round(spend / results * 100) / 100) : "—"],
+    ].map(([k, x]) => `<div><span>${esc(k)}</span><b><bdi>${esc(x)}</bdi></b></div>`).join("");
+  };
+  $("#ctrl").addEventListener("input", calc); calc();
+  $("#fsrc").textContent = F.sources ? `Default assumptions: ${F.sources}` : "Enter your own assumptions; this page ships no benchmark figures. A forecast is a range to plan with, not a promise.";
+
+  // rules and owners
+  const rules = P.rules || [];
+  $("#rulegrid").innerHTML = rules.map(r => `<div class="box"><b>${esc(r.when)}</b><p>${esc(r.then)}</p></div>`).join("");
+  hide("rules", !rules.length);
+  const owners = P.owners || [];
+  $("#ownergrid").innerHTML = owners.map(o => `<div class="box"><b>${esc(o.owner)}</b><ul class="plain">${(o.items || []).map(i => `<li>${esc(i)}</li>`).join("")}</ul></div>`).join("");
+  hide("owners", !owners.length);
+
+  // nav from the visible sections
+  $("#nav").innerHTML = [...document.querySelectorAll("section[data-nav]:not(.hidden)")].map(s => `<a href="#${s.id}">${esc(s.dataset.nav)}</a>`).join("");
+  if (!ADS.length && !flow.length && !SETS.length) $("#lede").textContent = P.subtitle || "No plan data yet. Fill window.PLAN and window.ADS in ads.js (the schema is at the top of the file).";
+})();
+</script>
+</body>
+</html>

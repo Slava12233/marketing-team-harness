@@ -1,0 +1,48 @@
+---
+name: health
+description: "Read-only check that the marketing harness and its plumbing work: Meta MCP login and account, live objects against memory, review flags and errors, pixel, destination pages, the preview site, fal credits, the go checklist, memory and config files, leftover processes and the direct-upload token. Prints a green/yellow/red table and never fixes anything. Use at session start, before any launch, or when the Operator types /health."
+---
+
+# /health: is the harness working? (read-only)
+
+Every check is a read. A red item gets a one-line "what to do" and, when the fix is a click or a console step, it is the Owner's. Project rules (`CLAUDE.md`) win on conflict.
+
+**Output:** one table in the terminal (at most 20 lines); when run from `/morning` it becomes section 1 of that report; when any item is red and the run is stand-alone, also `reports/YYYY-MM-DD-health.md`. **Language:** the report file in English; the terminal lines and the "what to do" lines in the chat language from `config/operator.md` (check names and ids stay as they are).
+
+Optional connections that are not set up read **n/a** with the reason, never red: fal (only when the fal MCP is loaded), the preview site (only when a plan names one), the product team's open-items file (only when `config/product-team.md` names one).
+
+## Checks, in order
+| # | Check | How | Green | Yellow | Red |
+|---|---|---|---|---|---|
+| 1 | Meta MCP loaded | `mcp__meta-ads__*` tools present in this session (the server name is in `config/accounts.md`) | present | | missing → a new session is needed; if auth expired, `claude mcp login meta-ads` in an interactive terminal is the Owner's step |
+| 2 | Login and account | `ads_get_ad_accounts`; `ads_get_ad_account_pages` | the account `meta_ad_account_id` (its `currency`, active) and the Page `page_id` from `config/accounts.md` are visible, with Lead Ads terms accepted when a funnel in `config/product.md` uses an instant form | a duplicate Page listed in `config/accounts.md` "duplicates to avoid" shows | account not visible → wrong login |
+| 3 | Live objects vs memory | `ads_get_ad_entities` (`ad_account_id`, `object_type` campaign / adset / ad, `object_ids` from the `memory.md` campaigns table, `fields` status, effective_status, daily_budget, delivery) | every status matches `memory.md` "Current state"; every ad set holds the ad count the campaigns table records; campaigns that memory says to leave running are running | an ad in PENDING_REVIEW or IN_PROCESS under 60 min | anything ACTIVE that memory says is PAUSED; a count that differs; an object missing |
+| 4 | Review flags and errors | the same read plus `ads_get_errors` (`entity_ids`: the campaign ids) | no DISAPPROVED / WITH_ISSUES; errors empty | a review older than 60 min | a disapproval, a policy notice, a non-empty errors list |
+| 5 | Pixel / dataset | `ads_get_datasets`, `ads_get_dataset_stats` for `pixel_id` in `config/accounts.md` | events in the last 24 h while a set is ACTIVE | no events before any ad runs (expected when the pixel is consent-gated, per `config/product.md`) | no events for 24 h while a set is ACTIVE |
+| 6 | Destinations | for every row of the destination pages table in `config/product.md`: `timeout 60 curl -sS -o /dev/null -w "%{http_code}" <url>` and a text fetch of the page | 200 and the H1 as written in that table present, in that row's language | a redirect that still lands on the right language | non-200, wrong language, a sign-in screen or any host `config/product.md` marks as never-for-paid-traffic |
+| 7 | Preview site | only when the current flight's plan names a preview URL: the same curl on that URL and on its `/plan` page | 200 | n/a (no preview site in the plan) | non-200; a redeploy is a bounded `timeout 540 npx vercel@latest deploy --prod --yes` from the flight's `preview/` folder after `rm -f .env.local`, and only when the Owner asks |
+| 8 | fal credits | only when `mcp__fal__*` tools are loaded: `mcp__fal__check_account_status` | credits above zero | zero (no generation; the fallback upload route through fal's CDN is closed, the direct script in 13 does not need it); n/a when fal is not loaded | the call fails |
+| 9 | Go checklist | `checklist.md` in the repo root: a table with the columns id, item, owner, status, note, updated and a `## Sync log` section are present | present, the newest Sync log line within 7 days | present but no Sync log line in 7 days | missing → recreate it from `docs/TEMPLATE-SPEC.md` §9 and `memory.md` before anything else |
+| 10 | Memory and config files | `memory.md` exists with the §9 sections, "Current state" dated within 7 days, the plan it points to exists; every file in `config/` exists and contains no `{{` placeholder (grep `{{` in `config/*.md`, ignoring `config/README.md`); the flight's `preview/ads.js`, when a preview exists, matches the plan's copy table for any ad id checked in 3 | all present, no placeholders | "Current state" older than 7 days; a placeholder in an optional field (`product-team.md`, `instagram_account_id`) | `memory.md` missing (recreate it from `CLAUDE.md`, `config/accounts.md` and the latest plan before anything else); a placeholder in a required config field → run `/setup` |
+| 11 | Machine | `tasklist` filtered for node.exe, ffmpeg.exe and any render tool you installed on Windows, or `ps` for node, ffmpeg and the same elsewhere; this session's background tasks | none left over | a sleep timer | a heavy process with no time bound → report its PID; the kill (`taskkill /PID <pid> /T /F` or `kill`) waits for the Operator's word unless this session started it |
+| 12 | Open items that gate delivery | `checklist.md` items with status `open` or `blocked` whose note says they gate a live or planned cell; plus, when `config/product-team.md` names an open-items file, grep it for those items | status lines quoted | | a gate that changed since the last session (quote it) |
+| 13 | Upload token | `timeout 60 node creatives/tools/meta-upload.mjs --check` (reads `META_MARKETING_TOKEN` and `META_AD_ACCOUNT_ID` from `.env` itself, prints names only) | the token holder's name, the account from `config/accounts.md`, adimages and advideos read ok | exit 2 "not set" (the token line in `.env` is empty: the Owner pastes it; uploads fall back to the public-URL route meanwhile) | code 190 or 200: the token expired, was revoked or lost its asset assignment → the Owner regenerates it in Business Settings → System users; no retry |
+
+## Rules
+- No writes anywhere, no re-authentication, no deploys, no kills of processes this session did not start, no console steps: those are the Owner's; the table names the click.
+- Bounded commands only (`timeout N` first), one at a time; no polling. Recommended for any machine: run renders, builds and sweeps with a time bound and one at a time.
+- Never print a secret; environment files are never opened or echoed (check 13 lets the script read the token and report names only).
+- Numbers only in the table; a check that cannot run reads "not checked: <why>".
+
+## Output
+```
+/health YYYY-MM-DD HH:MM
+ 1 MCP ........ green
+ 2 login ...... green  account <meta_ad_account_id>, Page <page_id>
+ 3 objects .... green  2 campaigns PAUSED, 6 sets PAUSED, 42 ads PAUSED
+ 4 review ..... yellow 1 ad in review (#21, 12 min)
+ 7 preview .... n/a    no preview site in the plan
+ 8 fal ........ n/a    fal MCP not loaded
+ ...
+Red items → what to do (one line each, who clicks).
+```

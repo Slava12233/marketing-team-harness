@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<title>Ads preview</title>
+<style>
+  :root { --bg:#F0F2F5; --card:#FFFFFF; --text:#050505; --muted:#65676B; --line:#CED0D4; --sep:#E4E6EB; --btn:#E4E6EB; --btn-text:#050505; --accent:#0866FF; --chip:#E4E6EB; --link-card:#F0F2F5; --shadow:0 1px 2px rgba(0,0,0,.2); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#18191A; --card:#242526; --text:#E4E6EB; --muted:#B0B3B8; --line:#3E4042; --sep:#3E4042; --btn:#3A3B3C; --btn-text:#E4E6EB; --chip:#3A3B3C; --link-card:#3A3B3C; --shadow:none; } }
+  :root[data-theme="dark"] { --bg:#18191A; --card:#242526; --text:#E4E6EB; --muted:#B0B3B8; --line:#3E4042; --sep:#3E4042; --btn:#3A3B3C; --btn-text:#E4E6EB; --chip:#3A3B3C; --link-card:#3A3B3C; --shadow:none; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans", "Noto Sans Hebrew", "Noto Sans Arabic", sans-serif; -webkit-font-smoothing: antialiased; font-size: 15px; line-height: 1.34; }
+  bdi, .ltr { unicode-bidi: isolate; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+
+  /* preview chrome (ours, not Facebook's) */
+  .top { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--sep); }
+  .top .bar { max-width: 680px; margin: 0 auto; padding: 10px 16px 8px; display: flex; align-items: center; gap: 10px; }
+  .top h1 { font-size: 16px; font-weight: 700; margin: 0; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg { display: inline-flex; background: var(--chip); border-radius: 999px; padding: 2px; }
+  .seg button { padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .seg button.on { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+  .theme { width: 34px; height: 34px; border-radius: 50%; background: var(--chip); font-size: 16px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .chips { max-width: 680px; margin: 0 auto; padding: 0 12px 10px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips:empty { display: none; }
+  .chips button { flex: 0 0 auto; padding: 6px 12px; border-radius: 999px; background: var(--chip); font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .chips button.on { background: var(--accent); color: #fff; }
+  .plan { max-width: 680px; margin: 0 auto; padding: 0 12px 10px; }
+  .plan:empty { display: none; }
+  .plan details { background: var(--card); border-radius: 10px; box-shadow: var(--shadow); padding: 10px 14px; }
+  .plan summary { font-weight: 700; font-size: 14px; cursor: pointer; }
+  .plan ul { margin: 8px 0 0; padding-inline-start: 18px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .intro { max-width: 680px; margin: 0 auto; padding: 0 12px 8px; font-size: 13px; color: var(--muted); line-height: 1.45; }
+  .intro:empty { display: none; }
+
+  /* the feed */
+  .feed { max-width: 500px; margin: 0 auto; padding: 0 0 40px; }
+  @media (min-width: 600px) { .feed { padding: 12px 0 48px; } }
+  .empty { max-width: 500px; margin: 24px auto; padding: 16px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .label { font-size: 12px; color: var(--muted); padding: 10px 14px 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .label b { color: var(--text); font-weight: 600; }
+  .label .num { background: var(--text); color: var(--card); border-radius: 6px; padding: 1px 7px; font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+  .label span.note { flex: 1 1 auto; min-width: 0; }
+  .label .role, .label .status { flex: 0 0 auto; font-style: normal; font-size: 11px; font-weight: 600; border-radius: 999px; padding: 2px 8px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+  .label .role.launch { background: #E6F4EA; color: #137333; }
+  .label .status.active { background: #E6F4EA; color: #137333; }
+  .label .sw { margin-inline-start: auto; display: inline-flex; background: var(--chip); border-radius: 999px; padding: 2px; }
+  .label .sw button { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .label .sw button.on { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+  .card { background: var(--card); margin: 0 0 8px; }
+  @media (min-width: 600px) { .card { border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 16px; } }
+  .hdr { display: flex; align-items: center; gap: 8px; padding: 12px 16px 0; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; overflow: hidden; flex: 0 0 auto; color: #050505; font-weight: 700; }
+  .avatar img { width: 28px; height: auto; display: block; }
+  .who { flex: 1 1 auto; min-width: 0; }
+  .who .name { font-weight: 600; font-size: 15px; line-height: 1.2; }
+  .who .sub { font-size: 13px; color: var(--muted); line-height: 1.3; display: flex; align-items: center; gap: 4px; }
+  .who .sub svg { width: 12px; height: 12px; fill: var(--muted); }
+  .hdr .more { color: var(--muted); font-size: 20px; letter-spacing: 1px; padding: 0 4px; }
+  .hdr .x { color: var(--muted); font-size: 18px; padding: 0 4px; }
+  .text { padding: 8px 16px 10px; font-size: 15px; white-space: pre-line; overflow-wrap: anywhere; }
+  .text .more { color: var(--muted); font-weight: 600; }
+  .text .more:hover { text-decoration: underline; }
+  .media { position: relative; background: #000; aspect-ratio: 4 / 5; overflow: hidden; }
+  .media img, .media video { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .media.cover { aspect-ratio: 1200 / 628; }
+  .media .nofile { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 13px; }
+  .media .play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .media .play span { width: 64px; height: 64px; border-radius: 50%; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; }
+  .media .play svg { width: 28px; height: 28px; fill: #fff; margin-inline-start: 4px; }
+  .media.playing .play { display: none; }
+  .media .mute { position: absolute; bottom: 10px; inset-inline-end: 10px; width: 30px; height: 30px; border-radius: 50%; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; }
+  .media .mute svg { width: 16px; height: 16px; fill: #fff; }
+  .link { background: var(--link-card); display: flex; align-items: center; gap: 12px; padding: 10px 16px; }
+  .link .lt { flex: 1 1 auto; min-width: 0; }
+  .link .cap { font-size: 12px; color: var(--muted); letter-spacing: .01em; text-transform: uppercase; }
+  .link .h { font-size: 16px; font-weight: 600; line-height: 1.25; margin-top: 2px; }
+  .link .d { font-size: 14px; color: var(--muted); line-height: 1.3; margin-top: 2px; }
+  .link .cta { flex: 0 0 auto; background: var(--btn); color: var(--btn-text); border-radius: 6px; padding: 0 14px; height: 36px; display: inline-flex; align-items: center; font-weight: 600; font-size: 15px; white-space: nowrap; }
+  .acts { display: flex; border-top: 1px solid var(--sep); margin: 0 16px; }
+  .acts button { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0; color: var(--muted); font-size: 14px; font-weight: 600; }
+  .acts svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* stories */
+  .stories { max-width: 420px; margin: 0 auto; padding: 12px 12px 48px; display: flex; flex-direction: column; gap: 20px; }
+  .story { position: relative; aspect-ratio: 9 / 16; border-radius: 16px; overflow: hidden; background: #000; color: #fff; box-shadow: var(--shadow); }
+  .story img, .story video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .story .grad-t, .story .grad-b { position: absolute; left: 0; right: 0; height: 22%; pointer-events: none; }
+  .story .grad-t { top: 0; background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0)); }
+  .story .grad-b { bottom: 0; background: linear-gradient(0deg, rgba(0,0,0,.6), rgba(0,0,0,0)); }
+  .story .prog { position: absolute; top: 8px; left: 10px; right: 10px; height: 2px; background: rgba(255,255,255,.35); border-radius: 2px; overflow: hidden; }
+  .story .prog i { display: block; width: 38%; height: 100%; background: #fff; }
+  .story .shdr { position: absolute; top: 18px; inset-inline-start: 12px; inset-inline-end: 12px; display: flex; align-items: center; gap: 8px; }
+  .story .shdr .avatar { width: 32px; height: 32px; border: 0; }
+  .story .shdr .avatar img { width: 22px; height: auto; }
+  .story .shdr .name { font-weight: 600; font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+  .story .shdr .sub { font-size: 12px; opacity: .85; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+  .story .shdr .ctrl { margin-inline-start: auto; font-size: 18px; letter-spacing: 2px; opacity: .9; }
+  .story .cta { position: absolute; bottom: 22px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .story .cta svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+  .story .cta b { background: #fff; color: #050505; border-radius: 999px; padding: 10px 26px; font-size: 15px; }
+  .story .slabel { position: absolute; bottom: 86px; inset-inline-start: 14px; inset-inline-end: 14px; font-size: 12px; opacity: .8; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+
+  .foot { max-width: 500px; margin: 0 auto; padding: 8px 16px 40px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .foot .chrome { direction: ltr; text-align: left; }
+  .foot a { color: inherit; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <h1 id="title"></h1>
+    <div class="seg" id="view"><button data-v="feed" class="on"></button><button data-v="story"></button></div>
+    <button class="theme" id="theme">◐</button>
+  </div>
+  <nav class="chips" id="chips"></nav>
+  <div class="plan" id="plan"></div>
+  <div class="intro" id="intro"></div>
+</header>
+
+<main>
+  <section class="feed" id="feed"></section>
+  <section class="stories hidden" id="stories"></section>
+</main>
+
+<footer class="foot">
+  <div id="footnote"></div>
+  <div class="chrome">Preview mock-up: a Facebook mobile-feed frame around each planned ad (primary text, media, headline, description, button). Meta's own rendering in Ads Manager is the final word. Nothing on this page is live. <a href="plan.html">The plan</a></div>
+</footer>
+
+<script src="ads.js"></script>
+<script>
+(() => {
+  const META = window.ADS_META || {};
+  const ADS = window.ADS || [];
+  const SETS = window.SETS || [];
+  const ROLES = window.ROLES || {};
+  const PLAN = window.PLAN || {};
+  const L = Object.assign({
+    sponsored: "Sponsored", seeMore: "See more", like: "Like", comment: "Comment", share: "Share",
+    feed: "Feed", stories: "Stories", all: "All", image: "Image", video: "Video", theme: "Dark or light",
+    coverSub: "Lead-form cover, 1200×628", coverText: "The top of the instant form after a tap on the button.",
+    noStories: "No 9:16 files in this selection.",
+    empty: "No ads yet. Fill ads.js with the flight's ads (the schema is at the top of the file).",
+  }, META.labels || {});
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const attr = esc;
+
+  document.documentElement.dir = META.dir === "rtl" ? "rtl" : "ltr";
+  if (META.lang) document.documentElement.lang = META.lang;
+  if (META.accent) document.documentElement.style.setProperty("--accent", META.accent);
+  document.title = META.title || "Ads preview";
+  $("#title").textContent = META.title || "Ads preview";
+  $("#footnote").textContent = META.footnote || "";
+  const [bFeed, bStory] = document.querySelectorAll("#view button");
+  bFeed.textContent = L.feed; bStory.textContent = L.stories;
+  $("#theme").title = L.theme; $("#theme").setAttribute("aria-label", L.theme);
+
+  const pageName = META.pageName || "Page name";
+  const avatarHtml = () => META.avatar ? `<img src="${attr(META.avatar)}" alt="">` : esc((pageName.trim()[0] || "?").toUpperCase());
+
+  const ICON_GLOBE = '<svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm4.9 6.5h-2.1a10.6 10.6 0 0 0-.9-3.9 5.5 5.5 0 0 1 3 3.9zM8 2.6c.6.8 1.3 2.3 1.5 4.9h-3C6.7 4.9 7.4 3.4 8 2.6zM2.6 8.5h2.1c.1 1.5.4 2.8.9 3.9a5.5 5.5 0 0 1-3-3.9zm2.1-1H2.6a5.5 5.5 0 0 1 3-3.9 10.6 10.6 0 0 0-.9 3.9zM8 13.4c-.6-.8-1.3-2.3-1.5-4.9h3c-.2 2.6-.9 4.1-1.5 4.9zm1.9-1a10.6 10.6 0 0 0 .9-3.9h2.1a5.5 5.5 0 0 1-3 3.9z"/></svg>';
+  const ICON_LIKE = '<svg viewBox="0 0 24 24"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3zm0 0 4.2-7.5a1.6 1.6 0 0 1 3 .9L13.5 9H19a2 2 0 0 1 2 2.3l-1.2 6.5A2.5 2.5 0 0 1 17.3 20H7"/></svg>';
+  const ICON_COMMENT = '<svg viewBox="0 0 24 24"><path d="M12 3.5c-5 0-9 3.4-9 7.6 0 2.2 1.1 4.2 3 5.6L5 20.5l4.3-1.6c.9.2 1.8.3 2.7.3 5 0 9-3.4 9-7.6s-4-7.6-9-7.6z"/></svg>';
+  const ICON_SHARE = '<svg viewBox="0 0 24 24"><path d="M14 5l7 6.5-7 6.5v-4C8.5 14 5.5 15.5 3 19c1-5 4-9 11-10V5z"/></svg>';
+  const ICON_PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>';
+  const ICON_MUTE = '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3 2.5-2.5-1.4-1.4L15 10.6l-2.6-2.5L11 9.5l2.5 2.5L11 14.5l1.4 1.4 2.6-2.5 2.6 2.5 1.4-1.4L16.5 12z"/></svg>';
+  const ICON_CHEV = '<svg viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>';
+
+  const state = { set: decodeURIComponent(location.hash.replace("#", "")) || "all", view: "feed", mode: {} };
+  const SETS_ALL = SETS.length ? [{ id: "all", label: `${L.all} (${ADS.length})` }, ...SETS.map(s => ({ ...s, label: `${s.label} (${ADS.filter(a => a.set === s.id).length})` }))] : [];
+  if (!SETS_ALL.some(s => s.id === state.set)) state.set = "all";
+  if (PLAN.lines && PLAN.lines.length) $("#plan").innerHTML = `<details open><summary>${esc(PLAN.title || "Plan")}</summary><ul>${PLAN.lines.map(l => `<li>${esc(l)}</li>`).join("")}</ul></details>`;
+
+  const chips = $("#chips");
+  chips.innerHTML = SETS_ALL.map(s => `<button data-set="${attr(s.id)}">${esc(s.label)}</button>`).join("");
+  chips.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.set = b.dataset.set; history.replaceState(null, "", state.set === "all" ? location.pathname : `#${encodeURIComponent(state.set)}`); render(); });
+  $("#view").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.view = b.dataset.v; render(); });
+  $("#theme").addEventListener("click", () => { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark ? "light" : "dark"; });
+
+  const key = (ad) => `n${ad.n}`;
+  const ctaOf = (ad) => ad.cta || META.cta || "Learn more";
+  const primaryHtml = (t, k) => {
+    t = String(t ?? "");
+    if (state.mode[k + ":open"] || t.length <= 125) return esc(t);
+    const cut = t.slice(0, 110).replace(/\s+\S*$/, "");
+    return `${esc(cut)}… <button class="more" data-open="${k}">${esc(L.seeMore)}</button>`;
+  };
+  const mediaHtml = (ad) => {
+    const m = (state.mode[key(ad)] === "video" && ad.video) ? ad.video : (ad.media || {});
+    if (!m.src) return `<div class="media${m.type === "cover" ? " cover" : ""}"><div class="nofile">${esc(ad.id || "")}</div></div>`;
+    if (m.type === "video") return `<div class="media" data-video><video src="${attr(m.src)}"${m.poster ? ` poster="${attr(m.poster)}"` : ""} playsinline muted loop preload="metadata"></video><div class="play"><span>${ICON_PLAY}</span></div><div class="mute">${ICON_MUTE}</div></div>`;
+    if (m.type === "cover") return `<div class="media cover"><img src="${attr(m.src)}" alt=""></div>`;
+    return `<div class="media"><img src="${attr(m.src)}" alt=""></div>`;
+  };
+  const labelHtml = (ad, extra = "") => {
+    const role = ad.role && ROLES[ad.role] ? `<i class="role ${attr(ad.role)}">${esc(ROLES[ad.role])}</i>` : "";
+    const status = ad.status ? `<i class="status ${attr(ad.status)}">${esc(ad.status)}${ad.adId ? ` · <bdi>${esc(ad.adId)}</bdi>` : ""}</i>` : "";
+    return `<div class="label"><b class="num">#${esc(ad.n)}</b><b><bdi>${esc(ad.id || "")}</bdi></b><span class="note">${esc(ad.note || ad.name || "")}</span>${role}${status}${extra}</div>`;
+  };
+  const cardHtml = (ad) => {
+    const k = key(ad);
+    if ((ad.media || {}).type === "cover") return `
+    <article class="card-wrap" data-k="${k}">
+      ${labelHtml(ad)}
+      <div class="card">
+        <div class="hdr"><div class="avatar">${avatarHtml()}</div><div class="who"><div class="name"><bdi>${esc(pageName)}</bdi></div><div class="sub">${esc(L.coverSub)}</div></div></div>
+        <div class="text">${esc(L.coverText)}</div>
+        ${mediaHtml(ad)}
+      </div>
+    </article>`;
+    const sw = ad.video ? `<span class="sw"><button data-mode="image" class="${state.mode[k] !== "video" ? "on" : ""}">${esc(L.image)}</button><button data-mode="video" class="${state.mode[k] === "video" ? "on" : ""}">${esc(L.video)}</button></span>` : "";
+    return `
+    <article class="card-wrap" data-k="${k}">
+      ${labelHtml(ad, sw)}
+      <div class="card">
+        <div class="hdr">
+          <div class="avatar">${avatarHtml()}</div>
+          <div class="who"><div class="name"><bdi>${esc(pageName)}</bdi></div><div class="sub">${esc(L.sponsored)} · ${ICON_GLOBE}</div></div>
+          <button class="more" aria-label="More">···</button><button class="x" aria-label="Close">✕</button>
+        </div>
+        <div class="text">${primaryHtml(ad.primary, k)}</div>
+        ${mediaHtml(ad)}
+        <div class="link"><div class="lt">${META.linkCaption ? `<div class="cap"><bdi>${esc(META.linkCaption)}</bdi></div>` : ""}<div class="h">${esc(ad.headline)}</div>${ad.description ? `<div class="d">${esc(ad.description)}</div>` : ""}</div><span class="cta">${esc(ctaOf(ad))}</span></div>
+        <div class="acts"><button>${ICON_LIKE}${esc(L.like)}</button><button>${ICON_COMMENT}${esc(L.comment)}</button><button>${ICON_SHARE}${esc(L.share)}</button></div>
+      </div>
+    </article>`;
+  };
+  const storyHtml = (ad) => {
+    const m = ad.media || {};
+    if (m.type === "cover" || !m.tall) return "";
+    const isVideo = m.type === "video" || /\.(mp4|webm|mov|m4v)$/i.test(m.tall);
+    const bg = isVideo ? `<video src="${attr(m.tall)}"${m.tallPoster ? ` poster="${attr(m.tallPoster)}"` : ""} playsinline muted loop preload="metadata"></video>` : `<img src="${attr(m.tall)}" alt="">`;
+    return `<div class="story">${bg}<div class="grad-t"></div><div class="grad-b"></div>
+      <div class="prog"><i></i></div>
+      <div class="shdr"><div class="avatar">${avatarHtml()}</div><div><div class="name"><bdi>${esc(pageName)}</bdi></div><div class="sub">${esc(L.sponsored)}</div></div><div class="ctrl">··· ✕</div></div>
+      <div class="slabel">#${esc(ad.n)} · <bdi>${esc(ad.id || "")}</bdi> · ${esc(ad.note || ad.name || "")}</div>
+      <div class="cta">${ICON_CHEV}<b>${esc(ctaOf(ad))}</b></div></div>`;
+  };
+
+  const feed = $("#feed"), stories = $("#stories");
+  let io;
+  function render() {
+    const list = ADS.filter(a => state.set === "all" || a.set === state.set).slice().sort((a, b) => a.n - b.n);
+    document.querySelectorAll("#chips button").forEach(b => b.classList.toggle("on", b.dataset.set === state.set));
+    $("#intro").textContent = (SETS.find(s => s.id === state.set) || {}).intro || "";
+    bFeed.classList.toggle("on", state.view === "feed"); bStory.classList.toggle("on", state.view === "story");
+    feed.classList.toggle("hidden", state.view !== "feed");
+    stories.classList.toggle("hidden", state.view !== "story");
+    if (!ADS.length) { feed.innerHTML = `<p class="empty">${esc(L.empty)}</p>`; stories.innerHTML = ""; return; }
+    if (state.view === "feed") { feed.innerHTML = list.map(cardHtml).join(""); wireVideos(".media[data-video]"); }
+    else { stories.innerHTML = list.map(storyHtml).join("") || `<p class="empty">${esc(L.noStories)}</p>`; wireVideos(".story"); }
+  }
+  function wireVideos(sel) {
+    if (io) io.disconnect();
+    io = new IntersectionObserver((entries) => {
+      for (const en of entries) { const v = en.target.querySelector("video"); if (!v) continue; if (en.intersectionRatio >= .6) { v.play().then(() => en.target.classList.add("playing")).catch(() => {}); } else { v.pause(); en.target.classList.remove("playing"); } }
+    }, { threshold: [0, .6] });
+    document.querySelectorAll(sel).forEach(m => { if (m.querySelector("video")) io.observe(m); });
+  }
+  document.body.addEventListener("click", (e) => {
+    const open = e.target.closest("button[data-open]"); if (open) { state.mode[open.dataset.open + ":open"] = true; render(); return; }
+    const mode = e.target.closest("button[data-mode]"); if (mode) { state.mode[mode.closest(".card-wrap").dataset.k] = mode.dataset.mode; render(); return; }
+    const mute = e.target.closest(".mute"); if (mute) { const v = mute.parentElement.querySelector("video"); v.muted = !v.muted; mute.style.opacity = v.muted ? 1 : .55; return; }
+    const media = e.target.closest(".media[data-video]"); if (media) { const v = media.querySelector("video"); if (v.paused) { v.play(); media.classList.add("playing"); } else { v.pause(); media.classList.remove("playing"); } }
+  });
+  render();
+})();
+</script>
+</body>
+</html>
