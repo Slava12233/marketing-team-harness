@@ -1,0 +1,18 @@
+{
+  "name": "hyperframes",
+  "owner": {
+    "name": "HeyGen",
+    "email": "hyperframes@heygen.com",
+    "url": "https://hyperframes.heygen.com"
+  },
+  "plugins": [
+    {
+      "name": "hyperframes",
+      "source": "./",
+      "description": "Recommended: all published HyperFrames skills in one versioned bundle. Create and render videos from HTML; load workflows on demand without installing newer standalone skills.",
+      "homepage": "https://hyperframes.heygen.com",
+      "license": "Apache-2.0"
+    }
+  ],
+  "description": "HyperFrames video creation skills, versioned and updated as one plugin."
+}
