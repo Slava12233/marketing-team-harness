@@ -58,7 +58,7 @@ test('bare template: everything to do except .mcp.json; offline; optional rows h
   const app = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli'];
   for (const [k, s] of Object.entries(st)) {
     if (!SEALED && app.includes(k)) continue;
-    assert.equal(s, k === 'install.mcpjson' ? 'done' : k === 'obsidian.hooks' ? 'owner' : 'todo', k);
+    assert.equal(s, k === 'install.mcpjson' ? 'done' : 'todo', k);
   }
   assert.ok(!('meta.webhook' in st) && !('meta.instagram' in st));
   assert.match(html, /<html lang="en" dir="ltr">/);
@@ -128,31 +128,37 @@ test('both string tables cover every chapter, item, status and hint; the embedde
   assert.match(render(data.model, data.strings.he, data.glyphs), /עדכון אחרון/);
 }));
 
-test('the memory vault chapter: app, vault list, hooks and business note answered by files; the clicks wait for the app', () => withCopy(false, dir => {
+test('the memory vault chapter: app, Obsidian config, shipped hooks and business note answered by files; never a click', () => withCopy(false, dir => {
   const keys = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled'];
-  let r = run(dir);
+  let r = run(dir, '--print');
   assert.equal(r.status, 0, r.stderr);
-  let { data, st } = page(dir);
+  let { html, data, st } = page(dir);
   const ch = data.model.chapters.find(c => c.id === 'vault');
   assert.deepEqual(ch.items.map(i => i.key), keys);
   assert.equal(data.model.chapters.indexOf(ch), 2, 'right after the Install chapter');
-  assert.equal(st['obsidian.hooks'], 'owner');
+  assert.equal(st['obsidian.hooks'], 'todo', 'no settings file in this copy');
   assert.equal(st['memory.business_filled'], 'todo');
-  if (SEALED) {
-    assert.equal(st['obsidian.installed'], 'todo');
-    assert.equal(st['obsidian.vault_opened'], 'todo', 'no click asked before the app is there');
+  assert.equal(st['obsidian.vault_opened'], 'todo');
+  assert.equal(st['obsidian.cli'], 'todo');
+  if (SEALED) assert.equal(st['obsidian.installed'], 'todo');
+  for (const lang of ['en', 'he']) {
+    for (const k of ['obsidian.vault_opened', 'obsidian.cli']) assert.match(data.strings[lang].hints[k], /obsidian-setup\.mjs/, `${lang} hint ${k}`);
+    assert.match(data.strings[lang].hints['obsidian.hooks'], /hooks-paste-block\.md/);
   }
+  assert.match(html, /<span class="hint">[^<]*<code dir="ltr">node memory\/tools\/obsidian-setup\.mjs<\/code>/, 'an open Obsidian item shows its command');
+  assert.match(r.stdout, /\[obsidian\.cli\] \(Nothing to click/);
+  assert.doesNotMatch(html + r.stdout, /Settings → General|Open folder as vault/, 'no click is asked in Obsidian');
   // the bootstrap's mark counts while no app is found; a mark on a file-answered item does not
-  r = run(dir, '--mark', 'obsidian.installed=done', '--mark', 'obsidian.hooks=done');
+  r = run(dir, '--mark', 'obsidian.installed=done', '--mark', 'obsidian.cli=done', '--mark', 'obsidian.hooks=done');
   assert.equal(r.status, 0, r.stderr);
   ({ st } = page(dir));
   assert.equal(st['obsidian.installed'], 'done');
-  assert.equal(st['obsidian.vault_opened'], 'owner');
-  assert.equal(st['obsidian.cli'], 'owner');
-  assert.equal(st['obsidian.hooks'], 'owner');
-  assert.match(r.stderr, /obsidian\.hooks stays owner/);
+  assert.equal(st['obsidian.vault_opened'], 'todo');
+  assert.equal(st['obsidian.cli'], 'todo');
+  assert.equal(st['obsidian.hooks'], 'todo');
+  assert.match(r.stderr, /obsidian\.cli stays todo/);
   writeFileSync(join(dir, 'dashboard', 'setup-progress.json'), '{"marks":{}}');
-  // the files: the app where its installer puts it, this folder in Obsidian's vault list, the hooks, the note
+  // the files: the app where its installer puts it, this folder in Obsidian's vault list, the shipped hooks, the note
   const a = away(dir);
   const exe = process.platform === 'win32' ? join(a, 'Programs', 'Obsidian', 'Obsidian.exe')
     : process.platform === 'darwin' ? join(a, 'Applications', 'Obsidian.app') : join(a, '.local', 'bin', 'obsidian');
@@ -161,21 +167,24 @@ test('the memory vault chapter: app, vault list, hooks and business note answere
   const reg = process.platform === 'win32' ? join(a, 'obsidian') : process.platform === 'darwin'
     ? join(a, 'Library', 'Application Support', 'obsidian') : join(a, 'obsidian');
   mkdirSync(reg, { recursive: true });
-  writeFileSync(join(reg, 'obsidian.json'), JSON.stringify({ vaults: { abc123: { path: dir + (process.platform === 'win32' ? '\\' : '/'), ts: 1, open: true } } }));
+  const vaults = { abc123: { path: dir + (process.platform === 'win32' ? '\\' : '/'), ts: 1, open: true } };
+  writeFileSync(join(reg, 'obsidian.json'), JSON.stringify({ vaults }));
   mkdirSync(join(dir, '.claude'));
-  writeFileSync(join(dir, '.claude', 'settings.json'), JSON.stringify({ hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/session-start.mjs' }] }] } }));
+  cpSync(join(REPO, '.claude', 'settings.json'), join(dir, '.claude', 'settings.json'));   // the shipped file
   mkdirSync(join(dir, 'memory', 'business'), { recursive: true });
   writeFileSync(join(dir, 'memory', 'business', 'company.md'), '# Company\n\nName: <fill at /setup>\n');
   assert.equal(run(dir).status, 0);
   ({ st } = page(dir));
   assert.equal(st['obsidian.installed'], 'done');
   assert.equal(st['obsidian.vault_opened'], 'done');
-  assert.equal(st['obsidian.cli'], 'owner', 'the command line toggle is the Owner\'s click');
-  assert.equal(st['obsidian.hooks'], 'done');
+  assert.equal(st['obsidian.cli'], 'todo', 'the config does not say "cli": true yet');
+  assert.equal(st['obsidian.hooks'], 'done', 'the shipped settings file carries the hooks');
   assert.equal(st['memory.business_filled'], 'todo', 'a placeholder is left');
+  writeFileSync(join(reg, 'obsidian.json'), JSON.stringify({ vaults, cli: true }));
   writeFileSync(join(dir, 'memory', 'business', 'company.md'), '# Company\n\nName: Example Co\n');
-  assert.equal(run(dir, '--mark', 'obsidian.cli=done').status, 0);
+  assert.equal(run(dir).status, 0);
   ({ data, st } = page(dir));
+  assert.equal(st['obsidian.cli'], 'done');
   assert.equal(st['memory.business_filled'], 'done');
   assert.equal(data.model.chapters.find(c => c.id === 'vault').status, 'done');
 }));

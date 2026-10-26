@@ -9,9 +9,11 @@
 // Statuses: todo, doing, done, owner (waiting for the Owner's click), na. A mark (dashboard/setup-progress.json)
 // counts only where the files give no answer: the Console steps table of config/accounts.md, checklist.md,
 // .mcp.json, whether .env exists (it is never opened), the config/*.md placeholders, plans/*first-flight-plan.md,
-// dashboard/state.json, .claude/settings.json (the memory hooks), memory/business/company.md, and, outside the
-// folder, whether the Obsidian app is installed and whether Obsidian's own vault list names this folder. The page shows names and public ids only, never a secret, and loads nothing from the
-// internet. Exit codes: 0 written, 1 a file could not be written, 2 wrong usage (unknown option, key or status).
+// dashboard/state.json, .claude/settings.json (the memory hooks, shipped), memory/business/company.md, and, outside
+// the folder, whether the Obsidian app is installed and what Obsidian's global config (obsidian.json) says: this
+// folder in its vault list, and "cli": true (both written by memory/tools/obsidian-setup.mjs, never a click). The
+// page shows names and public ids only, never a secret, and loads nothing from the internet.
+// Exit codes: 0 written, 1 a file could not be written, 2 wrong usage (unknown option, key or status).
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,8 +48,7 @@ const CONSOLE = {
   'meta.domain': 'Domain verified', 'meta.webhook': 'Lead webhook subscription', 'meta.instagram': 'Instagram linked',
 };
 const OPTIONAL = ['meta.webhook', 'meta.instagram'];
-// The Owner's clicks in Obsidian: "your turn" once the app is installed, "to do" before that.
-const AFTER_APP = ['obsidian.vault_opened', 'obsidian.cli'];
+
 // Interview round → the config files it writes; the round is done once they hold no {{ placeholder.
 const ROUND_FILES = { a: ['operator.md'], b: ['company.md'], c: ['product.md'], d: ['audiences.md'], e: ['brand.md'],
   f: ['claims.md'], g: ['accounts.md', 'product-team.md'], h: ['operator.md'], i: ['goals.md'] };
@@ -74,9 +75,9 @@ const EN = {
     'install.mcpjson': '`.mcp.json` declares the `meta-ads` server',
     'install.approved': 'The two servers in `.mcp.json` approved in Claude Code',
     'obsidian.installed': 'Obsidian installed (free, also for commercial use)',
-    'obsidian.vault_opened': 'This folder opened in Obsidian as a vault',
-    'obsidian.cli': "Obsidian's command line interface turned on",
-    'obsidian.hooks': 'Memory hooks pasted into `.claude/settings.json` (`docs/hooks-paste-block.md`)',
+    'obsidian.vault_opened': 'This folder registered in Obsidian as a vault',
+    'obsidian.cli': "Obsidian's command line interface on",
+    'obsidian.hooks': 'Memory hooks in `.claude/settings.json` (shipped)',
     'memory.business_filled': 'The business note `memory/business/company.md` filled in by `/setup`',
     'meta.portfolio': 'Business portfolio', 'meta.page': 'Facebook Page', 'meta.adaccount': 'Ad account owned by the portfolio',
     'meta.payment': 'Payment method on the ad account', 'meta.phone': 'Phone number verified on the ad account',
@@ -100,9 +101,9 @@ const EN = {
     'flight.build': 'Campaign built PAUSED', 'flight.preview': "Meta's preview images sent to the Owner",
   },
   hints: {
-    'obsidian.vault_opened': 'Obsidian → "Open folder as vault" on its start screen (or File → Open folder as vault) → pick the harness folder',
-    'obsidian.cli': 'Obsidian → Settings → General → Command line interface → turn it on',
-    'obsidian.hooks': "Open `docs/hooks-paste-block.md` and paste its block into `.claude/settings.json` (the Owner's paste; the harness never edits settings)",
+    'obsidian.vault_opened': 'Nothing to click: the bootstrap does it, or run `node memory/tools/obsidian-setup.mjs` in the harness folder',
+    'obsidian.cli': 'Nothing to click: the bootstrap does it, or run `node memory/tools/obsidian-setup.mjs` in the harness folder',
+    'obsidian.hooks': 'The file ships with the harness; if it was deleted or replaced, restore its block from `docs/hooks-paste-block.md`',
     'meta.portfolio': 'Business Settings → Business portfolio', 'meta.page': 'Business Settings → Accounts → Pages',
     'meta.adaccount': 'Business Settings → Accounts → Ad accounts (time zone and currency are permanent)',
     'meta.payment': 'Ad account → Payment settings',
@@ -139,9 +140,9 @@ const HE = {
     'install.mcpjson': 'הקובץ `.mcp.json` מגדיר את השרת `meta-ads`',
     'install.approved': 'שני השרתים שב-`.mcp.json` אושרו ב-Claude Code',
     'obsidian.installed': 'Obsidian מותקן (חינמי, גם לשימוש מסחרי)',
-    'obsidian.vault_opened': 'התיקייה נפתחה ב-Obsidian ככספת (vault)',
-    'obsidian.cli': 'ממשק שורת הפקודה של Obsidian הופעל',
-    'obsidian.hooks': 'ה-hooks של הזיכרון הודבקו בקובץ `.claude/settings.json` (`docs/hooks-paste-block.md`)',
+    'obsidian.vault_opened': 'התיקייה רשומה ב-Obsidian ככספת (vault)',
+    'obsidian.cli': 'ממשק שורת הפקודה של Obsidian פעיל',
+    'obsidian.hooks': 'ה-hooks של הזיכרון בקובץ `.claude/settings.json` (מגיעים עם הכלי)',
     'memory.business_filled': 'פתק העסק `memory/business/company.md` מולא על ידי `/setup`',
     'meta.portfolio': 'תיק עסקי', 'meta.page': 'עמוד פייסבוק', 'meta.adaccount': 'חשבון מודעות בבעלות התיק העסקי',
     'meta.payment': 'אמצעי תשלום בחשבון המודעות', 'meta.phone': 'מספר טלפון מאומת בחשבון המודעות',
@@ -164,9 +165,9 @@ const HE = {
     'flight.build': 'הקמפיין נבנה במצב PAUSED', 'flight.preview': 'תמונות התצוגה המקדימה של Meta נשלחו לבעלים',
   },
   hints: {
-    'obsidian.vault_opened': 'Obsidian ← "Open folder as vault" במסך הפתיחה (או File ← Open folder as vault) ← בחרו את תיקיית הפרויקט',
-    'obsidian.cli': 'Obsidian ← Settings ← General ← Command line interface ← הפעילו',
-    'obsidian.hooks': 'פתחו את `docs/hooks-paste-block.md` והדביקו את הבלוק שלו בקובץ `.claude/settings.json` (הדבקה של הבעלים; הכלי לא עורך הגדרות)',
+    'obsidian.vault_opened': 'אין מה ללחוץ: סקריפט ההתקנה עושה את זה, או הריצו `node memory/tools/obsidian-setup.mjs` בתיקיית הפרויקט',
+    'obsidian.cli': 'אין מה ללחוץ: סקריפט ההתקנה עושה את זה, או הריצו `node memory/tools/obsidian-setup.mjs` בתיקיית הפרויקט',
+    'obsidian.hooks': 'הקובץ מגיע עם הכלי; אם נמחק או הוחלף, שחזרו את הבלוק שלו מ-`docs/hooks-paste-block.md`',
     'meta.portfolio': 'הגדרות העסק ← תיק עסקי', 'meta.page': 'הגדרות העסק ← חשבונות ← עמודים',
     'meta.adaccount': 'הגדרות העסק ← חשבונות ← חשבונות מודעות (אזור הזמן והמטבע קבועים לתמיד)',
     'meta.payment': 'חשבון המודעות ← הגדרות תשלום',
@@ -238,15 +239,16 @@ function obsidianApp(env) {   // true when the Obsidian app is where its install
       home && join(home, '.local', 'bin', 'obsidian'), home && join(home, '.local', 'share', 'flatpak', 'exports', 'bin', 'md.obsidian.Obsidian')];
   return places.some(p => p && existsSync(p));
 }
-function vaultOpened(root, env) {   // true when Obsidian's own vault list (obsidian.json) names this folder
+function obsidianConfig(env) {   // Obsidian's global config (obsidian.json) parsed, or null when absent or unreadable
   const home = env.HOME || env.USERPROFILE || '';
   const reg = WIN ? env.APPDATA && join(env.APPDATA, 'obsidian', 'obsidian.json')
     : MAC ? home && join(home, 'Library', 'Application Support', 'obsidian', 'obsidian.json')
     : join(env.XDG_CONFIG_HOME || join(home, '.config'), 'obsidian', 'obsidian.json');
-  try {
-    const want = samePath(root), vaults = JSON.parse(readFileSync(reg, 'utf8')).vaults || {};
-    return Object.values(vaults).some(v => v && typeof v.path === 'string' && v.path !== '' && samePath(v.path) === want);
-  } catch { return false; }
+  try { const c = JSON.parse(readFileSync(reg, 'utf8')); return c && typeof c === 'object' ? c : null; } catch { return null; }
+}
+function vaultListed(root, cfg) {   // true when the config's vault list names this folder
+  const want = samePath(root), vaults = (cfg && cfg.vaults) || {};
+  return Object.values(vaults).some(v => v && typeof v.path === 'string' && v.path !== '' && samePath(v.path) === want);
 }
 
 function facts(root, env = process.env) {   // what the files say; .env is checked for existence only and never opened
@@ -271,7 +273,7 @@ function facts(root, env = process.env) {   // what the files say; .env is check
     built: Array.isArray(campaigns) && campaigns.some(c => c && /^(PAUSED|ACTIVE)$/i.test(String(c.status))),
     company: line('config/company.md', 'Short name').split(/;| \(/)[0].trim().slice(0, 60) || null,
     chat: line('config/operator.md', 'Chat language'),
-    obsidian: obsidianApp(env), vault: vaultOpened(root, env),
+    obsidian: obsidianApp(env), ...(cfg => ({ vault: vaultListed(root, cfg), cli: !!cfg && cfg.cli === true }))(obsidianConfig(env)),
     hooks: (read('.claude/settings.json') || '').includes('session-start.mjs'),
     business: (b => b !== null && !b.includes('<fill at /setup>'))(read('memory/business/company.md')),
   };
@@ -282,8 +284,9 @@ function fileAnswer(key, f) {   // the files' answer for one item: a status, or 
   if (key === 'install.mcpjson') return f.servers.includes('meta-ads') ? 'done' : 'todo';
   if (key === 'meta.people') return cellStatus(f.item('People and roles')?.status);
   if (key === 'obsidian.installed') return f.obsidian ? 'done' : null;
-  if (key === 'obsidian.vault_opened') return f.vault ? 'done' : null;
-  if (key === 'obsidian.hooks') return f.hooks ? 'done' : 'owner';
+  if (key === 'obsidian.vault_opened') return f.vault ? 'done' : 'todo';
+  if (key === 'obsidian.cli') return f.cli ? 'done' : 'todo';
+  if (key === 'obsidian.hooks') return f.hooks ? 'done' : 'todo';
   if (key === 'memory.business_filled') return f.business ? 'done' : 'todo';
   if (CONSOLE[key]) {
     const row = f.step(CONSOLE[key]);
@@ -305,14 +308,12 @@ function buildModel(root, progress) {   // the files win, then the mark, then th
   const lang = progress.lang || (/hebrew|עברית/i.test(f.chat) ? 'he' : 'en');
   const real = c => c != null && !String(c).includes('{{') && norm(c) !== '';
   let done = 0, tracked = 0, next = null;
-  const seen = {};   // the statuses decided so far: the Obsidian clicks wait for the app
-  const fallback = key => (key === 'fal.login' && !f.servers.includes('fal') ? 'na'
-    : AFTER_APP.includes(key) && seen['obsidian.installed'] === 'done' ? 'owner' : 'todo');
+  const fallback = key => (key === 'fal.login' && !f.servers.includes('fal') ? 'na' : 'todo');
   const chapters = CHAPTERS.map((c, n) => {
     if (c.info) return { id: c.id, n, info: true };
     const items = [];
     for (const key of c.items) {
-      const status = seen[key] = fileAnswer(key, f) || marks[key] || fallback(key);
+      const status = fileAnswer(key, f) || marks[key] || fallback(key);
       const answered = OPTIONAL.includes(key) && (real(f.step(CONSOLE[key])?.status) || real(f.item(CONSOLE[key])?.status));
       if (OPTIONAL.includes(key) && (status === 'na' || (!answered && !marks[key]))) continue;
       items.push({ key, status });
@@ -345,7 +346,8 @@ function renderPage(m, S, G) {
     h += '<p class="what">' + fmt(S.items[nx.key]) + '</p><p class="who">';
     if (nx.status === 'owner') h += esc(S.yourClick) + (S.hints[nx.key] ? ': ' + fmt(S.hints[nx.key]) : '');
     else if (nx.status === 'doing') h += esc(S.wizard);
-    else h += esc(tpl(S.chapterN, { n: nx.n })) + ' · ' + fmt(S.chapters[nx.chapter]);
+    else h += esc(tpl(S.chapterN, { n: nx.n })) + ' · ' + fmt(S.chapters[nx.chapter]) +
+      (nx.key.indexOf('obsidian.') === 0 && S.hints[nx.key] ? ' · ' + fmt(S.hints[nx.key]) : '');
     h += '</p>';
   }
   h += '</section>';
@@ -361,7 +363,8 @@ function renderPage(m, S, G) {
       '" title="' + esc(S.status[c.status]) + '">' + G[c.status] + '</span>' + head +
       (c.tracked ? '<span class="cnt">' + c.done + '/' + c.tracked + '</span>' : '') + '</h2><ul class="items">';
     for (var k = 0; k < c.items.length; k++) {
-      var it = c.items[k], hint = it.status === 'owner' && S.hints[it.key];
+      // a hint shows on the Owner's turn, and on an open Obsidian item (it names the command that does it)
+      var it = c.items[k], hint = (it.status === 'owner' || (it.status === 'todo' && it.key.indexOf('obsidian.') === 0)) && S.hints[it.key];
       h += '<li class="st-' + it.status + '"><label><input type="checkbox" disabled' + (it.status === 'done' ? ' checked' : '') +
         '><span class="text"><span class="label">' + fmt(S.items[it.key]) + '</span> <span class="st">' + G[it.status] + ' ' +
         esc(S.status[it.status]) + '</span>' + (hint ? '<span class="hint">' + fmt(hint) + '</span>' : '') + '</span></label></li>';
@@ -481,7 +484,8 @@ function printText(model) {   // the checklist as plain text, for the wizard to 
     out.push('', `${c.n}. ${plain(S.chapters[c.id])}` + (c.info ? '' : `  ${GLYPHS[c.status]}${c.tracked ? ` ${c.done}/${c.tracked}` : ''}`));
     if (c.info) for (const l of S.info[c.id]) out.push(`   · ${plain(l)}`);
     else for (const it of c.items) {
-      const hint = it.status === 'owner' && S.hints[it.key] ? ` (${plain(S.hints[it.key])})` : '';
+      const hinted = it.status === 'owner' || (it.status === 'todo' && it.key.startsWith('obsidian.'));
+      const hint = hinted && S.hints[it.key] ? ` (${plain(S.hints[it.key])})` : '';
       out.push(`   ${GLYPHS[it.status]} ${plain(S.items[it.key])}: ${S.status[it.status]} [${it.key}]${hint}`);
     }
   }

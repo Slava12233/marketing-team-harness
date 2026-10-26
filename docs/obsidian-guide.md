@@ -5,7 +5,7 @@ updated: 2026-10-26
 status: active
 maintained_by: harness
 categories: [tooling, obsidian]
-summary: A plain-language guide to the memory vault in Obsidian - what it is, installing Obsidian, opening the folder, HOME, the Inbox, the weekly review, the CLI toggle, the hooks, optional Sync, and what goes wrong.
+summary: A plain-language guide to the memory vault in Obsidian - what it is, how it is set up with no click (install, vault, command line, hooks), HOME, the Inbox, the weekly review, optional Sync, and what goes wrong.
 ---
 
 # The memory vault in Obsidian: a guide for the Owner and the Operator
@@ -18,19 +18,22 @@ The harness remembers everything in plain text files in the `memory/` folder: wh
 
 ## 1. Install Obsidian
 
-The bootstrap (`bootstrap.ps1` on Windows, `bootstrap.sh` on macOS) installs Obsidian with the other tools after your one confirmation, and opens the vault at the end. If you skipped it, or want to install it yourself:
+The bootstrap (`bootstrap.ps1` on Windows, `bootstrap.sh` on macOS) installs Obsidian with the other tools after your one confirmation. If you skipped it, or want to install it yourself:
 
 - **Windows:** open PowerShell and run `winget install Obsidian.Obsidian`, or download it from obsidian.md.
 - **macOS:** open Terminal and run `brew install --cask obsidian`, or download it from obsidian.md.
 
-## 2. Open the folder as a vault (once)
+## 2. Set up with no click
 
-1. Start Obsidian.
-2. Choose **Open folder as vault**.
-3. Pick the folder you unzipped: the harness folder, the one that holds `CLAUDE.md`, `config/` and `memory/` (not the `memory/` folder itself).
-4. If Obsidian asks whether to trust the folder, say yes. The vault uses only Obsidian's built-in features; there are no community plugins to enable.
+You click nothing in Obsidian and paste nothing anywhere. Right after its installs, the bootstrap runs `node memory/tools/obsidian-setup.mjs`, which:
 
-Obsidian hides the folders that are not notes (`creatives/`, `.claude/`, `dashboard/`, `examples/`, `vendor/`). The left sidebar's **Bookmarks** has four shortcuts: HOME, Inbox, Current state, Memory contract.
+1. registers the harness folder (the one that holds `CLAUDE.md`, `config/` and `memory/`) as a vault in Obsidian's own settings file, the same entry Obsidian writes when someone opens a folder by hand;
+2. turns on Obsidian's command line interface in that same file, so Claude can search the vault and move or rename notes with their links kept;
+3. starts Obsidian, which opens on your HOME page.
+
+The bootstrap ends with the line "Obsidian is set up: the vault is registered, the command line interface is on, the app opened on your HOME page". `/setup` runs the same tool again once it has filled the vault, `/sync` keeps it that way, and `/health` checks it. If Obsidian was already open while this ran, close it and open it again once, so it reads the new setting. If Obsidian was installed later, the same command, `node memory/tools/obsidian-setup.mjs` in the harness folder, finishes the job.
+
+The vault uses only Obsidian's built-in features; there are no community plugins to enable. Obsidian hides the folders that are not notes (`creatives/`, `.claude/`, `dashboard/`, `examples/`, `vendor/`). The left sidebar's **Bookmarks** has four shortcuts: HOME, Inbox, Current state, Memory contract.
 
 ## 3. HOME: your page
 
@@ -55,13 +58,15 @@ The Inbox never changes the ad account. Anything that would spend money becomes 
 
 Once a week `/next-round` writes a short review in `memory/reviews/` (one note per week, named like `2026-W44`): the bottom line, the campaigns against your caps, up to three learnings, the decisions waiting for you with their cost, and what comes next. The **Sessions** table on HOME links each day's note if you want the detail.
 
-## 6. The command line switch (optional)
+## 6. The command line interface (already on)
 
-Recent Obsidian versions include a command line interface that lets Claude rename and move notes with their links kept, and search the vault quickly. Turn it on once: **Settings → General → Command line interface → on**, then close and reopen your terminal. Without it, everything still works through plain files.
+Recent Obsidian versions include a command line interface that lets Claude rename and move notes with their links kept, and search the vault quickly. `obsidian-setup.mjs` turns it on for you (section 2), and Claude calls it by its full path, so nothing has to be added to your terminal. Without Obsidian, everything still works through plain files.
 
-## 7. The hooks (once, by the Owner)
+## 7. The hooks (already on)
 
-Two small scripts make every new session start with the vault's HOT and save a checkpoint before a long conversation is compacted. Installing them is the Owner's step: follow `docs/hooks-paste-block.md` (copy one block into `.claude/settings.json`). Without them the harness still reads HOT, just one step later.
+Two small scripts make every new session start with the vault's HOT and save a checkpoint before a long conversation is compacted. They ship turned on in `.claude/settings.json`; the first time Claude Code opens the folder it asks once whether to trust it, and that yes is all. If that file is ever deleted or replaced, `docs/hooks-paste-block.md` holds the block to restore, and `/health` says so. Without them the harness still reads HOT, just one step later.
+
+**Your only Obsidian action is to use it:** HOME to see where things stand, the Inbox to write to the team.
 
 ## 8. On the phone (optional): Obsidian Sync
 
@@ -84,4 +89,6 @@ Write on the phone only in the Inbox; let the harness write everything else. If 
 | `/sync` stops with "lint: … FAIL" | A note breaks a rule: a phone number or email, a broken link, a hand edit inside a generated part | Ask Claude to fix the lines it names; never put a customer's name, email or phone in a note |
 | You edited HOME between the `%%` lines | The next build overwrites it and the check flags the edit | Write your own text below the generated part |
 | Obsidian shows a note twice or a strange `(conflicted copy)` file | Sync saw two edits at once | Keep the right one, delete the copy |
-| The HOT never appears in new sessions | The hooks are not pasted, or Claude Code was started from another folder | Follow `docs/hooks-paste-block.md`; start Claude Code from the harness folder |
+| Obsidian opens on its start screen, not on HOME | The setup tool has not run on this computer yet | In the harness folder run `node memory/tools/obsidian-setup.mjs` (or run the bootstrap again) |
+| Claude says the Obsidian command line does not answer | Obsidian was open while the tool turned it on | Close Obsidian and open it again once |
+| The HOT never appears in new sessions | Claude Code was started from another folder, the folder was not trusted, or `.claude/settings.json` was deleted or replaced | Start Claude Code from the harness folder and trust it; if `/health` shows the hooks red, restore the block from `docs/hooks-paste-block.md` |

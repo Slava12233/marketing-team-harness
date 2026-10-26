@@ -8,7 +8,8 @@
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Help    show the usage
 # The one install takes every missing item, required and optional alike (Git, Node.js, Claude Code,
 # playwright-core, Obsidian for the memory vault, FFmpeg, the HyperFrames video plugin from vendor\hyperframes),
-# copies .env.example to .env and opens the setup progress page; it ends with the Owner's three Obsidian clicks.
+# copies .env.example to .env, sets Obsidian up for the vault (memory/tools/obsidian-setup.mjs: the vault is
+# registered, the command line interface is on, the app opens; no click) and opens the setup progress page.
 # Enter at its question means Yes; Enter at an -Ask question means No.
 # Tags: [ok] already there, [installed] put in place by this run, [missing] not there, [skipped] an optional
 # item left out. Exit codes: 0 everything required is present, 1 something required is missing or the
@@ -251,8 +252,9 @@ else {
 }
 
 # Obsidian (free, also for commercial use; Sync and Publish are optional paid services) opens the folder as the
-# memory vault: notes, links and the Bases dashboards over memory/. This script installs the app. Opening the
-# folder as a vault, turning on its command line and pasting the hooks are the Owner's clicks, listed at the end.
+# memory vault: notes, links and the Bases dashboards over memory/. This script installs the app; after the
+# install phase memory/tools/obsidian-setup.mjs registers the vault, turns on the command line interface and
+# starts the app, so the Owner clicks nothing in Obsidian. The memory hooks ship in .claude/settings.json.
 $ObsidianCmd = 'winget install --id Obsidian.Obsidian -e --accept-package-agreements --accept-source-agreements'
 $ObsidianPage = 'https://obsidian.md/download'
 function Get-ObsidianPath {   # Obsidian.exe of a per-user or a machine install, or '' when neither is there
@@ -263,18 +265,7 @@ function Get-ObsidianPath {   # Obsidian.exe of a per-user or a machine install,
   foreach ($p in $places) { if (Test-Path -LiteralPath $p -PathType Leaf) { return $p } }
   return ''
 }
-function Test-ObsidianVault([string]$folder) {   # true when Obsidian's own vault list already names this folder
-  try {
-    $reg = Join-Path $env:APPDATA 'obsidian\obsidian.json'
-    if (-not (Test-Path -LiteralPath $reg -PathType Leaf)) { return $false }
-    $list = (Get-Content -LiteralPath $reg -Raw -ErrorAction Stop | ConvertFrom-Json).vaults
-    $want = $folder.TrimEnd('\', '/')
-    foreach ($v in @($list.PSObject.Properties)) {
-      if (([string]$v.Value.path).TrimEnd('\', '/') -ieq $want) { return $true }
-    }
-  } catch { return $false }
-  return $false
-}
+
 function Invoke-Obsidian {   # installs Obsidian (after its question under -Ask)
   $script:Done = $false
   $from = Get-PkgFrom
@@ -456,6 +447,30 @@ if ($Recheck.Count -gt 0) {
   if ($again) { $Missing = $true; Note 'Not found yet: open a new terminal window in this folder and run this script again.' }
 }
 
+# Obsidian set up with no click: memory/tools/obsidian-setup.mjs registers this folder as a vault in Obsidian's
+# own config (obsidian.json), turns on its command line interface there and starts the app on the vault.
+# -Check runs it with --check (a report line, nothing changed); a declined run leaves it out. It never fails
+# the run. $ObsSetup: ok, failed, noapp, nonode, notool or skipped.
+$ObsSetup = 'skipped'
+$obsNow = Get-ObsidianPath
+if (-not $Declined) {
+  if (-not (Test-Path -LiteralPath 'memory/tools/obsidian-setup.mjs' -PathType Leaf)) { $ObsSetup = 'notool' }
+  elseif (-not $obsNow) { $ObsSetup = 'noapp' }
+  elseif (-not (Get-Version 'node')) { $ObsSetup = 'nonode' }
+  else {
+    $obsArgs = @('--quiet')
+    if ($Mode -eq 'check') { $obsArgs = @('--check', '--quiet') }
+    $global:LASTEXITCODE = 0
+    try { & node memory/tools/obsidian-setup.mjs @obsArgs *> $null } catch { $global:LASTEXITCODE = 1 }
+    if ($LASTEXITCODE -eq 0) { $ObsSetup = 'ok' } else { $ObsSetup = 'failed' }
+  }
+  if ($Mode -eq 'check') {
+    if ($ObsSetup -eq 'ok') { Say '[ok] Obsidian is set up for the memory vault: the vault is registered and the command line interface is on.' }
+    elseif ($ObsSetup -eq 'failed') { Say '[skipped] Obsidian is not set up for this folder yet: run this script without -Check (or: node memory/tools/obsidian-setup.mjs).' }
+    elseif ($ObsSetup -eq 'nonode') { Say '[skipped] Obsidian is not set up for this folder yet: it needs Node.js first; then run this script without -Check.' }
+  }
+}
+
 Say ''
 Say 'What remains'
 if ($Declined) { Say '  First: run this script again and press Enter at the question to install what is marked [missing] above.' }
@@ -469,27 +484,26 @@ Say '  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser whe
 Say '     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load.'
 Say '  4. Type /setup and answer the wizard.'
 Say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
-# The memory vault: after a run that went ahead, the Owner's three Obsidian clicks, and Obsidian opened when it
-# is there (on this folder once it is a vault, otherwise on its start screen). Opening it never fails the run.
-$obsNow = ''
+# The memory vault in Obsidian: the result of obsidian-setup.mjs above, after a run that went ahead. Nothing
+# for the Owner to click; the memory hooks ship in .claude/settings.json.
 if (($Mode -ne 'check') -and -not $Declined) {
-  $obsNow = Get-ObsidianPath
-  Say '  6. The memory vault in Obsidian: three clicks for the Owner.'
-  Say '     a. In Obsidian choose "Open folder as vault" (or File, Open folder as vault) and pick this folder.'
-  Say '     b. In Obsidian: Settings, General, Command line interface: turn it on.'
-  Say '     c. Paste the block in docs/hooks-paste-block.md into .claude/settings.json, as that file says.'
-  if (-not $obsNow) { Say ('     Obsidian is not installed yet: run this script again, or get it from ' + $ObsidianPage + ' (free).') }
+  if ($ObsSetup -eq 'ok') {
+    Say '  6. Obsidian is set up: the vault is registered, the command line interface is on, the app opened on your HOME page.'
+    Say '     (If Obsidian was already open before this run, close and reopen it once so its command line answers.)'
+  }
+  elseif ($ObsSetup -eq 'notool') {
+    Say '  6. Obsidian is not set up: memory/tools/obsidian-setup.mjs is missing. Unzip the harness again to get it.'
+  }
+  elseif ($ObsSetup -eq 'noapp') {
+    Say '  6. Obsidian is not installed, so the memory vault is not set up in it yet (the notes work without it).'
+    Say ('     Install it (run this script again, or get it free from ' + $ObsidianPage + '); then node memory/tools/obsidian-setup.mjs finishes it.')
+  }
+  elseif ($ObsSetup -eq 'nonode') {
+    Say '  6. Obsidian is installed but not set up yet: this window does not find Node.js.'
+    Say '     Open a new terminal window in this folder and run: node memory/tools/obsidian-setup.mjs'
+  }
   else {
-    $here = (Get-Location).ProviderPath
-    try {
-      if (Test-ObsidianVault $here) {
-        Start-Process ('obsidian://open?path=' + [uri]::EscapeDataString($here)) -ErrorAction Stop
-        Say '     Obsidian opened on this folder.'
-      } else {
-        Start-Process -FilePath $obsNow -ErrorAction Stop
-        Say '     Obsidian opened: start with click a.'
-      }
-    } catch { Say '     Obsidian could not be opened from here: open it from the Start menu.' }
+    Say '  6. Obsidian could not be set up from here. Run: node memory/tools/obsidian-setup.mjs (it says why, and finishes it).'
   }
 }
 # The setup progress page (dashboard/setup.html): written and opened at the end of a run that went ahead,
@@ -503,9 +517,12 @@ if (($Mode -ne 'check') -and -not $Declined -and (Test-Path -LiteralPath 'dashbo
     $markNode = if (($pageMajor -ge 20) -or ($Recheck -contains 'node')) { 'done' } else { 'todo' }
     $markClaude = if ((Get-Version 'claude') -or ($Recheck -contains 'claude')) { 'done' } else { 'todo' }
     $markObsidian = if ($obsNow) { 'done' } else { 'todo' }
+    $pageArgs = @('dashboard/setup-page.mjs', '--mark', "install.git=$markGit", '--mark', "install.node=$markNode", '--mark', "install.claude=$markClaude", '--mark', "obsidian.installed=$markObsidian")
+    if ($ObsSetup -eq 'ok') { $pageArgs += @('--mark', 'obsidian.vault_opened=done', '--mark', 'obsidian.cli=done') }
+    $pageArgs += '--open'
     Say ''
     $global:LASTEXITCODE = 0
-    try { & node dashboard/setup-page.mjs --mark "install.git=$markGit" --mark "install.node=$markNode" --mark "install.claude=$markClaude" --mark "obsidian.installed=$markObsidian" --open *> $null } catch { $global:LASTEXITCODE = 1 }
+    try { & node @pageArgs *> $null } catch { $global:LASTEXITCODE = 1 }
     if ($LASTEXITCODE -eq 0) { Say 'A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html' }
     else { Say 'The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later.' }
   } elseif ($PageTodo) {

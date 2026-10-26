@@ -173,7 +173,7 @@ function hooksNote(root) {
     file: 'hooks.md', title: 'Hooks',
     summary: `The ${rows.length} hook scripts under .claude/hooks, their events and whether project settings install them, generated.`,
     lines: [
-      'Hooks are installed by the Owner only: the Owner pastes the block in [[hooks-paste-block]] (`docs/`) into `.claude/settings.json`. "Installed" reads the project settings files for the script name.', '',
+      'The hooks ship turned on in `.claude/settings.json` (nothing to paste); [[hooks-paste-block]] (`docs/`) holds the block to restore if that file is deleted or replaced. "Installed" reads the project settings files for the script name.', '',
       ...(rows.length ? table(['Hook', 'Event', 'What it does', 'Installed'], rows) : ['No hook scripts in `.claude/hooks/` yet.']),
     ],
   };
