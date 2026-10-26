@@ -1,0 +1,19 @@
+{
+  "userIgnoreFilters": [
+    "creatives/",
+    ".claude/",
+    "node_modules/",
+    "dashboard/",
+    ".git/",
+    "examples/",
+    "vendor/",
+    "dist/"
+  ],
+  "showUnsupportedFiles": false,
+  "alwaysUpdateLinks": true,
+  "newFileLocation": "folder",
+  "newFileFolderPath": "memory/inbox",
+  "attachmentFolderPath": "memory/archive/attachments",
+  "useMarkdownLinks": false,
+  "promptDelete": true
+}

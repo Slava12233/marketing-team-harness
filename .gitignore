@@ -23,3 +23,35 @@ dashboard/*.tmp
 
 # Release zips built by release.sh / release.ps1
 dist/
+
+# Media: the vault and the repo track text; pictures, videos, fonts and PDFs under creatives/ and reports/ stay on disk only
+creatives/**/*.png
+creatives/**/*.jpg
+creatives/**/*.jpeg
+creatives/**/*.gif
+creatives/**/*.webp
+creatives/**/*.mp4
+creatives/**/*.mov
+creatives/**/*.webm
+creatives/**/*.mp3
+creatives/**/*.wav
+creatives/**/*.woff
+creatives/**/*.woff2
+creatives/**/*.ttf
+creatives/**/*.otf
+creatives/**/*.pdf
+reports/**/*.png
+reports/**/*.jpg
+reports/**/*.pdf
+reports/**/*.mp4
+
+# Tooling and local state
+.vercel/
+.vscode/
+*.tmp
+
+# Obsidian: per-machine workspace and caches stay local; app.json, core-plugins.json, appearance.json, bookmarks.json and templates.json are tracked
+.obsidian/workspace*.json
+.obsidian/cache/
+.obsidian/plugins/*/data.json
+.trash/

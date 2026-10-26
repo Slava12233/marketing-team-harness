@@ -29,7 +29,18 @@ function withCopy(example, fn) {   // a minimal harness folder: the template fil
     fn(dir);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 }
-const run = (dir, ...args) => spawnSync(process.execPath, [join(dir, 'dashboard', 'setup-page.mjs'), ...args], { encoding: 'utf8' });
+// Where the page looks for the Obsidian app and its vault list: pointed into the copy, so the machine's own
+// Obsidian install never changes a result. The folder 'away' is empty unless a test fills it.
+const away = dir => join(dir, 'away');
+const SANDBOXED = ['LOCALAPPDATA', 'ProgramFiles', 'ProgramW6432', 'APPDATA', 'HOME', 'USERPROFILE', 'XDG_CONFIG_HOME'];
+const sandbox = dir => {   // names compared without case (Git Bash spells PROGRAMFILES); Windows rebuilds ProgramFiles from ProgramW6432
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !SANDBOXED.some(n => n.toLowerCase() === k.toLowerCase())));
+  for (const n of SANDBOXED) env[n] = away(dir);
+  return env;
+};
+// On Windows every Obsidian location is under those variables; elsewhere a machine-wide app may still be found.
+const SEALED = process.platform === 'win32';
+const run = (dir, ...args) => spawnSync(process.execPath, [join(dir, 'dashboard', 'setup-page.mjs'), ...args], { encoding: 'utf8', env: sandbox(dir) });
 function page(dir) {   // the written page, its embedded data, and the status of every item it shows
   const html = readFileSync(join(dir, 'dashboard', 'setup.html'), 'utf8');
   const m = html.match(/<script type="application\/json" id="setup-data">([^<]*)<\/script>/);
@@ -42,9 +53,13 @@ function page(dir) {   // the written page, its embedded data, and the status of
 test('bare template: everything to do except .mcp.json; offline; optional rows hidden', () => withCopy(false, dir => {
   const r = run(dir, '--print');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^setup page: 1\/41 done, next: Git installed/m);
+  assert.match(r.stdout, SEALED ? /^setup page: 1\/46 done, next: Git installed/m : /^setup page: \d+\/46 done, next: Git installed/m);
   const { html, st } = page(dir);
-  for (const [k, s] of Object.entries(st)) assert.equal(s, k === 'install.mcpjson' ? 'done' : 'todo', k);
+  const app = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli'];
+  for (const [k, s] of Object.entries(st)) {
+    if (!SEALED && app.includes(k)) continue;
+    assert.equal(s, k === 'install.mcpjson' ? 'done' : k === 'obsidian.hooks' ? 'owner' : 'todo', k);
+  }
   assert.ok(!('meta.webhook' in st) && !('meta.instagram' in st));
   assert.match(html, /<html lang="en" dir="ltr">/);
   assert.match(html, /<meta http-equiv="refresh" content="5">/);
@@ -92,7 +107,7 @@ test('both string tables cover every chapter, item, status and hint; the embedde
   run(dir, '--mark', 'meta.webhook=todo', '--mark', 'meta.instagram=todo');   // marks show the optional rows (placeholders here)
   const { html, data } = page(dir);
   const keys = data.model.chapters.flatMap(c => (c.items || []).map(i => i.key));
-  assert.equal(keys.length, 43);
+  assert.equal(keys.length, 48);
   for (const lang of ['en', 'he']) {
     const S = data.strings[lang];
     for (const c of data.model.chapters) {
@@ -111,4 +126,56 @@ test('both string tables cover every chapter, item, status and hint; the embedde
   const first = html.match(/<main id="app">([\s\S]*?)<\/main>/)[1];
   assert.equal(render(data.model, data.strings[data.model.lang], data.glyphs), first, 'the toggle renders what Node rendered');
   assert.match(render(data.model, data.strings.he, data.glyphs), /עדכון אחרון/);
+}));
+
+test('the memory vault chapter: app, vault list, hooks and business note answered by files; the clicks wait for the app', () => withCopy(false, dir => {
+  const keys = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled'];
+  let r = run(dir);
+  assert.equal(r.status, 0, r.stderr);
+  let { data, st } = page(dir);
+  const ch = data.model.chapters.find(c => c.id === 'vault');
+  assert.deepEqual(ch.items.map(i => i.key), keys);
+  assert.equal(data.model.chapters.indexOf(ch), 2, 'right after the Install chapter');
+  assert.equal(st['obsidian.hooks'], 'owner');
+  assert.equal(st['memory.business_filled'], 'todo');
+  if (SEALED) {
+    assert.equal(st['obsidian.installed'], 'todo');
+    assert.equal(st['obsidian.vault_opened'], 'todo', 'no click asked before the app is there');
+  }
+  // the bootstrap's mark counts while no app is found; a mark on a file-answered item does not
+  r = run(dir, '--mark', 'obsidian.installed=done', '--mark', 'obsidian.hooks=done');
+  assert.equal(r.status, 0, r.stderr);
+  ({ st } = page(dir));
+  assert.equal(st['obsidian.installed'], 'done');
+  assert.equal(st['obsidian.vault_opened'], 'owner');
+  assert.equal(st['obsidian.cli'], 'owner');
+  assert.equal(st['obsidian.hooks'], 'owner');
+  assert.match(r.stderr, /obsidian\.hooks stays owner/);
+  writeFileSync(join(dir, 'dashboard', 'setup-progress.json'), '{"marks":{}}');
+  // the files: the app where its installer puts it, this folder in Obsidian's vault list, the hooks, the note
+  const a = away(dir);
+  const exe = process.platform === 'win32' ? join(a, 'Programs', 'Obsidian', 'Obsidian.exe')
+    : process.platform === 'darwin' ? join(a, 'Applications', 'Obsidian.app') : join(a, '.local', 'bin', 'obsidian');
+  mkdirSync(dirname(exe), { recursive: true });
+  if (process.platform === 'darwin') mkdirSync(exe); else writeFileSync(exe, '');
+  const reg = process.platform === 'win32' ? join(a, 'obsidian') : process.platform === 'darwin'
+    ? join(a, 'Library', 'Application Support', 'obsidian') : join(a, 'obsidian');
+  mkdirSync(reg, { recursive: true });
+  writeFileSync(join(reg, 'obsidian.json'), JSON.stringify({ vaults: { abc123: { path: dir + (process.platform === 'win32' ? '\\' : '/'), ts: 1, open: true } } }));
+  mkdirSync(join(dir, '.claude'));
+  writeFileSync(join(dir, '.claude', 'settings.json'), JSON.stringify({ hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/session-start.mjs' }] }] } }));
+  mkdirSync(join(dir, 'memory', 'business'), { recursive: true });
+  writeFileSync(join(dir, 'memory', 'business', 'company.md'), '# Company\n\nName: <fill at /setup>\n');
+  assert.equal(run(dir).status, 0);
+  ({ st } = page(dir));
+  assert.equal(st['obsidian.installed'], 'done');
+  assert.equal(st['obsidian.vault_opened'], 'done');
+  assert.equal(st['obsidian.cli'], 'owner', 'the command line toggle is the Owner\'s click');
+  assert.equal(st['obsidian.hooks'], 'done');
+  assert.equal(st['memory.business_filled'], 'todo', 'a placeholder is left');
+  writeFileSync(join(dir, 'memory', 'business', 'company.md'), '# Company\n\nName: Example Co\n');
+  assert.equal(run(dir, '--mark', 'obsidian.cli=done').status, 0);
+  ({ data, st } = page(dir));
+  assert.equal(st['memory.business_filled'], 'done');
+  assert.equal(data.model.chapters.find(c => c.id === 'vault').status, 'done');
 }));

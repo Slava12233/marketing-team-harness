@@ -1,0 +1,38 @@
+filters:
+  and:
+    - 'type == "campaign"'
+    - '!file.inFolder("memory/templates")'
+
+properties:
+  file.name:
+    displayName: "קמפיין"
+  status:
+    displayName: "סטטוס"
+  daily_budget:
+    displayName: "תקציב יומי"
+  cap:
+    displayName: "תקרה"
+  start:
+    displayName: "התחלה"
+  end:
+    displayName: "סיום"
+  updated:
+    displayName: "עודכן"
+
+views:
+  - type: table
+    name: "קמפיינים לפי סטטוס"
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - file.name
+      - status
+      - daily_budget
+      - cap
+      - start
+      - end
+      - updated
+    sort:
+      - property: start
+        direction: DESC

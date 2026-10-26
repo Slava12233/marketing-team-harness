@@ -8,10 +8,11 @@
 //   node dashboard/setup-page.mjs --open | --print        also open it in the default browser | print it as text
 // Statuses: todo, doing, done, owner (waiting for the Owner's click), na. A mark (dashboard/setup-progress.json)
 // counts only where the files give no answer: the Console steps table of config/accounts.md, checklist.md,
-// .mcp.json, whether .env exists (it is never opened), the config/*.md placeholders, plans/*first-flight-plan.md
-// and dashboard/state.json. The page shows names and public ids only, never a secret, and loads nothing from the
+// .mcp.json, whether .env exists (it is never opened), the config/*.md placeholders, plans/*first-flight-plan.md,
+// dashboard/state.json, .claude/settings.json (the memory hooks), memory/business/company.md, and, outside the
+// folder, whether the Obsidian app is installed and whether Obsidian's own vault list names this folder. The page shows names and public ids only, never a secret, and loads nothing from the
 // internet. Exit codes: 0 written, 1 a file could not be written, 2 wrong usage (unknown option, key or status).
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
@@ -21,6 +22,7 @@ const GLYPHS = { done: '✓', todo: '○', doing: '◐', owner: '●', na: '–'
 const CHAPTERS = [
   { id: 'c0', info: true },
   { id: 'c1', items: ['install.git', 'install.node', 'install.claude', 'install.env', 'install.mcpjson', 'install.approved'] },
+  { id: 'vault', items: ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled'] },
   { id: 'c2', items: ['meta.portfolio', 'meta.page', 'meta.adaccount', 'meta.payment', 'meta.phone', 'meta.people'] },
   { id: 'c3', items: ['meta.login', 'login.tools'] },
   { id: 'c4', items: ['meta.pixel'] },
@@ -44,6 +46,8 @@ const CONSOLE = {
   'meta.domain': 'Domain verified', 'meta.webhook': 'Lead webhook subscription', 'meta.instagram': 'Instagram linked',
 };
 const OPTIONAL = ['meta.webhook', 'meta.instagram'];
+// The Owner's clicks in Obsidian: "your turn" once the app is installed, "to do" before that.
+const AFTER_APP = ['obsidian.vault_opened', 'obsidian.cli'];
 // Interview round → the config files it writes; the round is done once they hold no {{ placeholder.
 const ROUND_FILES = { a: ['operator.md'], b: ['company.md'], c: ['product.md'], d: ['audiences.md'], e: ['brand.md'],
   f: ['claims.md'], g: ['accounts.md', 'product-team.md'], h: ['operator.md'], i: ['goals.md'] };
@@ -56,7 +60,7 @@ const EN = {
   byHand: 'To update it by hand, run `node dashboard/setup-page.mjs` in the harness folder.',
   langName: { en: 'English', he: 'עברית' },
   status: { todo: 'to do', doing: 'in progress', done: 'done', owner: 'your turn', na: 'n/a' },
-  chapters: { c0: 'Before you start', c1: 'Install', c2: 'Meta business basics', c3: 'Claude Code connected to Meta',
+  chapters: { c0: 'Before you start', c1: 'Install', vault: 'The memory vault (Obsidian)', c2: 'Meta business basics', c3: 'Claude Code connected to Meta',
     c4: 'Pixel and tracking', c5: 'Developer app and upload token', c6: 'WhatsApp, lead forms, domain', c7: 'fal (optional)',
     c8: '`/setup` interview', c9: '`/health`', c10: 'First flight built PAUSED', c11: 'The routine' },
   info: {
@@ -69,6 +73,11 @@ const EN = {
     'install.env': '`.env` created from `.env.example` (its contents are never shown)',
     'install.mcpjson': '`.mcp.json` declares the `meta-ads` server',
     'install.approved': 'The two servers in `.mcp.json` approved in Claude Code',
+    'obsidian.installed': 'Obsidian installed (free, also for commercial use)',
+    'obsidian.vault_opened': 'This folder opened in Obsidian as a vault',
+    'obsidian.cli': "Obsidian's command line interface turned on",
+    'obsidian.hooks': 'Memory hooks pasted into `.claude/settings.json` (`docs/hooks-paste-block.md`)',
+    'memory.business_filled': 'The business note `memory/business/company.md` filled in by `/setup`',
     'meta.portfolio': 'Business portfolio', 'meta.page': 'Facebook Page', 'meta.adaccount': 'Ad account owned by the portfolio',
     'meta.payment': 'Payment method on the ad account', 'meta.phone': 'Phone number verified on the ad account',
     'meta.people': 'People and roles', 'meta.login': 'Meta login in Claude Code (`meta-ads`)',
@@ -91,6 +100,9 @@ const EN = {
     'flight.build': 'Campaign built PAUSED', 'flight.preview': "Meta's preview images sent to the Owner",
   },
   hints: {
+    'obsidian.vault_opened': 'Obsidian → "Open folder as vault" on its start screen (or File → Open folder as vault) → pick the harness folder',
+    'obsidian.cli': 'Obsidian → Settings → General → Command line interface → turn it on',
+    'obsidian.hooks': "Open `docs/hooks-paste-block.md` and paste its block into `.claude/settings.json` (the Owner's paste; the harness never edits settings)",
     'meta.portfolio': 'Business Settings → Business portfolio', 'meta.page': 'Business Settings → Accounts → Pages',
     'meta.adaccount': 'Business Settings → Accounts → Ad accounts (time zone and currency are permanent)',
     'meta.payment': 'Ad account → Payment settings',
@@ -113,7 +125,7 @@ const HE = {
   byHand: 'לעדכון ידני, הריצו `node dashboard/setup-page.mjs` בתיקיית הפרויקט.',
   langName: { en: 'English', he: 'עברית' },
   status: { todo: 'לביצוע', doing: 'בתהליך', done: 'בוצע', owner: 'התור שלכם', na: 'לא רלוונטי' },
-  chapters: { c0: 'לפני שמתחילים', c1: 'התקנה', c2: 'יסודות העסק ב-Meta', c3: 'חיבור Claude Code ל-Meta',
+  chapters: { c0: 'לפני שמתחילים', c1: 'התקנה', vault: 'כספת הזיכרון (Obsidian)', c2: 'יסודות העסק ב-Meta', c3: 'חיבור Claude Code ל-Meta',
     c4: 'פיקסל ומעקב', c5: 'אפליקציית מפתחים וטוקן העלאה', c6: 'WhatsApp, טופסי לידים, דומיין', c7: 'fal (אופציונלי)',
     c8: 'הראיון של `/setup`', c9: '`/health`', c10: 'קמפיין ראשון בנוי במצב PAUSED', c11: 'השגרה' },
   info: {
@@ -126,6 +138,11 @@ const HE = {
     'install.env': 'הקובץ `.env` נוצר מתוך `.env.example` (התוכן שלו לא מוצג אף פעם)',
     'install.mcpjson': 'הקובץ `.mcp.json` מגדיר את השרת `meta-ads`',
     'install.approved': 'שני השרתים שב-`.mcp.json` אושרו ב-Claude Code',
+    'obsidian.installed': 'Obsidian מותקן (חינמי, גם לשימוש מסחרי)',
+    'obsidian.vault_opened': 'התיקייה נפתחה ב-Obsidian ככספת (vault)',
+    'obsidian.cli': 'ממשק שורת הפקודה של Obsidian הופעל',
+    'obsidian.hooks': 'ה-hooks של הזיכרון הודבקו בקובץ `.claude/settings.json` (`docs/hooks-paste-block.md`)',
+    'memory.business_filled': 'פתק העסק `memory/business/company.md` מולא על ידי `/setup`',
     'meta.portfolio': 'תיק עסקי', 'meta.page': 'עמוד פייסבוק', 'meta.adaccount': 'חשבון מודעות בבעלות התיק העסקי',
     'meta.payment': 'אמצעי תשלום בחשבון המודעות', 'meta.phone': 'מספר טלפון מאומת בחשבון המודעות',
     'meta.people': 'אנשים ותפקידים', 'meta.login': 'התחברות ל-Meta ב-Claude Code דרך `meta-ads`',
@@ -147,6 +164,9 @@ const HE = {
     'flight.build': 'הקמפיין נבנה במצב PAUSED', 'flight.preview': 'תמונות התצוגה המקדימה של Meta נשלחו לבעלים',
   },
   hints: {
+    'obsidian.vault_opened': 'Obsidian ← "Open folder as vault" במסך הפתיחה (או File ← Open folder as vault) ← בחרו את תיקיית הפרויקט',
+    'obsidian.cli': 'Obsidian ← Settings ← General ← Command line interface ← הפעילו',
+    'obsidian.hooks': 'פתחו את `docs/hooks-paste-block.md` והדביקו את הבלוק שלו בקובץ `.claude/settings.json` (הדבקה של הבעלים; הכלי לא עורך הגדרות)',
     'meta.portfolio': 'הגדרות העסק ← תיק עסקי', 'meta.page': 'הגדרות העסק ← חשבונות ← עמודים',
     'meta.adaccount': 'הגדרות העסק ← חשבונות ← חשבונות מודעות (אזור הזמן והמטבע קבועים לתמיד)',
     'meta.payment': 'חשבון המודעות ← הגדרות תשלום',
@@ -202,7 +222,34 @@ function cellStatus(cell) {   // a status cell of config/accounts.md or checklis
   return s.startsWith('n/a') || s === 'na' ? 'na' : null;
 }
 
-function facts(root) {   // what the files say; .env is checked for existence only and never opened
+const WIN = process.platform === 'win32', MAC = process.platform === 'darwin';
+const samePath = p => {   // one spelling of a folder path, for comparing two of them
+  let s = resolve(String(p));
+  try { s = realpathSync(s); } catch { /* keep the resolved spelling */ }
+  s = s.replace(/[\\/]+$/, '');
+  return WIN ? s.toLowerCase() : s;
+};
+function obsidianApp(env) {   // true when the Obsidian app is where its installers put it
+  const home = env.HOME || env.USERPROFILE || '';
+  const places = WIN ? [env.LOCALAPPDATA && join(env.LOCALAPPDATA, 'Programs', 'Obsidian', 'Obsidian.exe'),
+    env.ProgramFiles && join(env.ProgramFiles, 'Obsidian', 'Obsidian.exe')]
+    : MAC ? ['/Applications/Obsidian.app', home && join(home, 'Applications', 'Obsidian.app')]
+    : ['/usr/bin/obsidian', '/snap/bin/obsidian', '/var/lib/flatpak/exports/bin/md.obsidian.Obsidian',
+      home && join(home, '.local', 'bin', 'obsidian'), home && join(home, '.local', 'share', 'flatpak', 'exports', 'bin', 'md.obsidian.Obsidian')];
+  return places.some(p => p && existsSync(p));
+}
+function vaultOpened(root, env) {   // true when Obsidian's own vault list (obsidian.json) names this folder
+  const home = env.HOME || env.USERPROFILE || '';
+  const reg = WIN ? env.APPDATA && join(env.APPDATA, 'obsidian', 'obsidian.json')
+    : MAC ? home && join(home, 'Library', 'Application Support', 'obsidian', 'obsidian.json')
+    : join(env.XDG_CONFIG_HOME || join(home, '.config'), 'obsidian', 'obsidian.json');
+  try {
+    const want = samePath(root), vaults = JSON.parse(readFileSync(reg, 'utf8')).vaults || {};
+    return Object.values(vaults).some(v => v && typeof v.path === 'string' && v.path !== '' && samePath(v.path) === want);
+  } catch { return false; }
+}
+
+function facts(root, env = process.env) {   // what the files say; .env is checked for existence only and never opened
   const read = rel => { try { return readFileSync(join(root, rel), 'utf8'); } catch { return null; } };
   const ls = rel => { try { return readdirSync(join(root, rel)); } catch { return []; } };
   const json = rel => { try { return JSON.parse(read(rel)) || {}; } catch { return {}; } };
@@ -224,6 +271,9 @@ function facts(root) {   // what the files say; .env is checked for existence on
     built: Array.isArray(campaigns) && campaigns.some(c => c && /^(PAUSED|ACTIVE)$/i.test(String(c.status))),
     company: line('config/company.md', 'Short name').split(/;| \(/)[0].trim().slice(0, 60) || null,
     chat: line('config/operator.md', 'Chat language'),
+    obsidian: obsidianApp(env), vault: vaultOpened(root, env),
+    hooks: (read('.claude/settings.json') || '').includes('session-start.mjs'),
+    business: (b => b !== null && !b.includes('<fill at /setup>'))(read('memory/business/company.md')),
   };
 }
 
@@ -231,6 +281,10 @@ function fileAnswer(key, f) {   // the files' answer for one item: a status, or 
   if (key === 'install.env') return f.env ? 'done' : 'todo';
   if (key === 'install.mcpjson') return f.servers.includes('meta-ads') ? 'done' : 'todo';
   if (key === 'meta.people') return cellStatus(f.item('People and roles')?.status);
+  if (key === 'obsidian.installed') return f.obsidian ? 'done' : null;
+  if (key === 'obsidian.vault_opened') return f.vault ? 'done' : null;
+  if (key === 'obsidian.hooks') return f.hooks ? 'done' : 'owner';
+  if (key === 'memory.business_filled') return f.business ? 'done' : 'todo';
   if (CONSOLE[key]) {
     const row = f.step(CONSOLE[key]);
     if (key === 'meta.pixel' && (f.pixelNoSite || /no website/.test(norm(row?.status)) || norm(row?.note).startsWith('no website'))) return 'na';
@@ -251,11 +305,14 @@ function buildModel(root, progress) {   // the files win, then the mark, then th
   const lang = progress.lang || (/hebrew|עברית/i.test(f.chat) ? 'he' : 'en');
   const real = c => c != null && !String(c).includes('{{') && norm(c) !== '';
   let done = 0, tracked = 0, next = null;
+  const seen = {};   // the statuses decided so far: the Obsidian clicks wait for the app
+  const fallback = key => (key === 'fal.login' && !f.servers.includes('fal') ? 'na'
+    : AFTER_APP.includes(key) && seen['obsidian.installed'] === 'done' ? 'owner' : 'todo');
   const chapters = CHAPTERS.map((c, n) => {
     if (c.info) return { id: c.id, n, info: true };
     const items = [];
     for (const key of c.items) {
-      const status = fileAnswer(key, f) || marks[key] || (key === 'fal.login' && !f.servers.includes('fal') ? 'na' : 'todo');
+      const status = seen[key] = fileAnswer(key, f) || marks[key] || fallback(key);
       const answered = OPTIONAL.includes(key) && (real(f.step(CONSOLE[key])?.status) || real(f.item(CONSOLE[key])?.status));
       if (OPTIONAL.includes(key) && (status === 'na' || (!answered && !marks[key]))) continue;
       items.push({ key, status });

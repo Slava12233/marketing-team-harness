@@ -1,0 +1,8 @@
+{
+  "items": [
+    { "type": "file", "ctime": 1761500000000, "path": "memory/HOME.md", "title": "HOME" },
+    { "type": "file", "ctime": 1761500000001, "path": "memory/inbox/owner.md", "title": "Inbox" },
+    { "type": "file", "ctime": 1761500000002, "path": "memory/state/current.md", "title": "Current state" },
+    { "type": "file", "ctime": 1761500000003, "path": "memory/README.md", "title": "Memory contract" }
+  ]
+}

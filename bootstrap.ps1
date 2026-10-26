@@ -7,8 +7,9 @@
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check   report only: no questions, no installs, nothing changed
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Help    show the usage
 # The one install takes every missing item, required and optional alike (Git, Node.js, Claude Code,
-# playwright-core, FFmpeg, the HyperFrames video plugin from vendor\hyperframes), copies .env.example to .env
-# and opens the setup progress page. Enter at its question means Yes; Enter at an -Ask question means No.
+# playwright-core, Obsidian for the memory vault, FFmpeg, the HyperFrames video plugin from vendor\hyperframes),
+# copies .env.example to .env and opens the setup progress page; it ends with the Owner's three Obsidian clicks.
+# Enter at its question means Yes; Enter at an -Ask question means No.
 # Tags: [ok] already there, [installed] put in place by this run, [missing] not there, [skipped] an optional
 # item left out. Exit codes: 0 everything required is present, 1 something required is missing or the
 # install was declined, 2 wrong folder or unknown option. It never asks for, reads or prints a token: .env is
@@ -249,6 +250,57 @@ else {
   if ($Mode -eq 'all') { $Plan += 'playwright' } else { Invoke-Playwright }
 }
 
+# Obsidian (free, also for commercial use; Sync and Publish are optional paid services) opens the folder as the
+# memory vault: notes, links and the Bases dashboards over memory/. This script installs the app. Opening the
+# folder as a vault, turning on its command line and pasting the hooks are the Owner's clicks, listed at the end.
+$ObsidianCmd = 'winget install --id Obsidian.Obsidian -e --accept-package-agreements --accept-source-agreements'
+$ObsidianPage = 'https://obsidian.md/download'
+function Get-ObsidianPath {   # Obsidian.exe of a per-user or a machine install, or '' when neither is there
+  $places = @()
+  if ($env:LOCALAPPDATA) { $places += (Join-Path $env:LOCALAPPDATA 'Programs\Obsidian\Obsidian.exe') }
+  if ($env:ProgramFiles) { $places += (Join-Path $env:ProgramFiles 'Obsidian\Obsidian.exe') }
+  if ($env:ProgramW6432) { $places += (Join-Path $env:ProgramW6432 'Obsidian\Obsidian.exe') }   # a 32-bit PowerShell window
+  foreach ($p in $places) { if (Test-Path -LiteralPath $p -PathType Leaf) { return $p } }
+  return ''
+}
+function Test-ObsidianVault([string]$folder) {   # true when Obsidian's own vault list already names this folder
+  try {
+    $reg = Join-Path $env:APPDATA 'obsidian\obsidian.json'
+    if (-not (Test-Path -LiteralPath $reg -PathType Leaf)) { return $false }
+    $list = (Get-Content -LiteralPath $reg -Raw -ErrorAction Stop | ConvertFrom-Json).vaults
+    $want = $folder.TrimEnd('\', '/')
+    foreach ($v in @($list.PSObject.Properties)) {
+      if (([string]$v.Value.path).TrimEnd('\', '/') -ieq $want) { return $true }
+    }
+  } catch { return $false }
+  return $false
+}
+function Invoke-Obsidian {   # installs Obsidian (after its question under -Ask)
+  $script:Done = $false
+  $from = Get-PkgFrom
+  if (-not $from) {
+    Show-PkgHint 'Obsidian' $ObsidianPage
+    Say '[skipped] Obsidian. Install it later; the vault notes are plain Markdown files and work without it.'
+    return
+  }
+  Offer 'Obsidian' $false "Obsidian (free, also for commercial use) from $from" $ObsidianCmd { & winget install --id Obsidian.Obsidian -e --accept-package-agreements --accept-source-agreements }
+  $p = Get-ObsidianPath
+  if ($script:Done -and $p) { Say "[installed] Obsidian ($p)." }
+  elseif ($script:Done) { Say '[installed] Obsidian. A new terminal window may be needed before this script finds it.' }
+  else { Say ('[skipped] Obsidian. Install it later with: ' + $ObsidianCmd + ' (or from ' + $ObsidianPage + ')') }
+}
+$obsPath = Get-ObsidianPath
+if ($obsPath) { Say "[ok] Obsidian is installed for the memory vault ($obsPath)." }
+elseif ($Mode -eq 'check') { Say '[skipped] Obsidian is not installed (optional: it shows the memory vault, memory/, as linked notes and dashboards).' }
+elseif (($Mode -eq 'all') -and -not (Get-PkgFrom)) {
+  Say '[skipped] Obsidian is not installed (optional: it shows the memory vault, memory/, as linked notes and dashboards).'
+  Show-PkgHint 'Obsidian' $ObsidianPage
+}
+else {
+  Say '[missing] Obsidian is not installed (optional: it shows the memory vault, memory/, as linked notes and dashboards).'
+  if ($Mode -eq 'all') { $Plan += 'obsidian' } else { Invoke-Obsidian }
+}
+
 # The HyperFrames video plugin (Apache-2.0, by HeyGen) ships in this folder, in vendor\hyperframes: the script
 # adds that folder as the plugin's marketplace and never adds one from GitHub. The renderer needs Node.js 22
 # or newer and FFmpeg; it is fetched from the npm registry (npx hyperframes) the first time a video is made.
@@ -330,6 +382,7 @@ function Show-PlanLine([string]$item) {   # one line of the plan: the item and w
   elseif ($item -eq 'node') { Say ('  - Node.js LTS, from ' + (Get-PkgFrom)) }
   elseif ($item -eq 'claude') { Say '  - Claude Code, from claude.ai (the official installer; the npm registry if that fails)' }
   elseif ($item -eq 'playwright') { Say '  - playwright-core (a few megabytes), from the npm registry into node_modules in this folder' }
+  elseif ($item -eq 'obsidian') { Say ('  - Obsidian for the memory vault (free, also for commercial use), from ' + (Get-PkgFrom)) }
   elseif ($item -eq 'ffmpeg') { Say ('  - FFmpeg, from ' + (Get-PkgFrom)) }
   else { Say '  - The HyperFrames video plugin, from vendor/hyperframes in this folder (its renderer comes from npm on first use)' }
 }
@@ -385,6 +438,7 @@ if ($Mode -eq 'all') {
     if ($Plan -contains 'claude') { Put 'Claude Code' 'claude' }
     if ($EnvTodo) { Copy-Env }
     if ($Plan -contains 'playwright') { Install-PlaywrightNow }
+    if ($Plan -contains 'obsidian') { Invoke-Obsidian }
     if ($Plan -contains 'ffmpeg') { Invoke-FFmpeg }
     if ($Plan -contains 'hyperframes') { Install-HyperframesNow }
   }
@@ -415,6 +469,29 @@ Say '  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser whe
 Say '     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load.'
 Say '  4. Type /setup and answer the wizard.'
 Say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
+# The memory vault: after a run that went ahead, the Owner's three Obsidian clicks, and Obsidian opened when it
+# is there (on this folder once it is a vault, otherwise on its start screen). Opening it never fails the run.
+$obsNow = ''
+if (($Mode -ne 'check') -and -not $Declined) {
+  $obsNow = Get-ObsidianPath
+  Say '  6. The memory vault in Obsidian: three clicks for the Owner.'
+  Say '     a. In Obsidian choose "Open folder as vault" (or File, Open folder as vault) and pick this folder.'
+  Say '     b. In Obsidian: Settings, General, Command line interface: turn it on.'
+  Say '     c. Paste the block in docs/hooks-paste-block.md into .claude/settings.json, as that file says.'
+  if (-not $obsNow) { Say ('     Obsidian is not installed yet: run this script again, or get it from ' + $ObsidianPage + ' (free).') }
+  else {
+    $here = (Get-Location).ProviderPath
+    try {
+      if (Test-ObsidianVault $here) {
+        Start-Process ('obsidian://open?path=' + [uri]::EscapeDataString($here)) -ErrorAction Stop
+        Say '     Obsidian opened on this folder.'
+      } else {
+        Start-Process -FilePath $obsNow -ErrorAction Stop
+        Say '     Obsidian opened: start with click a.'
+      }
+    } catch { Say '     Obsidian could not be opened from here: open it from the Start menu.' }
+  }
+}
 # The setup progress page (dashboard/setup.html): written and opened at the end of a run that went ahead,
 # never under -Check or after a No. The marks are this run's results: done when the tool was found or installed.
 if (($Mode -ne 'check') -and -not $Declined -and (Test-Path -LiteralPath 'dashboard/setup-page.mjs' -PathType Leaf)) {
@@ -425,9 +502,10 @@ if (($Mode -ne 'check') -and -not $Declined -and (Test-Path -LiteralPath 'dashbo
     $markGit = if ((Get-Version 'git') -or ($Recheck -contains 'git')) { 'done' } else { 'todo' }
     $markNode = if (($pageMajor -ge 20) -or ($Recheck -contains 'node')) { 'done' } else { 'todo' }
     $markClaude = if ((Get-Version 'claude') -or ($Recheck -contains 'claude')) { 'done' } else { 'todo' }
+    $markObsidian = if ($obsNow) { 'done' } else { 'todo' }
     Say ''
     $global:LASTEXITCODE = 0
-    try { & node dashboard/setup-page.mjs --mark "install.git=$markGit" --mark "install.node=$markNode" --mark "install.claude=$markClaude" --open *> $null } catch { $global:LASTEXITCODE = 1 }
+    try { & node dashboard/setup-page.mjs --mark "install.git=$markGit" --mark "install.node=$markNode" --mark "install.claude=$markClaude" --mark "obsidian.installed=$markObsidian" --open *> $null } catch { $global:LASTEXITCODE = 1 }
     if ($LASTEXITCODE -eq 0) { Say 'A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html' }
     else { Say 'The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later.' }
   } elseif ($PageTodo) {

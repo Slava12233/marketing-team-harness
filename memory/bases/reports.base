@@ -1,0 +1,25 @@
+filters:
+  and:
+    - 'type == "report"'
+
+properties:
+  file.name:
+    displayName: "דוח"
+  created:
+    displayName: "תאריך"
+  summary:
+    displayName: "תקציר"
+  status:
+    displayName: "סטטוס"
+
+views:
+  - type: table
+    name: "דוחות, החדשים קודם"
+    order:
+      - file.name
+      - created
+      - summary
+      - status
+    sort:
+      - property: created
+        direction: DESC

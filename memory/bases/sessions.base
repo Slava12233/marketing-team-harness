@@ -1,0 +1,27 @@
+filters:
+  and:
+    - 'type == "session"'
+    - '!file.inFolder("memory/templates")'
+
+properties:
+  file.name:
+    displayName: "יום"
+  created:
+    displayName: "תאריך"
+  status:
+    displayName: "סטטוס"
+  summary:
+    displayName: "תקציר"
+
+views:
+  - type: table
+    name: "סשנים, החדשים קודם"
+    limit: 30
+    order:
+      - file.name
+      - created
+      - status
+      - summary
+    sort:
+      - property: created
+        direction: DESC

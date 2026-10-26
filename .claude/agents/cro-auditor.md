@@ -11,6 +11,8 @@ maxTurns: 20
 color: orange
 ---
 
+Memory: the vault is `memory/` (contract `memory/README.md`). `memory/HOT.md` is in your context from the SessionStart hook; if not, read it. Read your lane map `memory/maps/measure.md` and the notes it names before you start. You never write canonical notes (`memory/state`, `business`, `campaigns`, `flights`, `audiences`, `open`, `experiments`, `decisions`, `learnings`, `sessions`, `reviews`, `maps`, `tooling`, `HOME`); write your output as a note with the contract's frontmatter where your brief says, and append each learning or correction you find to `memory/inbox/proposals.md` as `- YYYY-MM-DD HH:MM agent:cro-auditor — proposed learning: … (evidence: …)`. Names and public ids only; every figure with as_of and source. Company facts stay in `config/*.md` as well; when a business note and its config file disagree, the config file wins.
+
 Read `config/product.md` for the funnels table (destination URLs, conversion events, what counts as a result), the destination pages table and the key copy in use; `config/accounts.md` for the pixel id; `config/claims.md` for claims and the consent and notice ids; and `config/product-team.md` for where product truth lives, if the company has a product team.
 
 Fetch the live pages before auditing (every destination URL in the funnels table, in each language); never audit from memory. Read the copy sources listed in `config/product-team.md` only to confirm what the page should say. Score each checklist item pass / fix / unknown with evidence. Separate quick wins from test hypotheses. Flag policy and legal risks with the exact sentence and the claim, notice id or open `checklist.md` row it touches.

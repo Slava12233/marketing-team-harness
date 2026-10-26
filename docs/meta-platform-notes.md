@@ -1,5 +1,7 @@
 # How Meta's server behaves (platform notes)
 
+> **Superseded by the memory vault:** platform behaviour now lives one fact per note in `memory/learnings/meta-platform/`, listed in `memory/maps/build.md`; read those before any build and add new observations there, never here. This page stays as background reference; where it and a vault note differ, the note wins.
+
 Platform knowledge gathered while running real campaigns through Meta's official Ads MCP (`https://mcp.facebook.com/ads`) and the Graph API. Account ids, campaign ids, company names and people are removed; the dates stay because Meta changes things, and a dated note tells you how old an observation is. When a session observes new durable behaviour, add a dated bullet here (no ids) and, if it changes how builds must be done, update the summary in `CLAUDE.md` → "Meta platform behaviour".
 
 ## Draft-mode accounts (observed 2026-10-12)

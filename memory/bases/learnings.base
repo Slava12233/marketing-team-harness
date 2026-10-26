@@ -1,0 +1,46 @@
+filters:
+  and:
+    - 'type == "learning"'
+    - '!file.inFolder("memory/templates")'
+
+properties:
+  file.name:
+    displayName: "למידה"
+  created:
+    displayName: "נוצר"
+  summary:
+    displayName: "תקציר"
+  status:
+    displayName: "סטטוס"
+  categories:
+    displayName: "קטגוריות"
+
+views:
+  - type: table
+    name: "החדשות קודם"
+    order:
+      - file.name
+      - created
+      - summary
+      - status
+      - categories
+    sort:
+      - property: created
+        direction: DESC
+
+  - type: table
+    name: "לפי קטגוריה"
+    filters:
+      and:
+        - 'status != "superseded"'
+    groupBy:
+      property: categories
+      direction: ASC
+    order:
+      - file.name
+      - created
+      - summary
+      - status
+    sort:
+      - property: created
+        direction: DESC

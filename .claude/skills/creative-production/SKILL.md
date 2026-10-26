@@ -72,4 +72,4 @@ When a flight's files are final and the Owner has seen them:
 1. `node creatives/tools/meta-upload.mjs --check` once per session, then `node creatives/tools/meta-upload.mjs <files>` → image hashes and video ids (ledger `creatives/uploads/<date>-meta-upload.json`).
 2. List the files with sizes, numbers, hashes and video ids in the plan file's media table.
 3. Update the flight's preview site (`ads.js` in step with the plan's copy table; compressed copies only, never the upload files).
-4. Note the storyboard version and QA verdict in `memory.md` (`memory-update`).
+4. Note the storyboard version and QA verdict in the flight note `memory/flights/<flight>.md` (`memory-update`).

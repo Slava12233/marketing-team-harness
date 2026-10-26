@@ -1,0 +1,26 @@
+filters:
+  and:
+    - 'type == "decision"'
+    - '!file.inFolder("memory/templates")'
+
+properties:
+  file.name:
+    displayName: "החלטה"
+  created:
+    displayName: "תאריך"
+  status:
+    displayName: "סטטוס"
+  summary:
+    displayName: "תקציר"
+
+views:
+  - type: table
+    name: "החלטות, החדשות קודם"
+    order:
+      - file.name
+      - created
+      - status
+      - summary
+    sort:
+      - property: created
+        direction: DESC

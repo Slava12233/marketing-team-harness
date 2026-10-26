@@ -34,7 +34,7 @@ Under Advantage+ audience, **locations, languages, minimum age and excluded cust
 **Candidates to size:** derive them from `config/audiences.md` per audience: the category's interests (names vary by locale; check the UI in the audience's language), life events and behaviours that fit the pain, plus Advantage+ audience with these as suggestions (`targeting_as_signal` 3). For B2B audiences: job titles, employers (companies in the target industry), industry interests. For language or diaspora audiences: the language as a locale control and intent-based interests, **never** religion, origin or another personal attribute.
 
 ## Structure rules
-- One cold ad set per language arm during a test; otherwise one consolidated cold ad set per audience. Do not fragment below the daily budget per ad set the Owner set in `memory.md` "Decision rules" (as a rule of thumb, an ad set needs about 50 results a week to leave learning).
+- One cold ad set per language arm during a test; otherwise one consolidated cold ad set per audience. Do not fragment below the daily budget per ad set the Owner set in `memory/business/goals.md` and `memory/decisions/` (as a rule of thumb, an ad set needs about 50 results a week to leave learning).
 - Advantage+ audience ON with signals as suggestions (where the special ad category allows); hard caps only when the Owner asks.
 - **Retargeting ladder** once traffic exists: site visitors 30 days (consented pixel traffic only, so the pool is a fraction of visitors), 90-day visitors, video viewers 25%+. Budget 10–20% of cold spend. A different message per rung (the film → the product's steps → the date or the offer).
 - **Custom audiences from any sign-up, lead or customer list: not without the Owner's ruling.** A sign-up consent that covers contact about the person's interest does not cover sharing with Meta.
@@ -42,7 +42,7 @@ Under Advantage+ audience, **locations, languages, minimum age and excluded cust
 - **Exclusions:** once a result event exists, exclude recent converters from cold ad sets that ask for the same result.
 
 ## Geo order
-Take the order from `config/company.md` (primary market first, then other markets) and the Owner's decision rules in `memory.md`: the primary market in its main language → the primary market in its second language arm → each other market in its own language, only after that market's legal and consent questions in `config/claims.md` are closed.
+Take the order from `config/company.md` (primary market first, then other markets) and the Owner's decision rules in `memory/decisions/`: the primary market in its main language → the primary market in its second language arm → each other market in its own language, only after that market's legal and consent questions in `config/claims.md` are closed.
 
 ## Output
 A table of signals with type, size (the editor's estimate, with the date), id (if known), category impact and recommendation (suggest / hard cap / skip); the proposed ad set structure; the exact `targeting` JSON for `meta-campaign-build`, with `special_ad_categories` stated per campaign.

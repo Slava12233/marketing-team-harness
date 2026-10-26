@@ -1,0 +1,30 @@
+filters:
+  and:
+    - 'status == "open"'
+    - '!owner.isEmpty()'
+    - '!file.inFolder("memory/templates")'
+
+properties:
+  file.name:
+    displayName: "פריט"
+  owner:
+    displayName: "בעלים"
+  summary:
+    displayName: "תקציר"
+  updated:
+    displayName: "עודכן"
+
+views:
+  - type: table
+    name: "פתוחים לפי בעלים"
+    groupBy:
+      property: owner
+      direction: ASC
+    order:
+      - file.name
+      - owner
+      - summary
+      - updated
+    sort:
+      - property: updated
+        direction: DESC

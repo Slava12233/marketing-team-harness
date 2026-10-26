@@ -4,7 +4,7 @@ If something here contradicts `CLAUDE.md`, `CLAUDE.md` wins; tell the Owner so t
 
 ## 1. What this is, in one paragraph
 
-This folder turns Claude Code into your company's marketing and paid-media team on Meta (Facebook, Instagram, WhatsApp, Messenger). It is not an app, and apart from a one-time install script (§3) there is no code you need to run. It holds rules (`CLAUDE.md`), your company's facts (`config/`), memory (`memory.md`), a go checklist (`checklist.md`), plans, reports, ad creatives, a set of skills (step-by-step procedures) and a set of agents (specialist helpers). Claude reads them when you open a session here and behaves like a careful media buyer who knows the account, the product, the claims you may make and what happened yesterday. It is connected to your Meta ad account through Meta's official Ads server, so it can read performance, build campaigns and ads, upload creatives and write reports. It never turns anything on and never spends money by itself.
+This folder turns Claude Code into your company's marketing and paid-media team on Meta (Facebook, Instagram, WhatsApp, Messenger). It is not an app, and apart from a one-time install script (§3) there is no code you need to run. It holds rules (`CLAUDE.md`), your company's facts (`config/`), a memory vault (`memory/`, a folder of linked notes you can open in Obsidian, §8a), a go checklist (`checklist.md`), plans, reports, ad creatives, a set of skills (step-by-step procedures) and a set of agents (specialist helpers). Claude reads them when you open a session here and behaves like a careful media buyer who knows the account, the product, the claims you may make and what happened yesterday. It is connected to your Meta ad account through Meta's official Ads server, so it can read performance, build campaigns and ads, upload creatives and write reports. It never turns anything on and never spends money by itself.
 
 **Why a harness and not just "ask Claude":** a fresh chat knows nothing about your company, your account, your decisions or last week's results. The files in this folder are that knowledge, written down, so every session starts where the last one stopped and follows the same rules.
 
@@ -22,7 +22,7 @@ Both are named in `config/operator.md`. If you have a **Product team** (the peop
 1. **Everything is built paused.** Campaigns, ad sets and ads are created in PAUSED state. Turning something on is a separate step, done only on the Owner's go. *Why:* a mistake in a paused object costs nothing.
 2. **The Owner's go, in the same message, with the money.** Claude activates, raises a budget, extends a schedule or starts an experiment only when the Owner writes the go and the spend in one message, in the phrasing set in `config/operator.md` (its shape is "turn on <campaign>, <amount>/day, cap <amount>", in the account currency). An earlier yes does not carry over. *Why:* money moves only on an explicit, auditable instruction.
 3. **Product truth lives with whoever ships the website.** Page copy, consent wording, the pixel and legal notices belong to the product team (or the Owner). The harness reads them and never edits them. A page or wording change is written up as a dated request file labelled "Needs product team". *Why:* one owner per fact; marketing never ships a website change by accident.
-4. **Memory first, memory last.** Every session begins by reading `memory.md` and ends by writing to it. *Why:* the next session, or the next person, inherits the state, the ids and the open questions instead of guessing.
+4. **Memory first, memory last.** Every session begins by reading the vault (a short summary, `memory/HOT.md`, then the current state) and ends with `/sync`, which writes it; every change is written into its note the moment it happens. *Why:* the next session, or the next person, inherits the state, the ids and the open questions instead of guessing.
 5. **A compliance gate before every build.** New copy, creatives and page requests go through the compliance check (Meta's advertising policies, the claims and legal notes in `config/claims.md`, the harness rules) before anything is built. *Why:* a rejected ad costs a day; a policy strike can cost the account.
 
 ## 3. Before your first session
@@ -41,7 +41,7 @@ Claude Max is the working plan: the agents run on Opus and Sonnet, and creative 
    - Windows: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1`
    - macOS: `bash bootstrap.sh`
 
-   It checks, one at a time, Git, Node.js 20 or newer and Claude Code, reports whether a browser (Microsoft Edge or Google Chrome) is present, lists what is missing (Git, Node.js, Claude Code, FFmpeg, `playwright-core`, the HyperFrames plugin) and installs all of it after one confirmation: press Enter. Flags: `-Check` / `--check` only reports; `-Yes` / `--yes` installs without the question; `-Ask` / `--ask` asks per item; `-Help` / `--help`. It copies `.env.example` to `.env`, the file on this computer that will hold the upload token. It then offers the optional extras of §3c (`playwright-core` and the HyperFrames plugin), y/n each. At the end it prints what is in place and what remains: the logins below and the Owner's Meta steps. It never asks for a password or a token. To get the report without installing anything, add `-Check` on Windows or `--check` on macOS. Running it again is safe. At the end it opens a progress page in your browser (`dashboard/setup.html`): a checklist of every setup step that the wizard ticks as it confirms each one; your own clicks in Meta show there as "your turn". Keep it open beside Claude Code; it refreshes itself.
+   It checks, one at a time, Git, Node.js 20 or newer and Claude Code, reports whether a browser (Microsoft Edge or Google Chrome) is present, lists what is missing (Git, Node.js, Claude Code, FFmpeg, `playwright-core`, the HyperFrames plugin, Obsidian) and installs all of it after one confirmation: press Enter. Flags: `-Check` / `--check` only reports; `-Yes` / `--yes` installs without the question; `-Ask` / `--ask` asks per item; `-Help` / `--help`. It copies `.env.example` to `.env`, the file on this computer that will hold the upload token. It then offers the optional extras of §3c (`playwright-core` and the HyperFrames plugin), y/n each. At the end it prints what is in place and what remains: the logins below and the Owner's Meta steps. It never asks for a password or a token. To get the report without installing anything, add `-Check` on Windows or `--check` on macOS. Running it again is safe. At the end it opens a progress page in your browser (`dashboard/setup.html`): a checklist of every setup step that the wizard ticks as it confirms each one; your own clicks in Meta show there as "your turn". Keep it open beside Claude Code; it refreshes itself.
 4. **Open the folder in Claude Code.** In the same terminal, type `claude`. The first time, Claude Code asks you to log in to your Claude account (§3a) and whether you trust this folder. It then asks whether to use the two MCP servers the folder brings in `.mcp.json`: `meta-ads` (Meta's official Ads server) and `fal` (picture and video generation). Approve both; neither can do anything until someone logs in.
 5. **Log in to Meta.** Type `/mcp`, pick `meta-ads` and choose to log in. The Facebook consent screen opens in the browser, and it must show **the Owner's** Facebook profile: the one that runs the company's Business portfolio and ad account. Grant this company's business, ad account and Page, and nothing else. If the company has no Business portfolio or ad account yet, the Owner does steps 1 to 4 of `docs/meta-setup-guide.md` first; the login can only grant what exists.
 6. **Log in to fal (optional).** `/mcp` → `fal` → log in with the company's fal account, when you want generated pictures or clips. fal is paid per run; every paid round is stated in money first and runs on the Owner's go.
@@ -95,7 +95,7 @@ Optional clips:
 
 ## 4. Your first session: `/setup`, then the first ten minutes
 
-**The very first time, type `/setup`.** The wizard interviews you in rounds of four questions (in English, with the recommended answer first): (a) who runs this, (b) the company, (c) the product and its funnels, (d) the audiences, (e) the brand, (f) claims and law, (g) accounts and tracking, (h) routines and the go, and (i) goals and money. It writes your company's facts into `config/`: A progress page in your browser (`dashboard/setup.html`, opened by the bootstrap and by the wizard) ticks each step as the wizard confirms it; your own Meta clicks show there as "your turn".
+**The very first time, type `/setup`.** The wizard interviews you in rounds of four questions (in English, with the recommended answer first): (a) who runs this, (b) the company, (c) the product and its funnels, (d) the audiences, (e) the brand, (f) claims and law, (g) accounts and tracking, (h) routines and the go, and (i) goals and money. It writes your company's facts into `config/` and fills the memory vault from them (§8a: the business notes, the current state, HOME and the Inbox in your chat language). A progress page in your browser (`dashboard/setup.html`, opened by the bootstrap and by the wizard) ticks each step as the wizard confirms it; your own Meta clicks show there as "your turn".
 
 | File | What it holds |
 |---|---|
@@ -109,15 +109,15 @@ Optional clips:
 | `config/product-team.md` | Where product truth lives and how requests are filed, or one line saying there is no product team |
 | `config/goals.md` | Goals and money, from round (i): the monthly budget band (in the account currency), the target cost per result for each funnel, the first funnel to launch, the hard caps (daily, weekly, monthly, per campaign), what success in 30 days means, how much risk you accept in tests, and when spend is reviewed |
 
-As it goes, the wizard prints the Meta console click lists (the steps of `docs/meta-setup-guide.md`, with Meta's addresses and what you should see) and checks each outcome live: it reads the Meta account and writes the ids it finds, runs the upload-token check, and opens each destination page. It then drafts `plans/<date>-first-flight-plan.md`: one campaign proposal per funnel, with budgets proposed inside the band and below the caps of `config/goals.md`, each labelled "Needs the Owner's go". It can also show you the fictional example in `examples/acme-fitness/` (in a scratch copy, never over your own config) so you can see a configured harness first. You can re-run `/setup` or edit any `config/` file by hand at any time.
+As it goes, the wizard prints the Meta console click lists (the steps of `docs/meta-setup-guide.md`, with Meta's addresses and what you should see) and checks each outcome live: it reads the Meta account and writes the ids it finds, runs the upload-token check, and opens each destination page. It then drafts `plans/<date>-first-flight-plan.md`: one campaign proposal per funnel, with budgets proposed inside the band and below the caps of `config/goals.md`, each labelled "Needs the Owner's go". At the end it lists the Owner's three one-time vault clicks (open the folder in Obsidian as a vault, turn on Obsidian's command line, paste the hooks block; §8a). It can also show you the fictional example in `examples/acme-fitness/` (in a scratch copy, never over your own config) so you can see a configured harness first. You can re-run `/setup` or edit any `config/` file by hand at any time.
 
 **Every day after that:**
 
-1. Type `/health`. It checks the plumbing (the servers in `.mcp.json`, the Meta login and account, objects against memory, review flags, pixel, destination pages, preview site, credits, `checklist.md`, memory and config files, the upload token, the bootstrap's prerequisites, and money against the caps in `config/goals.md`) and prints a green/yellow/red table. It changes nothing.
-2. Type `/morning`. It reads memory and the checklist, reads the live account, reports what changed overnight, what is in review, what is spending, which gates are open and who owns them, and gives ranked recommendations. The full report lands in `reports/YYYY-MM-DD-morning.md`.
+1. Type `/health`. It checks the plumbing (the servers in `.mcp.json`, the Meta login and account, objects against memory, review flags, pixel, destination pages, preview site, credits, `checklist.md`, memory and config files, the upload token, the bootstrap's prerequisites, money against the caps in `config/goals.md`, and the vault: its check, the summary, the hooks, Obsidian) and prints a green/yellow/red table. It changes nothing.
+2. Type `/morning`. It answers your Inbox, reads the vault and the checklist, reads the live account, reports what changed overnight, what is in review, what is spending, which gates are open and who owns them, and gives ranked recommendations. The full report lands in `reports/YYYY-MM-DD-morning.md`.
 3. Read the two lists at the end: **Needs the Owner's go** (anything that moves money or delivery) and **Needs product team** (anything on the website). Those are the decisions; everything else Claude can do now.
 4. Work: ask for what you need (§6).
-5. Type `/sync` before you close. It verifies what changed, writes `memory.md`, updates `checklist.md` and prints a short closing summary.
+5. Type `/sync` before you close. It verifies what changed, writes the vault (the day's note, the notes that changed, HOME and the summary), answers your Inbox, checks the vault, updates `checklist.md`, saves a local git commit when the folder is a git repository, and prints a short closing summary.
 
 **Why this order:** health catches a dead login before you trust a number; morning gives everyone the same picture; sync makes sure tomorrow starts from today.
 
@@ -128,8 +128,9 @@ The times are set in `config/operator.md`; the control room, if installed, remin
 | When | Command | What you get |
 |---|---|---|
 | Every working day, first thing | `/health` then `/morning` | The plumbing table and the daily report with recommendations. Read-only: a broken ad is reported with a click list, and the pause is the Owner's |
-| Every working day, last thing | `/sync` | Memory written, checklist updated, closing summary |
-| Once a week, once a campaign has about a week of data | `/next-round` | The week's numbers, three specialist views (creative, copy, competitors) run in parallel, a compliance pass, and a numbered list you pick from. Only the picked items are built, paused. Before there is data it runs as a labelled opinion |
+| Every working day, last thing | `/sync` | Memory written, Inbox answered, vault checked, checklist updated, closing summary |
+| Once a week, before the round | `/consolidate` (also runs by itself as the first step of `/next-round`) | The memory tidied: duplicates merged, old facts replaced, closed items archived, size limits kept; a short note of what changed |
+| Once a week, once a campaign has about a week of data | `/next-round` | The week's numbers, three specialist views (creative, copy, competitors) run in parallel, a compliance pass, and a numbered list you pick from. Only the picked items are built, paused, and the weekly review lands in `memory/reviews/`. Before there is data it runs as a labelled opinion |
 | Before any launch | `checklist.md` (§8) | Every gate done, or consciously marked n/a by its owner |
 | Once, or when the company changes | `/setup` | `config/` rewritten from a fresh interview |
 
@@ -141,10 +142,10 @@ Write in plain language. Claude answers in the chat language set in `config/oper
 |---|---|---|---|
 | A report | "How did the sign-up campaign do this week?" | Pull the numbers from the live account and write a report in the account currency (spend, results, cost per result, CTR, CPM, frequency, landing page views) against the previous equal period, save it in `reports/`, and lead with the answer | Fill a gap with an estimate; "no data yet" is an acceptable answer |
 | A new creative round | "We need fresh ads for the first funnel." | Run a brief, several genuinely different concepts and copy variations, a compliance pass, then a numbered recap for you to pick from | Build anything before you pick; use a claim that is not in `config/claims.md` |
-| A build | "Build #4 and #5 into the sign-up ad set." | Build them PAUSED, read them back, check for errors, record every id in the plan and `memory.md`, then show you Meta's rendering as images | Turn them on |
+| A build | "Build #4 and #5 into the sign-up ad set." | Build them PAUSED, read them back, check for errors, record every id in the plan and the campaign note, then show you Meta's rendering as images | Turn them on |
 | A page audit | "Why do people click but not sign up?" | Audit the destination page for message match, the offer, friction and tracking, and write any change as a dated request labelled "Needs product team" | Edit the website or write consent wording |
 | Showing an ad as images | "Show me ad #3 as it looks on Facebook." | Fetch Meta's own preview of the built ad, capture it with `creatives/tools/ad-shots.sh` and send you the pictures, saying whether the ad is paused or live | Open a browser pane instead, or redraw a built ad by hand |
-| A budget change (needs the go) | The Owner writes the go in the phrasing from `config/operator.md`: "turn on <campaign>, <amount>/day, cap <amount>" | Restate the daily spend and the cap, activate exactly what was written, re-read it live, check errors, record it in `memory.md` | Act on an Operator's request, on an earlier yes, or on a go without the amounts; go beyond what was written |
+| A budget change (needs the go) | The Owner writes the go in the phrasing from `config/operator.md`: "turn on <campaign>, <amount>/day, cap <amount>" | Restate the daily spend and the cap, activate exactly what was written, re-read it live, check errors, record it in the campaign note | Act on an Operator's request, on an earlier yes, or on a go without the amounts; go beyond what was written |
 | An explanation | "Why is the second funnel on a lead form and not the page?" | Find the decision and point to where it is written down | Invent a reason that is not written anywhere |
 
 **What Claude prepares and hands to the Owner instead of doing:** turning anything on or changing spend; deleting live objects and discarding drafts; anything in Meta's consoles (Page, Business portfolio, Lead Ads terms, developer app, tokens, domain verification); a decision on using sign-up lists as custom audiences; appeals on policy notices. It writes the exact click list and stops.
@@ -165,13 +166,53 @@ A table of everything that must be true before a campaign runs: each item has an
 - Anyone on the team can edit it; Claude fills the Harness items and adds notes during `/sync`.
 - Claude never marks an Owner or Product-team item done; it adds a note and leaves the status to that owner.
 
+## 8a. The memory vault (Obsidian)
+
+The harness keeps its memory as a folder of small linked notes, `memory/`. The whole harness folder is an **Obsidian vault**: Obsidian is a free note app that shows plain text files as linked pages and tables (the bootstrap installs it). Claude reads and writes the same files directly; Obsidian is your window onto them. Nothing breaks if Obsidian is closed or not installed. The full guide is `docs/obsidian-guide.md`; the rulebook for the folder is `memory/README.md`.
+
+**What is in it, in plain words.** Your company's facts as notes (`memory/business/`, filled by `/setup` from `config/`); the account as last checked (`memory/state/current.md`); one note per campaign, per creative flight, per audience and per experiment, each with a "Current state" that is always true now and a dated log below it; one note per decision the Owner made; one note per lesson learned (for example how Meta's server behaves); one note per working day (what was asked, done and left open); a weekly review; the Owner's Inbox.
+
+**How to open it (once).** Open Obsidian → **Open folder as vault** → pick this harness folder. Obsidian remembers it. The creative files, `.claude/` and the dashboard folder are hidden from Obsidian on purpose; flight notes link to creatives by path.
+
+**HOME.** Open `memory/HOME.md` and pin it. It is in your chat language and shows, top to bottom: today; money against the caps in `config/goals.md`; the campaigns table (status, daily budget, cap, next review); the open items by owner with the cost of each; the experiments by verdict; the newest lessons; the latest weekly review; a link to the Inbox. The top part is rewritten by the harness at every `/morning` and `/sync`; anything you write **below** the line marked `%% generated:end %%` is yours and is never touched.
+
+**The Inbox** (`memory/inbox/owner.md`). Write anything under the open heading, in plain words: a question, a fact, an idea, a request. Every morning (`/morning`) and at every `/sync` the harness answers under your line, starting with `↳`: done (and where it was filed), needs your go (with the cost), or filed to a note. Answered lines move to the answered heading. **The Inbox never changes the account.** A request that would spend money or turn something on comes back as "needs your go", and only the Owner's go in chat, with the spend stated, makes it happen.
+
+**The weekly review** (`memory/reviews/YYYY-Www.md`, in your chat language). Written by `/next-round` (or by `/sync` on the last working day of the week if the round did not run): the bottom line, campaigns against the caps, up to three lessons of the week, the decisions waiting for the Owner with their cost, next week.
+
+**What the harness writes where.**
+
+| Where | What | When |
+|---|---|---|
+| `memory/state/current.md` | The account as last checked, the campaigns table, the plan to read first, the next actions | after every live read and every change |
+| `memory/business/` | The company, product, brand, audiences, claims, funnels, offers, goals, where product truth lives | `/setup`, and whenever a fact in `config/` changes (the `config/` file wins) |
+| `memory/campaigns/`, `flights/`, `audiences/`, `experiments/` | One note per thing: "Current state" plus a dated log | the moment something changes |
+| `memory/decisions/`, `memory/learnings/` | One ruling or one lesson per note; never edited later, replaced by a newer note | when the Owner decides or Claude learns something |
+| `memory/sessions/YYYY-MM/` | One note per day | through the day; closed by `/sync` |
+| `memory/HOT.md`, `INDEX.md`, `capabilities/`, HOME's top part, `dashboard/state.json` | Generated summaries; nobody edits them by hand | `/morning`, `/sync`, `/consolidate` |
+| `memory/inbox/proposals.md` | Suggestions from the specialist agents; only the main session turns them into notes | agents append; `/sync` empties it |
+| `memory/archive/` | Old notes and closed campaigns | `/consolidate` |
+
+The go checklist stays `checklist.md` (§8); it is not a vault note.
+
+**The three rhythms.** (1) *At once:* every change in the account and every decision is written into its note in the same turn. (2) *Every `/sync`:* a quick check of the whole vault (dead links, size limits, no secret and no lead's name, email or phone anywhere) and, when the folder is a git repository, a local save point (never pushed). (3) *Weekly:* `/consolidate` tidies the vault, then `/next-round` and the weekly review.
+
+**The Owner's three one-time clicks** (all optional; `/setup` lists them and `/health` checks them in its last four lines):
+- **Open the folder as a vault** in Obsidian (above).
+- **Obsidian's command line:** Settings → General → **Command line interface** → on, then close and reopen the terminal. It lets Claude search the vault and move or rename notes with their links kept. Without it everything still works, through the files.
+- **The hooks:** two small scripts that load the summary (`memory/HOT.md`) into every new session and save a checkpoint into the day's note before a long chat is compacted. Paste the block from `docs/hooks-paste-block.md` into `.claude/settings.json` once; Claude prepares it but never installs hooks itself.
+
+**When Claude says it will not edit a note:** the note is the Owner's (the part of HOME below the line, the Inbox lines) or a dated ruling or lesson that is only ever replaced. Edit your own part yourself; for a ruling or lesson, say what changed and Claude writes a new note that replaces the old one.
+
+
 ## 9. The map of the folder
 
 | Path | What it is | Who edits |
 |---|---|---|
 | `CLAUDE.md` | The rulebook: money and safety, claims, compliance, skills, agents, the campaign from A to Z | Claude, only when a rule changes |
 | `config/` | Your company's facts, written by `/setup` (§4), including `config/goals.md` (budgets, targets, caps); `config/README.md` explains each file | `/setup`, or you by hand |
-| `memory.md` | The working memory: current state, how to verify it, learnings, decision rules, a session log, "next session should" | Claude, at every state change and at every sync |
+| `memory/` | The memory vault (§8a): HOME, the Inbox, state, business notes, campaigns, flights, audiences, experiments, decisions, learnings, day notes, weekly reviews; the rulebook for it is `memory/README.md` | Claude (the main session only); you write below HOME's marked line and in the Inbox |
+| `.obsidian/` | Obsidian's settings for this folder (core plugins only; `creatives/`, `.claude/` and `dashboard/` hidden) | Obsidian |
 | `checklist.md` | The go checklist (§8) | Claude and the team |
 | `ONBOARDING.md` | This manual | Claude, on request |
 | `plans/` | Living plans with every id, spec, copy table and decision; requests to the product team | Claude |
@@ -186,7 +227,7 @@ A table of everything that must be true before a campaign runs: each item has an
 | `bootstrap.ps1`, `bootstrap.sh` | The first-run check and install (§3), for Windows and macOS | nobody; they ship as is |
 | `README.md`, `LICENSE`, `THIRD-PARTY.md` | What this is and the quick start; the licence (a single-company draft); the third-party skills and their licences | the repository owner |
 | `CHANGELOG.md`, `release.ps1`, `release.sh` | What changed in each release; the script that cuts a release | whoever publishes releases |
-| `docs/` | The template contract, the notes on how Meta's server behaves, and the Owner's Meta setup guide (`docs/meta-setup-guide.md`) | Claude |
+| `docs/` | The template contract, the Owner's Meta setup guide (`docs/meta-setup-guide.md`), the Obsidian guide (`docs/obsidian-guide.md`), the hooks paste block (`docs/hooks-paste-block.md`), and the older notes on how Meta's server behaves (superseded by `memory/learnings/meta-platform/`) | Claude |
 | `.claude/skills/` | The procedures, one folder each (§10) | Claude |
 | `.claude/agents/` | The specialists (§11) | Claude |
 | `dashboard/state.json`, `control-room/` | The optional control room and its data file | Claude; installing the mod is the Owner's |
@@ -206,12 +247,13 @@ Both MCP servers come with the folder in `.mcp.json`: Claude Code asks you to ap
 
 ## 10. The skills
 
-Commands you type: `/setup`, `/morning`, `/health`, `/next-round`, `/sync`. The craft skills below run inside those or when a task needs them; you can name one ("use the ad-copy skill") but you rarely need to.
+Commands you type: `/setup`, `/morning`, `/health`, `/next-round`, `/sync`, `/consolidate`. The craft skills below run inside those or when a task needs them; you can name one ("use the ad-copy skill") but you rarely need to.
 
 | Skill | One line |
 |---|---|
 | `setup` | The onboarding interview (rounds (a) to (i)) that writes `config/`, prints the Meta click lists and checks each outcome live, and drafts the first flight plan |
-| `memory-update` | How memory is read at the start and written at every change and at the end |
+| `memory-update` | How the vault is read at the start and written at every change and at the end |
+| `consolidate` | The weekly tidy of the vault: duplicates merged, stale facts replaced, closed items archived, size limits kept |
 | `meta-campaign-build` | How campaigns, ad sets and ads are built and changed through Meta's server, with every learned platform rule; uploads |
 | `meta-performance-report` | The report: columns, the diagnosis order, the decision rules |
 | `ad-copy` | Primary text, headlines, hooks in your languages, inside the claims rules |
@@ -224,6 +266,7 @@ Commands you type: `/setup`, `/morning`, `/health`, `/next-round`, `/sync`. The 
 | `ab-test-design` | Experiments with pre-registered decision rules |
 | `offer-design`, `scaling-playbook`, `marketing-psychology`, `competitor-research` | What each funnel offers; how to scale and pause; principles for copy; Ad Library scans |
 | Third-party: `ad-creative`, `image`, `banner-design`, `frontend-design`, `viral-reverse-engineering`, `find-skills`, `grill-me`, `grilling` | Craft references (sources in `THIRD-PARTY.md`); the harness rules win on any conflict |
+| Third-party: `obsidian-markdown`, `obsidian-bases`, `obsidian-cli`, `json-canvas`, `defuddle`, `knap` (from kepano/obsidian-skills, MIT) | How the vault's notes, properties, bases and canvases are written, and how the Obsidian command line is used; `memory/README.md` wins on any conflict |
 
 ## 11. The agents (who does what)
 
@@ -240,7 +283,7 @@ Claude delegates to these when a task is big or needs a second, independent read
 | `competitor-researcher` | Ad Library and web scans | Account writes |
 | `signals-auditor` | Pixel, consent, attribution checks | Account writes |
 | `test-designer` | Experiment design and verdicts | Creating objects or experiments |
-| `harness-librarian` | Keeps memory, plans, the checklist and the rulebook consistent | Account writes |
+| `harness-librarian` | The mechanical part of `/consolidate` and `/sync`: finds duplicates, stale facts and gaps in the vault and proposes fixes | Account writes, writing the vault's notes itself |
 
 ## 12. When something goes wrong
 
@@ -253,6 +296,9 @@ Claude delegates to these when a task is big or needs a second, independent read
 | A long render or check was stopped | Heavy commands run with a time limit, one at a time | Normal; Claude reports the partial result and does not loop |
 | A number looks wrong | Often consent gating (only visitors who accepted cookies send events) or a different attribution window | Ask for the `signals-audit`; compare with the counts the product team hands over |
 | Claude says "Needs the Owner's go" | The action moves money or delivery | The Owner writes the go with the amounts in one message, or decides not to |
+| `/sync` stops on a red vault check | The checker found a secret or a lead's detail, a dead link, a note over its size limit, or a hand edit in a generated note | Claude fixes the note and runs the check again before it closes; a size problem is fixed by `/consolidate`. If the problem is in a note you wrote, Claude tells you which line |
+| HOME shows yesterday's numbers | The summary was not regenerated (a skipped `/morning`, or the script failed) | Type `/morning`, or ask Claude to run `build-hot`; `/health` line 17 shows it |
+| A new session does not seem to know the state | The hooks are not installed, so the summary is not loaded | Claude reads `memory/HOT.md` itself; paste the hooks block once (§8a) to make it automatic |
 
 ## 13. Glossary
 
@@ -267,5 +313,8 @@ Claude delegates to these when a task is big or needs a second, independent read
 - **Flight:** one round of campaigns with its numbered creatives and its plan.
 - **Go:** the Owner's written instruction with the spend stated, in the same message.
 - **Gate:** an item in `checklist.md` that must be done before a campaign is turned on.
-- **Sync:** the end-of-session write to memory and the checklist.
+- **Sync:** the end-of-session write to the vault and the checklist.
+- **Vault:** the `memory/` folder of linked notes, opened in Obsidian; `memory/README.md` is its rulebook.
+- **HOME / Inbox:** the Owner's page in the vault / the note where the Owner writes and the harness answers.
+- **HOT:** the short summary (`memory/HOT.md`) every new session loads first; generated, never edited by hand.
 - **Needs product team:** a request file for a page, event or notice change, carried to whoever ships the website (the Owner when there is no product team).

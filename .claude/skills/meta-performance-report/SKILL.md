@@ -32,9 +32,9 @@ Then: one paragraph diagnosis, one paragraph recommendation, the list of actions
 3. **Landing page arrival:** LPV ÷ outbound clicks. Below 70 % = slow page or wrong link (check the language path against the destination pages table in `config/product.md`).
 4. **Consent and modal friction:** when the destination shows a cookie bar, a popup or a sign-in step before the CTA, paid visitors meet it first. A gap between LPV and results with healthy CTR points at the page, not the ad; the fix is a request to the product team, never an ad edit.
 5. **Page conversion:** app results ÷ LPV; for form or meeting funnels, bookings ÷ LPV or bookings ÷ form leads.
-6. **Cost per result vs the target the Owner set** (`memory.md` "Decision rules"). When `config/company.md` gives no revenue model ("not stated"), there is no break-even to derive; if no target is set, report cost per result and write "no verdict: target not set".
+6. **Cost per result vs the target the Owner set** (`memory/decisions/` and `memory/business/goals.md`). When `config/company.md` gives no revenue model ("not stated"), there is no break-even to derive; if no target is set, report cost per result and write "no verdict: target not set".
 
-## Decision rules (from the plan and `memory.md`; do not override silently)
+## Decision rules (from the plan, `memory/decisions/` and `memory/business/goals.md`; do not override silently)
 - Learning: no judgement on an ad set before 7 days or 1,000+ impressions per ad, whichever is later.
 - A/B winner: the pre-registered threshold in `plans/experiments-log.md` (defaults: ≥30 sign-ups or leads per arm and a ≥30 % gap in cost per result; ≥10 meetings or bookings per arm for high-value funnels), confirmed by the experiment tool. Otherwise "no winner yet".
 - Frequency above 3 in 7 days with falling CTR = fatigue; recommend new creative, not a budget cut.

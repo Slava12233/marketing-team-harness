@@ -1,0 +1,38 @@
+filters:
+  and:
+    - 'type == "experiment"'
+    - '!file.inFolder("memory/templates")'
+
+properties:
+  file.name:
+    displayName: "ניסוי"
+  status:
+    displayName: "סטטוס"
+  verdict:
+    displayName: "הכרעה"
+  metric:
+    displayName: "מדד"
+  start:
+    displayName: "התחלה"
+  review:
+    displayName: "בדיקה"
+  campaign:
+    displayName: "קמפיין"
+
+views:
+  - type: table
+    name: "ניסויים לפי הכרעה"
+    groupBy:
+      property: verdict
+      direction: ASC
+    order:
+      - file.name
+      - status
+      - verdict
+      - metric
+      - start
+      - review
+      - campaign
+    sort:
+      - property: start
+        direction: DESC

@@ -1,0 +1,36 @@
+---
+type: campaign
+created: {{date}}
+updated: {{date}}
+status: paused
+maintained_by: harness
+categories: [campaigns]
+summary: 
+ids: []
+funnel: 
+plan: 
+daily_budget: 
+cap: 
+start: 
+end: 
+as_of: 
+source: ads_get_ad_entities
+---
+
+# {{title}}
+
+## Current state
+<!-- Rewritten by the main session after every change; every line true now; the time of the live read in as_of. -->
+
+| Object | Id | Status | Budget | Note |
+|---|---|---|---|---|
+
+## Decision rules
+<!-- Links to decision notes that govern this campaign. -->
+
+## Links
+Plan: · Reports: · Flight: · Experiments:
+
+## Log
+<!-- Dated bullets, append-only, newest last. -->
+- {{date}} — created

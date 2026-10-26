@@ -2,9 +2,17 @@
 
 A Claude Code harness that acts as a company's marketing and paid-media team on **Meta Ads** (Facebook, Instagram, WhatsApp, Messenger). It connects to Meta's official Ads MCP server and works the way a small in-house team would: it reads performance and writes daily and weekly reports, plans flights, writes ad copy and creative briefs, produces still ads, builds campaigns, ad sets and ads (always PAUSED), audits landing pages and tracking, and advises on positioning, audiences and budget.
 
-The harness is company-agnostic. Ten sub-agents (performance analyst, signals auditor, CRO auditor, creative director, copywriter, competitor researcher, compliance reviewer, test designer, media buyer, librarian) and about twenty skills carry the method; everything about your company (name, product, funnels, audiences, brand, claims, accounts, people) lives in `config/` and is written by the `/setup` wizard. Five commands run the day: `/setup` once, `/health` for plumbing, `/morning` to open a day, `/next-round` for the weekly creative round, `/sync` to close a session.
+The harness is company-agnostic. Ten sub-agents (performance analyst, signals auditor, CRO auditor, creative director, copywriter, competitor researcher, compliance reviewer, test designer, media buyer, librarian) and about twenty skills carry the method; everything about your company (name, product, funnels, audiences, brand, claims, accounts, people) lives in `config/` and is written by the `/setup` wizard. Six commands run the day: `/setup` once, `/health` for plumbing, `/morning` to open a day, `/next-round` for the weekly creative round, `/sync` to close a session, `/consolidate` to tidy the memory once a week.
 
-It was cut from a harness that ran real campaigns, so its rules carry what was learned the hard way: how Meta's MCP server really behaves (`docs/meta-platform-notes.md`), a compliance gate before every build, and a money model where nothing spends without the Owner's explicit go.
+It was cut from a harness that ran real campaigns, so its rules carry what was learned the hard way: how Meta's MCP server really behaves (one note per fact in `memory/learnings/meta-platform/`), a compliance gate before every build, and a money model where nothing spends without the Owner's explicit go.
+
+## What you get
+
+- **A team, not a chat.** Ten agents in five lanes (measure, create, gate, build, close) and about twenty skills, each a written procedure; fourteen third-party craft skills alongside them.
+- **Six commands with fixed outputs:** `/setup` (the onboarding wizard), `/health` (a green/yellow/red plumbing table), `/morning` (the daily report), `/next-round` (the weekly creative round and a numbered recap to pick from), `/sync` (the session closer), `/consolidate` (the weekly memory tidy).
+- **A memory vault you can open.** The folder is an Obsidian vault (Obsidian is installed by the bootstrap; everything also works as plain files): `memory/HOME.md` is the Owner's page (money against the caps, open items by owner, campaigns), `memory/inbox/owner.md` is an Inbox you write in and the harness answers (it never acts on it without a go in chat), a weekly review lands in `memory/reviews/`, and one note per campaign, flight, decision and lesson keeps the history. Two hooks load the summary into every new session and save a checkpoint before a long chat is compacted. The Owner's three clicks, once: open the folder in Obsidian as a vault, turn on Obsidian's command line, and paste `docs/hooks-paste-block.md` into `.claude/settings.json`. The guide is `docs/obsidian-guide.md`.
+- **A setup progress page** (`dashboard/setup.html`) that ticks itself as the wizard confirms each step and shows the Owner's own clicks as "your turn".
+- **Money rules that hold:** budgets inside the band and below the caps in `config/goals.md`, everything built PAUSED, nothing activated without the Owner's go in the same message.
 
 ## Who it is for
 
@@ -15,12 +23,13 @@ A company that advertises on Meta and wants Claude Code to do the paid-media wor
 ## Quick start
 
 1. **Get the files.** Download the release zip (or clone this repository, or press **Use this template** on GitHub and clone your copy, kept private) and unzip it into a folder you own, for example inside your Documents folder.
-2. **Run the bootstrap** in that folder. Windows: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1`. macOS: `bash bootstrap.sh`. It checks Git, Node 20+ and Claude Code, reports whether a browser (Edge or Chrome) is present, lists what is missing and installs all of it after one confirmation (Git, Node LTS, Claude Code, FFmpeg, `playwright-core`, the HyperFrames plugin from `vendor/hyperframes`), copies `.env.example` to `.env`, offers the optional extras and prints what remains. With `-Check` (Windows) or `--check` (macOS) it only reports. Flags: `-Check` / `--check` reports without installing; `-Yes` / `--yes` installs without the question; `-Ask` / `--ask` asks per item; `-Help` / `--help`. A progress page (`dashboard/setup.html`) opens in your browser at the end of the bootstrap and ticks itself as the wizard confirms each step (your own Meta clicks show as "your turn"); keep it beside Claude Code.
+2. **Run the bootstrap** in that folder. Windows: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1`. macOS: `bash bootstrap.sh`. It checks Git, Node 20+ and Claude Code, reports whether a browser (Edge or Chrome) is present, lists what is missing and installs all of it after one confirmation (Git, Node LTS, Claude Code, FFmpeg, `playwright-core`, the HyperFrames plugin from `vendor/hyperframes`, Obsidian), copies `.env.example` to `.env`, offers the optional extras and prints what remains. With `-Check` (Windows) or `--check` (macOS) it only reports. Flags: `-Check` / `--check` reports without installing; `-Yes` / `--yes` installs without the question; `-Ask` / `--ask` asks per item; `-Help` / `--help`. A progress page (`dashboard/setup.html`) opens in your browser at the end of the bootstrap and ticks itself as the wizard confirms each step (your own Meta clicks show as "your turn"); keep it beside Claude Code.
 3. **Open the folder in Claude Code** (type `claude` in a terminal in the folder) and approve the two MCP servers it brings in `.mcp.json`: `meta-ads` and `fal`.
 4. **Log in:** `/mcp` → `meta-ads` → log in with the Owner's Facebook profile, granting this company's business, ad account and Page. Optional: `/mcp` → `fal` → log in with the company's fal account.
 5. **Start a new session** (Meta's tools load only into sessions started after the login) and run `/setup`: the wizard interviews you in rounds of four questions, prints the Meta console click lists and checks each outcome live, writes `config/*.md` and drafts a first-flight plan.
 6. Run `/health`: a green/yellow/red table of every connection and file, the bootstrap's prerequisites, and spend against the caps in `config/goals.md`.
 7. Run `/morning` at the start of each working day.
+8. **The Owner's vault clicks** (once, optional): open this folder in Obsidian as a vault and pin `memory/HOME.md`; Settings → General → Command line interface → on; paste `docs/hooks-paste-block.md` into `.claude/settings.json`. `/setup` lists them and `/health` checks them.
 
 **Guided setup.** An A-Z explainer video, in chapters, and a screenshot guide walk a non-technical Owner through every step, from an empty laptop to a first campaign built PAUSED in the company's own Meta account. The text half of the guide is `docs/meta-setup-guide.md`. [link to the explainer video and the setup guide]
 
@@ -32,10 +41,12 @@ New Operators: read `ONBOARDING.md`. A fully filled fictional configuration is i
 CLAUDE.md                 the rules; imports config/*.md
 config/                   your company, written by /setup (see config/README.md)
 config/goals.md           budget band, target costs, caps, the first funnel (round (i) of /setup)
-memory.md, checklist.md   the harness's memory and the go checklist
+memory/                   the memory vault: HOME, the Inbox, state, business notes, campaigns, decisions, learnings, day notes, weekly reviews; the contract is memory/README.md
+.obsidian/                Obsidian's settings for the vault
+checklist.md              the go checklist
 plans/, reports/          dated Markdown, YYYY-MM-DD-<topic>.md
 creatives/                sources, finished files, tools, the preview-site template
-docs/                     the template spec and Meta platform notes
+docs/                     the template spec, the Obsidian guide, the hooks paste block, the older Meta platform notes
 docs/meta-setup-guide.md  the Owner's Meta console steps, in order, with what the harness checks
 .claude/agents, skills    the ten agents and the skills
 .mcp.json                 the two MCP servers (meta-ads, fal) Claude Code asks you to approve
@@ -78,10 +89,10 @@ The folder brings its two MCP servers in `.mcp.json`; the bootstrap checks or in
 
 ## Versions
 
-`CHANGELOG.md` lists what changed in each release. Releases are tagged `vX.Y.Z`; the first release after the beta run is 1.0.0. When you update, keep your own `config/`, `memory.md`, `checklist.md`, `plans/`, `reports/` and `.env`: a release ships the first five as empty templates, and no `.env` at all.
+`CHANGELOG.md` lists what changed in each release. Releases are tagged `vX.Y.Z`; the first release after the beta run is 1.0.0. When you update, keep your own `config/`, `memory/`, `checklist.md`, `plans/`, `reports/` and `.env`: a release ships the first five as empty templates, and no `.env` at all.
 
 ## Licence
 
-A single-company licence: a copy may be used, copied internally and modified to run the marketing of one company, the one that obtained it. No resale, no redistribution, no publishing of modified copies, and no service to third parties built on it (an agency serving clients needs a separate agreement). The licence is a draft, to be reviewed by a lawyer; its text is in `LICENSE`. The eight third-party skills keep their own licences (MIT and Apache-2.0), listed with their sources in `THIRD-PARTY.md`.
+A single-company licence: a copy may be used, copied internally and modified to run the marketing of one company, the one that obtained it. No resale, no redistribution, no publishing of modified copies, and no service to third parties built on it (an agency serving clients needs a separate agreement). The licence is a draft, to be reviewed by a lawyer; its text is in `LICENSE`. The third-party skills keep their own licences (MIT and Apache-2.0), listed with their sources in `THIRD-PARTY.md`.
 
 **No warranty, no guarantee of results.** Nothing here guarantees any ad result, cost, approval or account standing, and AI output can be wrong. You are responsible for your Meta accounts and spend, for Meta's advertising policies and for the law in your markets.

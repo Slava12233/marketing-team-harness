@@ -8,8 +8,9 @@
 #   bash bootstrap.sh --check    report only: no questions, no installs, nothing changed
 #   bash bootstrap.sh --help     show the usage
 # The one install takes every missing item, required and optional alike (Git, Node.js, Claude Code,
-# playwright-core, FFmpeg, the HyperFrames video plugin from vendor/hyperframes), copies .env.example to .env
-# and opens the setup progress page. Enter at its question means Yes; Enter at an --ask question means No.
+# playwright-core, Obsidian for the memory vault, FFmpeg, the HyperFrames video plugin from vendor/hyperframes),
+# copies .env.example to .env and opens the setup progress page; it ends with the Owner's three Obsidian clicks.
+# Enter at its question means Yes; Enter at an --ask question means No.
 # Tags: [ok] already there, [installed] put in place by this run, [missing] not there, [skipped] an optional
 # item left out. Exit codes: 0 everything required is present, 1 something required is missing or the
 # install was declined, 2 wrong folder or unknown option. It never asks for, reads or prints a token: .env is
@@ -266,6 +267,77 @@ else
   if [ "$MODE" = all ]; then PLAN="$PLAN playwright"; else do_playwright; fi
 fi
 
+# Obsidian (free, also for commercial use; Sync and Publish are optional paid services) opens the folder as the
+# memory vault: notes, links and the Bases dashboards over memory/. This script installs the app (winget on
+# Windows, the Homebrew cask on a Mac; on Linux it points to the download page). Opening the folder as a vault,
+# turning on its command line and pasting the hooks are the Owner's clicks, listed at the end.
+OBSIDIAN_PAGE=https://obsidian.md/download
+winpath_u() { cygpath -u "$1" 2>/dev/null || printf '%s' "$1"; }
+obsidian_path() {   # the Obsidian app found (printed), or nothing
+  local p
+  case "$OS" in
+    mac) for p in /Applications/Obsidian.app "$HOME/Applications/Obsidian.app"; do
+           [ -d "$p" ] && { say "$p"; return 0; }; done ;;
+    win) for p in "${LOCALAPPDATA:+$(winpath_u "$LOCALAPPDATA")/Programs/Obsidian/Obsidian.exe}" \
+                  "${PROGRAMFILES:+$(winpath_u "$PROGRAMFILES")/Obsidian/Obsidian.exe}"; do
+           [ -n "$p" ] && [ -f "$p" ] && { say "$p"; return 0; }; done ;;
+    *) p=$(command -v obsidian 2>/dev/null) && { say "$p"; return 0; }
+       for p in /snap/bin/obsidian /var/lib/flatpak/exports/bin/md.obsidian.Obsidian \
+                "$HOME/.local/share/flatpak/exports/bin/md.obsidian.Obsidian"; do
+         [ -x "$p" ] && { say "$p"; return 0; }; done ;;
+  esac
+  return 1
+}
+obsidian_from() { if [ "$OS" = win ] || [ "$OS" = mac ]; then pkg_from; fi; }   # nothing on Linux: no cask there
+obsidian_cmd() {
+  if [ "$OS" = win ]; then say "winget install --id Obsidian.Obsidian -e --accept-package-agreements --accept-source-agreements"
+  else say "$BREW install --cask obsidian"; fi
+}
+obsidian_vault_known() {   # 0 when Obsidian's own vault list already names this folder
+  local reg here
+  case "$OS" in
+    mac) reg="$HOME/Library/Application Support/obsidian/obsidian.json"; here=$(pwd) ;;
+    win) [ -n "${APPDATA:-}" ] || return 1
+         reg="$(winpath_u "$APPDATA")/obsidian/obsidian.json"
+         here=$(cygpath -w "$(pwd)" 2>/dev/null) || return 1; here=${here//\\/\\\\} ;;
+    *) reg="${XDG_CONFIG_HOME:-$HOME/.config}/obsidian/obsidian.json"; here=$(pwd) ;;
+  esac
+  [ -f "$reg" ] || return 1
+  sed 's/"path"[[:space:]]*:[[:space:]]*/"path":/g' "$reg" 2>/dev/null | grep -qiF "\"path\":\"$here\""
+}
+urlenc() {   # percent-encodes one string for a URL query value
+  local LC_ALL=C s="$1" out="" c i
+  for ((i = 0; i < ${#s}; i++)); do
+    c=${s:i:1}
+    case "$c" in [a-zA-Z0-9.~_-]) out+="$c" ;; *) out+=$(printf '%%%02X' "'$c") ;; esac
+  done
+  printf '%s' "$out"
+}
+do_obsidian() {   # installs Obsidian (after its question under --ask)
+  local from p; from=$(obsidian_from)
+  if [ -z "$from" ]; then
+    pkg_hint "Obsidian" "$OBSIDIAN_PAGE"
+    say "[skipped] Obsidian. Install it later; the vault notes are plain Markdown files and work without it."; return 1
+  fi
+  if offer "Obsidian" 0 "Obsidian (free, also for commercial use) from $from" "$(obsidian_cmd)"; then
+    p=$(obsidian_path)
+    if [ -n "$p" ]; then say "[installed] Obsidian ($p)."
+    else say "[installed] Obsidian. A new terminal window may be needed before this script finds it."; fi
+    return 0
+  fi
+  say "[skipped] Obsidian. Install it later with: $(obsidian_cmd) (or from $OBSIDIAN_PAGE)"; return 1
+}
+obs_path=$(obsidian_path)
+if [ -n "$obs_path" ]; then say "[ok] Obsidian is installed for the memory vault ($obs_path)."
+elif [ "$MODE" = check ]; then say "[skipped] Obsidian is not installed (optional: it shows the memory vault, memory/, as linked notes and dashboards)."
+elif [ "$MODE" = all ] && [ -z "$(obsidian_from)" ]; then
+  say "[skipped] Obsidian is not installed (optional: it shows the memory vault, memory/, as linked notes and dashboards)."
+  pkg_hint "Obsidian" "$OBSIDIAN_PAGE"
+else
+  say "[missing] Obsidian is not installed (optional: it shows the memory vault, memory/, as linked notes and dashboards)."
+  if [ "$MODE" = all ]; then PLAN="$PLAN obsidian"; else do_obsidian; fi
+fi
+
 # The HyperFrames video plugin (Apache-2.0, by HeyGen) ships in this folder, in vendor/hyperframes: the script
 # adds that folder as the plugin's marketplace and never adds one from GitHub. The renderer needs Node.js 22
 # or newer and FFmpeg; it is fetched from the npm registry (npx hyperframes) the first time a video is made.
@@ -338,6 +410,7 @@ plan_line() {   # one line of the plan: the item and where it comes from
     node)        if [ "$OS" = win ]; then say "  - Node.js LTS, from $(pkg_from)"; else say "  - Node.js, from $(pkg_from)"; fi ;;
     claude)      say "  - Claude Code, from claude.ai (the official installer; the npm registry if that fails)" ;;
     playwright)  say "  - playwright-core (a few megabytes), from the npm registry into node_modules in this folder" ;;
+    obsidian)    say "  - Obsidian for the memory vault (free, also for commercial use), from $(obsidian_from)" ;;
     ffmpeg)      say "  - FFmpeg, from $(pkg_from)" ;;
     hyperframes) say "  - The HyperFrames video plugin, from vendor/hyperframes in this folder (its renderer comes from npm on first use)" ;;
   esac
@@ -390,6 +463,7 @@ if [ "$MODE" = all ]; then
     in_plan claude && put "Claude Code" install_claude check_claude
     [ "$ENV_TODO" = 1 ] && copy_env
     in_plan playwright && playwright_now
+    in_plan obsidian && do_obsidian
     in_plan ffmpeg && do_ffmpeg
     in_plan hyperframes && hyperframes_now
   fi
@@ -416,6 +490,33 @@ say "  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser whe
 say "     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load."
 say "  4. Type /setup and answer the wizard."
 say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
+# The memory vault: after a run that went ahead, the Owner's three Obsidian clicks, and Obsidian opened when it
+# is there (on this folder once it is a vault, otherwise on its start screen). Opening it never fails the run.
+obs_now=""
+if [ "$MODE" != check ] && [ "$DECLINED" = 0 ]; then
+  obs_now=$(obsidian_path)
+  say "  6. The memory vault in Obsidian: three clicks for the Owner."
+  say "     a. In Obsidian choose \"Open folder as vault\" (or File, Open folder as vault) and pick this folder."
+  say "     b. In Obsidian: Settings, General, Command line interface: turn it on."
+  say "     c. Paste the block in docs/hooks-paste-block.md into .claude/settings.json, as that file says."
+  if [ -z "$obs_now" ]; then say "     Obsidian is not installed yet: run this script again, or get it from $OBSIDIAN_PAGE (free)."
+  else
+    obs_ok=1; obs_url=""
+    if obsidian_vault_known; then
+      if [ "$OS" = win ]; then obs_url="obsidian://open?path=$(urlenc "$(cygpath -w "$(pwd)")")"
+      else obs_url="obsidian://open?path=$(urlenc "$(pwd)")"; fi
+    fi
+    case "$OS" in
+      mac) if [ -n "$obs_url" ]; then open "$obs_url" >/dev/null 2>&1 || obs_ok=0; else open -a Obsidian >/dev/null 2>&1 || obs_ok=0; fi ;;
+      win) obs_target=${obs_url:-$(cygpath -w "$obs_now" 2>/dev/null)}
+           OBS_TARGET="$obs_target" powershell -NoProfile -Command 'Start-Process -FilePath $env:OBS_TARGET' >/dev/null 2>&1 || obs_ok=0 ;;
+      *) if [ -n "$obs_url" ] && command -v xdg-open >/dev/null 2>&1; then xdg-open "$obs_url" >/dev/null 2>&1 || obs_ok=0; else obs_ok=0; fi ;;
+    esac
+    if [ "$obs_ok" = 0 ]; then say "     Obsidian could not be opened from here: open it from your applications."
+    elif [ -n "$obs_url" ]; then say "     Obsidian opened on this folder."
+    else say "     Obsidian opened: start with click a."; fi
+  fi
+fi
 # The setup progress page (dashboard/setup.html): written and opened at the end of a run that went ahead,
 # never under --check or after a No. The marks are this run's results: done when the tool was found or installed.
 if [ "$MODE" != check ] && [ "$DECLINED" = 0 ] && [ -f dashboard/setup-page.mjs ]; then
@@ -426,9 +527,10 @@ if [ "$MODE" != check ] && [ "$DECLINED" = 0 ] && [ -f dashboard/setup-page.mjs 
     mark_git=todo; { [ -n "$(git_v)" ] || ran check_git; } && mark_git=done
     mark_node=todo; { [ "$pg_major" -ge 20 ] || ran check_node; } && mark_node=done
     mark_claude=todo; { [ -n "$(claude_v)" ] || ran check_claude; } && mark_claude=done
+    mark_obsidian=todo; [ -n "$obs_now" ] && mark_obsidian=done
     say ""
     if node dashboard/setup-page.mjs --mark "install.git=$mark_git" --mark "install.node=$mark_node" \
-         --mark "install.claude=$mark_claude" --open >/dev/null 2>&1
+         --mark "install.claude=$mark_claude" --mark "obsidian.installed=$mark_obsidian" --open >/dev/null 2>&1
     then say "A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html"
     else say "The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later."; fi
   elif [ "$PAGE_TODO" = 1 ]; then

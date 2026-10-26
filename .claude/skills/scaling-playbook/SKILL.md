@@ -8,7 +8,7 @@ description: "Rules for scaling, consolidating, pausing and refreshing the compa
 **Output:** a scale proposal in the current plan (`plans/`) or the day's report (`reports/`), labelled "Needs the Owner's go"; after the go, the new budget in `memory.md` "Current state". **Language:** files in English; chat in the chat language from `config/operator.md`; money in the account currency from `config/accounts.md`.
 
 ## Preconditions before any scale
-- Cost per result at or below the target the Owner set (`memory.md` "Decision rules"), for 7 consecutive days, with at least 30 results (sign-ups or leads) or 10 booked meetings in the window (use the funnel's result from `config/product.md`).
+- Cost per result at or below the target the Owner set (`memory/decisions/` and `memory/business/goals.md`), for 7 consecutive days, with at least 30 results (sign-ups or leads) or 10 booked meetings in the window (use the funnel's result from `config/product.md`).
 - The result event verified (`signals-audit` pass) and the app-side count agreeing in direction with Meta's.
 - At least 3 distinct creative concepts live, one of them new in the last 14 days.
 - The Owner's go for the budget change, stated as "from X to Y <currency>/day" in the phrasing from `config/operator.md`.
@@ -20,7 +20,7 @@ description: "Rules for scaling, consolidating, pausing and refreshing the compa
 - State the weekly worst case with every step: Meta may spend up to 7× a daily budget per Sunday–Saturday week, prorated.
 
 ## Structure as spend grows
-- Below the structure threshold the Owner records under `memory.md` "Decision rules" (ask once when the first scale is proposed; a threshold is a daily spend in the account currency): one campaign per funnel, one or two cold ad sets, one retargeting ad set.
+- Below the structure threshold the Owner records as a decision note in `memory/decisions/` (ask once when the first scale is proposed; a threshold is a daily spend in the account currency): one campaign per funnel, one or two cold ad sets, one retargeting ad set.
 - Above it: consider CBO for the scaling campaign with the proven creatives, and a separate ABO testing campaign at 20–30 % of spend for new concepts.
 - Retargeting at 10–20 % of cold spend with a different message per rung (when the pixel is consent-gated the pool is consented visitors only, so it fills slowly).
 - Special ad category audiences (`config/claims.md`) are broad by design; scaling them usually means more creative and more geo, not more signals.

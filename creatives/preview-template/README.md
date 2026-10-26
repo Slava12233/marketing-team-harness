@@ -38,7 +38,7 @@ timeout 540 npx vercel@latest deploy --prod --yes
 
 - The first run asks to link a project; accept or name one (for example `<company>-ads-preview-<flight>`). `vercel link` writes `.vercel/project.json` (kept out of git) and may write `.env.local`: **delete `.env.local` before every deploy**, and keep the `.env*` line in `.vercelignore`.
 - After the deploy, check that `<url>/.env.local` answers 404 and that `<url>/plan` loads.
-- Write the URL into the flight's plan file (and `config/` or `memory.md` if the team uses it daily). The `health` skill reads the preview URL from the plan.
+- Write the URL into the flight's plan file (and the flight note in `memory/flights/`). The `health` skill reads the preview URL from the plan.
 - The URL is public to anyone who has it. The pages carry `noindex` and the header above; password protection is a Vercel project setting and the Owner's click.
 - To refresh after a change: re-convert the changed media, edit `ads.js`, deploy again.
 

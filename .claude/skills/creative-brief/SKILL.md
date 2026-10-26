@@ -1,6 +1,6 @@
 ---
 name: creative-brief
-description: "Write creative briefs and review the company's Meta ad images and videos (statics, video, carousels) so each set is genuinely diverse, on brand, direction-correct for right-to-left languages and compliant. Use when planning new creatives, reviewing assets, or briefing the Owner, a designer or a video producer."
+description: "Write creative briefs and review the company's Meta ad images and videos (statics, video, carousels) so each set is genuinely diverse, on brand, direction-correct for right-to-left languages and compliant. Use when planning new creatives, reviewing assets, or HOT the Owner, a designer or a video producer."
 ---
 
 # Creative brief and review
