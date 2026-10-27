@@ -44,6 +44,22 @@ The steps, their outcomes and their pitfalls are the same either way.
 | DNS | The address book of the internet, managed wherever the company's domain name was bought or is hosted (step 10) |
 | Leads Center | The page in Meta Business Suite where instant-form leads arrive: the default lead delivery (step 9) |
 
+## Where every secret lives (the credential map)
+
+Most of the harness's connections are not keys in a file: they log in once, and the login is stored on this computer by Claude Code or by the tool itself. Nothing is copied from one company's computer to another's; a new company logs in with its own accounts. Only the two Graph tools read a key, and that key lives in `.env`. The same map, with the optional lines, is at the top of `.env.example`.
+
+| Connection | Kind | Where the secret lives | How it is provided | Checked by |
+|---|---|---|---|---|
+| Meta Ads MCP (`meta-ads`) | OAuth, the Owner's Facebook login | Claude Code's credential store | `/mcp` → `meta-ads` → log in, in the browser where the Owner is signed in (step 5) | `/health` 1 and 2 |
+| fal MCP (`fal`, optional: generated pictures) | OAuth, a fal login | Claude Code's credential store | `/mcp` → `fal` → log in | `/health` 8 |
+| The Graph tools (`meta-upload.mjs`, `meta-graph.mjs`) | a System User token | `META_MARKETING_TOKEN` in `.env` (plus the two public ids `META_AD_ACCOUNT_ID`, `META_PAGE_ID`) | the Owner generates it in Business Settings → System users and pastes it into `.env` with a text editor (step 7); never into the chat | `/health` 13 and 20 |
+| Vercel CLI (optional: the preview site and landing pages) | a CLI login | the Vercel CLI's own store in the user folder | `npx vercel@latest login` once | `/health` 7 |
+| HyperFrames (optional: videos), Obsidian (optional: the vault) | none | | | `/health` 14 and 19 |
+| Claude Code itself | the Claude account | Claude Code's own login | `claude login` | |
+| The browser extension (optional: the console steps and audience reads) | the Owner's browser session | the browser | sign in to facebook.com in that browser as the personal profile | |
+
+Two optional lines sit commented in `.env.example` for things the harness does not do by default: `FAL_KEY` (a script of your own calling fal directly instead of through the MCP) and `VERCEL_TOKEN` (a scheduled deploy without an interactive login). Nothing shipped reads them; leave them commented unless a tool of your own needs them, and keep the rule: names in chat, values only in `.env`.
+
 ## Which steps you need
 
 | Step | What | Needed when | Video chapter | Roughly |

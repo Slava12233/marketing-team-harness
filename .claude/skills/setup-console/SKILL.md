@@ -194,6 +194,7 @@ Names and public ids only: never a token, a password, a code, a card, an email a
 ## End state
 
 - Every row of the console-steps table in `config/accounts.md` (and its `checklist.md` row) is `done` or `n/a`, dated; "Phone number verified on the ad account" is `done` on the Owner's confirmation.
+- Every row of the credential map (the top of `.env.example`; the table "Where every secret lives" in `docs/meta-setup-guide.md`) is provided on the client's computer by the client's own accounts: the `meta-ads` and `fal` logins in `/mcp`, the token in `.env`, the Vercel login if the preview site is used; nothing copied from the installer's machine.
 - `/health` is green on checks 1–5 (MCP, login and account, objects, review, pixel), 13 (upload token) and 20 (Graph token, with the lead permissions and `META_PAGE_ID`).
 - The System User holds three assets (ad account, app, Page "Everything"); the Owner is an Administrator of the developer app; the MCP login is the Owner's own.
 - A `checklist.md` row for the Owner: remove or downgrade the installer's admin access in Users → People once `/health` is green (the Owner's click), with the date.

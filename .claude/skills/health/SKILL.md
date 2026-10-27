@@ -41,6 +41,7 @@ Read `memory/maps/build.md` and the `memory/learnings/meta-platform/` notes it l
 | 22 | Money ledgers | `memory/money/ledger.md` and `memory/money/go-log.md` exist, have frontmatter `type: ledger`, and their table header matches the shape in `memory/maps/close.md`, with every row having the header's column count (secrets, PII and `as_of` are covered by check 16) | both present, headers match | a row with the wrong column count; rows present but frontmatter `as_of` empty | a file missing (restore it from the template) |
 | 23 | Landing pages | only when a plan file `plans/*-landing-*.md` names a deployed URL: `timeout 60 curl -sS -o /dev/null -w "%{http_code}" <url>`, the same on `<url>/legal/privacy` and `<url>/legal/cookies` (skipped when the plan names the company's own policy pages), and a text fetch of each legal page for "DRAFT: your lawyer must review"; `<url>/.env.local` answers 404 | 200 everywhere, no DRAFT banner (the plan's legal status says the lawyer's text replaced it) | 200 but a legal page still carries the DRAFT banner → yellow until the Owner confirms in writing that the lawyer replaced it; n/a when no landing plan names a URL | non-200 on the page or a legal page, or `.env.local` reachable → the page is taken off every ad and redeployed only on the Owner's word (`rm -f .env.local` first) |
 | 24 | Upgrade backups | `.upgrade-backup/` holds no folder older than 30 days (folder names are `YYYY-MM-DD-HHMM`) | none, or all younger than 30 days | a folder older than 30 days → "an old upgrade backup: delete it once /health is green" | |
+| 25 | Credential map | `.env` exists and `git check-ignore -q .env` succeeds; the four names the Graph tools read are present (count lines matching `^META_MARKETING_TOKEN=.`, `^META_AD_ACCOUNT_ID=.`, `^META_GRAPH_VERSION=.`, `^META_PAGE_ID=.` with grep -c; never print a line); any other uncommented `NAME=` line is listed by name only; every MCP row of the map in `.env.example` has its login (checks 1, 2 and 8) | `.env` ignored, the four names set, no unknown names | `.env` missing (the bootstrap copies `.env.example`; uploads fall back to the public-URL route) or `META_PAGE_ID` empty (lead forms closed) or an uncommented name nothing shipped reads (`FAL_KEY`, `VERCEL_TOKEN` or another: "a tool of your own; keep it out of chat") | `.env` not git-ignored → "add `.env` to .gitignore before any commit" (a secret would be committed); `META_MARKETING_TOKEN` empty while a flight needs direct uploads → the Owner's paste (step 7 of the guide) |
 
 ## Rules
 - No writes anywhere, no re-authentication, no deploys, no kills of processes this session did not start, no console steps: those are the Owner's; the table names the click.
@@ -69,6 +70,7 @@ Read `memory/maps/build.md` and the `memory/learnings/meta-platform/` notes it l
 22 money ...... green  ledger.md and go-log.md present, headers match
 23 landing .... n/a    no landing plan names a URL
 24 backups .... green  no upgrade backup older than 30 days
+25 credentials  green  .env ignored; the four META_ names set; no unknown names; every MCP of the map logged in
 Red items → what to do (one line each, who clicks).
 ```
 
