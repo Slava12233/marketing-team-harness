@@ -178,13 +178,13 @@ Do the steps in this order. The harness checks steps 1 to 4 after step 5, once i
 **Where:** Claude Code, opened in the harness folder; the browser opens Facebook's login for business.
 
 **Clicks:**
-1. Open the harness folder in Claude Code (type `claude` in a terminal in that folder). The first time, Claude Code asks whether to use the two MCP servers the folder brings in `.mcp.json`: `meta-ads` and `fal`. Approve them.
-2. Type `/mcp`, choose `meta-ads`, and choose to log in.
+1. Open the harness folder in Claude Code (the desktop app's Code tab, or type `claude` in a terminal in that folder). When Claude Code asks whether to use the two MCP servers the folder brings in `.mcp.json`, `meta-ads` and `fal`, approve them; if the Code tab does not ask, `/mcp` lists them.
+2. Type `/mcp`, choose `meta-ads`, and choose to log in. When the Code tab offers no login there, run `claude mcp login meta-ads` in a terminal in the folder (and `claude mcp login fal` for fal).
 3. A browser tab opens on Facebook. Check that the profile shown is **yours, the Owner's**. If it is someone else's, log out in that browser first, or copy the link into the browser where you are signed in.
 4. Read the consent screen (Facebook Login for Business). It names the app that is asking, lists what it may do (for example create, manage and read ads, and read your Pages and business assets), and asks which businesses, ad accounts and Pages it may use.
 5. Choose **this company's** business portfolio, ad account and Page. If the screen offers "all current and future" businesses or accounts, choose the specific ones instead.
 6. Confirm. The browser tells you to go back to Claude Code, and `/mcp` shows `meta-ads` as connected.
-7. Close Claude Code (type `/exit`) and start it again in the same folder. **Meta's tools load only into a session started after the login.**
+7. Start a new session in the same folder (in the app: a new session on the folder; in a terminal: `/exit`, then `claude`). **In this harness's experience Meta's tools load only into a session started after the login**; the documentation does not require the step, so keep it and lose nothing.
 
 **What you should see:** in the new session, ask "which ad accounts can you see?". The harness lists the company's ad account with its name, id, currency and status, and nothing from other businesses.
 

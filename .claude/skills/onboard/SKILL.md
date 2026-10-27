@@ -61,7 +61,7 @@ Everything else is `setup-console` as written: how every step runs (navigate, sa
 
 ### A5. The Meta login  (`setup-console` step 5; marks `meta.login`, `login.tools`)
 
-- `/mcp` → `meta-ads` → log in: the consent screen opens in the browser; it must show the Owner's own profile; grant only this company's business, ad account and Page. The chooser is never screenshotted. When the Code tab offers no `/mcp` login, the documented fallback is a terminal in the harness folder: `claude mcp login meta-ads`. Then a new session; before it, append the session-note line and the marks so the next `/onboard` resumes here.
+- `/mcp` → `meta-ads` → log in: the consent screen opens in the browser; it must show the Owner's own profile; grant only this company's business, ad account and Page. The chooser is never screenshotted. When the Code tab offers no `/mcp` login, the documented fallback is a terminal in the harness folder: `claude mcp login meta-ads`. Then a new session (kept from this harness's experience: the documentation does not require it); before it, append the session-note line and the marks so the next `/onboard` resumes here.
 - In the new session: `ads_get_ad_accounts` and `ads_get_user_pages` show the company's account and Page. More than that: say "the grant was wider than it needs to be: `/mcp` → `meta-ads` → re-authenticate and tick only this business" (the account guard keeps every call inside the one account meanwhile). Then the pending live checks of A4 (steps 1–3), `min_daily_budget` recorded, `--mark meta.login=done --mark login.tools=done`.
 
 ### A6. The pixel  (`setup-console` step 6; mark `meta.pixel`)

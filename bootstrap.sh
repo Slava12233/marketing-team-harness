@@ -622,12 +622,12 @@ if [ -n "$RECO_MISSING" ]; then
 fi
 say "  1. Open the Claude desktop app, sign in, click the Code tab and open this folder (Open folder...; trust it when asked)."
 say "     A terminal works too (type claude in this folder), but the memory routines and the Claude in Chrome pairing are the app's."
-say "  2. Claude Code asks you to approve the two servers in .mcp.json (meta-ads and fal): approve them."
+say "  2. When Claude Code asks whether to use the two servers in .mcp.json (meta-ads and fal), approve them; if it does not ask, /mcp lists them."
 say "  3. Install the Claude in Chrome extension in Chrome and sign in to it with the same Claude account"
-say "     (in the app: your initials at the lower left > Settings > Customize > Connectors > Claude in Chrome > Configure)."
+say "     (in the app: your initials at the lower left > Settings > Customize > Connectors > Claude in Chrome > Configure; from a terminal here: claude --chrome)."
 say "  4. In the Code tab type /onboard: the keys pass. The harness leads every login and the one token in your own Chrome"
 say "     and stops where only you can click (passwords, codes, the card, the terms, the token); it ends with the keys"
-say "     table all green. The Meta and fal logins are chapters of it; docs/meta-setup-guide.md keeps every console step."
+say "     table all green. The Meta and fal logins are chapters of it (/mcp, or claude mcp login meta-ads and claude mcp login fal from a terminal here)."
 say "  5. Then type /setup and answer the wizard."
 if [ "$ROUTINES" -ge 2 ]; then say "     The two memory routines are already registered for this folder."
 else say "     It also registers two memory routines: a nightly check and a weekly review that alert your phone and never act."; fi
