@@ -11,8 +11,10 @@
 // .mcp.json, whether .env exists (it is never opened), the config/*.md placeholders, plans/*first-flight-plan.md,
 // dashboard/state.json, .claude/settings.json (the memory hooks, shipped), memory/business/company.md, and, outside
 // the folder, whether the Obsidian app is installed and what Obsidian's global config (obsidian.json) says: this
-// folder in its vault list, and "cli": true (both written by memory/tools/obsidian-setup.mjs, never a click). The
-// page shows names and public ids only, never a secret, and loads nothing from the internet.
+// folder in its vault list, and "cli": true (both written by memory/tools/obsidian-setup.mjs, never a click), and
+// whether the Claude desktop app is installed. The chapters follow the onboarding video: Part A (accounts and keys,
+// A0–A10, the /onboard pass) and Part B (the run, B1–B5). The page shows names and public ids only, never a secret,
+// and loads nothing from the internet.
 // Exit codes: 0 written, 1 a file could not be written, 2 wrong usage (unknown option, key or status).
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -21,21 +23,30 @@ import { spawn, spawnSync } from 'node:child_process';
 
 const STATUSES = ['todo', 'doing', 'done', 'owner', 'na'];
 const GLYPHS = { done: '✓', todo: '○', doing: '◐', owner: '●', na: '–' };
+// Two parts, in the order of the onboarding video: Part A, accounts and keys (chapters A0–A10: one pass that ends
+// with the keys table all green), then Part B, the run (B1–B5). A chapter's label is its part letter and its number
+// within the part (A0 … A10, B1 … B5), the same labels as ONBOARDING.md §3d.
 const CHAPTERS = [
-  { id: 'c0', info: true },
-  { id: 'c1', items: ['install.git', 'install.node', 'install.claude', 'install.env', 'install.mcpjson', 'install.approved'] },
-  { id: 'vault', items: ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled', 'memory.routines'] },
-  { id: 'c2', items: ['meta.portfolio', 'meta.page', 'meta.adaccount', 'meta.payment', 'meta.phone', 'meta.people'] },
-  { id: 'c3', items: ['meta.login', 'login.tools'] },
-  { id: 'c4', items: ['meta.pixel'] },
-  { id: 'c5', items: ['meta.apptoken', 'token.check'] },
-  { id: 'c6', items: ['meta.whatsapp', 'meta.leadads', 'meta.leadscenter', 'meta.domain', 'meta.webhook', 'meta.instagram'] },
-  { id: 'c7', items: ['fal.login'] },
-  { id: 'c8', items: [...'abcdefghi'].map(r => 'interview.' + r).concat(['setup.pages', 'setup.files', 'setup.plan']) },
-  { id: 'c9', items: ['health.run'] },
-  { id: 'c10', items: ['flight.copy', 'flight.compliance', 'flight.creative', 'flight.upload', 'flight.build', 'flight.preview'] },
-  { id: 'c11', info: true },
+  { id: 'c0', part: 'A', info: true },
+  { id: 'c1', part: 'A', items: ['install.git', 'install.node', 'install.claude', 'install.env', 'install.mcpjson'] },
+  { id: 'app', part: 'A', items: ['app.desktop', 'install.approved'] },
+  { id: 'chrome', part: 'A', items: ['chrome.extension'] },
+  { id: 'c2', part: 'A', items: ['meta.portfolio', 'meta.page', 'meta.adaccount', 'meta.payment', 'meta.phone', 'meta.people'] },
+  { id: 'c3', part: 'A', items: ['meta.login', 'login.tools'] },
+  { id: 'c4', part: 'A', items: ['meta.pixel'] },
+  { id: 'c5', part: 'A', items: ['meta.apptoken', 'token.check'] },
+  { id: 'c6', part: 'A', items: ['meta.whatsapp', 'meta.leadads', 'meta.leadscenter', 'meta.domain', 'meta.webhook', 'meta.instagram'] },
+  { id: 'c7', part: 'A', items: ['fal.login'] },
+  { id: 'keys', part: 'A', items: ['keys.table'] },
+  { id: 'c8', part: 'B', items: [...'abcdefghi'].map(r => 'interview.' + r).concat(['setup.pages', 'setup.files', 'setup.plan']) },
+  { id: 'c9', part: 'B', items: ['health.run'] },
+  { id: 'c10', part: 'B', items: ['flight.copy', 'flight.compliance', 'flight.creative', 'flight.video', 'flight.upload', 'flight.build', 'flight.preview'] },
+  { id: 'vault', part: 'B', items: ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled', 'memory.routines'] },
+  { id: 'c11', part: 'B', info: true },
 ];
+// Items whose hint shows while they are still to do: nothing to click in Obsidian, the desktop app and the extension
+// are the Owner's own installs, the keys table names the command.
+const HINTED_TODO = /^(obsidian|app|chrome|keys)\./;
 const KEYS = CHAPTERS.flatMap(c => c.items || []);
 // Item → the first words of its row in the Console steps table of config/accounts.md (the row names are the
 // contract with /setup; checklist.md carries the same names). The last two rows are optional: shown only once
@@ -61,19 +72,27 @@ const EN = {
   byHand: 'To update it by hand, run `node dashboard/setup-page.mjs` in the harness folder.',
   langName: { en: 'English', he: 'עברית' },
   status: { todo: 'to do', doing: 'in progress', done: 'done', owner: 'your turn', na: 'n/a' },
-  chapters: { c0: 'Before you start', c1: 'Install', vault: 'The memory vault (Obsidian)', c2: 'Meta business basics', c3: 'Claude Code connected to Meta',
-    c4: 'Pixel and tracking', c5: 'Developer app and upload token', c6: 'WhatsApp, lead forms, domain', c7: 'fal (optional)',
-    c8: '`/setup` interview', c9: '`/health`', c10: 'First flight built PAUSED', c11: 'The routine' },
+  parts: { A: 'Part A: accounts and keys (one pass; it ends with every row green)', B: 'Part B: the run' },
+  chapters: { c0: 'Before you start', c1: 'Install', app: 'The Claude desktop app', chrome: 'Claude in Chrome', c2: 'Meta business basics',
+    c3: 'The Meta login', c4: 'Pixel and tracking', c5: 'Developer app, System User, upload token', c6: 'WhatsApp, lead forms, domain',
+    c7: 'fal (optional)', keys: 'The keys table', c8: '`/setup` interview', c9: '`/health`', c10: 'First flight built PAUSED: a still and a video',
+    vault: 'The control room, the memory vault (Obsidian) and HOME', c11: "What's next" },
   info: {
     c0: ['A Claude plan (Max recommended; Pro runs into its limits on creative rounds and builds)',
-      'A Facebook profile that administers the business', 'A computer with Windows or macOS'],
-    c11: ['`/morning` every working day', '`/next-round` once a week', '`/sync` at the end of every session'],
+      'A Facebook profile that administers the business, with two-factor authentication on, signed in as the personal profile',
+      'Google Chrome, where the Claude in Chrome extension will run', 'A phone for the codes; a card for the ad account and for fal (nothing is charged while every ad is paused)',
+      'A computer with Windows or macOS'],
+    c11: ['`/morning` every working day', '`/sync` at the end of every session', '`/next-round` once a week',
+      'The two memory routines alert your phone and never act'],
   },
   items: {
     'install.git': 'Git installed', 'install.node': 'Node.js 20 or newer installed', 'install.claude': 'Claude Code installed',
     'install.env': '`.env` created from `.env.example` (its contents are never shown)',
     'install.mcpjson': '`.mcp.json` declares the `meta-ads` server',
-    'install.approved': 'The two servers in `.mcp.json` approved in Claude Code',
+    'app.desktop': 'The Claude desktop app installed (its Code tab runs the harness)',
+    'install.approved': 'The folder opened in the Code tab and the two servers in `.mcp.json` approved',
+    'chrome.extension': 'Google Chrome with the Claude in Chrome extension connected (`list_connected_browsers` lists it)',
+    'keys.table': '`/health --keys` all green: every login and the one key in place',
     'obsidian.installed': 'Obsidian installed (free, also for commercial use)',
     'obsidian.vault_opened': 'This folder registered in Obsidian as a vault',
     'obsidian.cli': "Obsidian's command line interface on",
@@ -98,10 +117,14 @@ const EN = {
     'setup.pages': 'Destination pages fetched', 'setup.files': '`config/` files written, no placeholder left',
     'setup.plan': 'First flight plan drafted in `plans/`', 'health.run': '`/health` run and its green/yellow/red table read',
     'flight.copy': 'Ad copy written', 'flight.compliance': 'Compliance gate passed',
-    'flight.creative': 'Creative made (at least one still)', 'flight.upload': 'Media uploaded to the ad account',
-    'flight.build': 'Campaign built PAUSED', 'flight.preview': "Meta's preview images sent to the Owner",
+    'flight.creative': 'The still made (the first ad)', 'flight.video': 'The silent video made from the still and the hook (10–15 s, rendered locally)',
+    'flight.upload': 'Media uploaded to the ad account (the still’s hash, the video id)',
+    'flight.build': 'Campaign built PAUSED: one ad set, two ads', 'flight.preview': "Meta's preview images of both ads sent to the Owner",
   },
   hints: {
+    'app.desktop': 'The bootstrap installs it; then open the harness folder in its Code tab',
+    'chrome.extension': 'In the app: your initials → Settings → Customize → Connectors → Claude in Chrome → Configure; the extension signed in to the same Claude account; then type `/onboard`',
+    'keys.table': 'Type `/onboard` in the Code tab; its last chapter runs `/health --keys`',
     'obsidian.vault_opened': 'Nothing to click: the bootstrap does it, or run `node memory/tools/obsidian-setup.mjs` in the harness folder',
     'obsidian.cli': 'Nothing to click: the bootstrap does it, or run `node memory/tools/obsidian-setup.mjs` in the harness folder',
     'obsidian.hooks': 'The file ships with the harness; if it was deleted or replaced, restore its block from `docs/hooks-paste-block.md`',
@@ -128,19 +151,27 @@ const HE = {
   byHand: 'לעדכון ידני, הריצו `node dashboard/setup-page.mjs` בתיקיית הפרויקט.',
   langName: { en: 'English', he: 'עברית' },
   status: { todo: 'לביצוע', doing: 'בתהליך', done: 'בוצע', owner: 'התור שלכם', na: 'לא רלוונטי' },
-  chapters: { c0: 'לפני שמתחילים', c1: 'התקנה', vault: 'כספת הזיכרון (Obsidian)', c2: 'יסודות העסק ב-Meta', c3: 'חיבור Claude Code ל-Meta',
-    c4: 'פיקסל ומעקב', c5: 'אפליקציית מפתחים וטוקן העלאה', c6: 'WhatsApp, טופסי לידים, דומיין', c7: 'fal (אופציונלי)',
-    c8: 'הראיון של `/setup`', c9: '`/health`', c10: 'קמפיין ראשון בנוי במצב PAUSED', c11: 'השגרה' },
+  parts: { A: 'חלק א: החשבונות והמפתחות (מעבר אחד; מסתיים כשכל השורות ירוקות)', B: 'חלק ב: ההרצה' },
+  chapters: { c0: 'לפני שמתחילים', c1: 'התקנה', app: 'אפליקציית Claude למחשב', chrome: 'Claude in Chrome', c2: 'יסודות העסק ב-Meta',
+    c3: 'ההתחברות ל-Meta', c4: 'פיקסל ומעקב', c5: 'אפליקציית מפתחים, System User וטוקן העלאה', c6: 'WhatsApp, טופסי לידים, דומיין',
+    c7: 'fal (אופציונלי)', keys: 'טבלת המפתחות', c8: 'הראיון של `/setup`', c9: '`/health`', c10: 'קמפיין ראשון בנוי במצב PAUSED: תמונה וסרטון',
+    vault: 'חדר הבקרה, כספת הזיכרון (Obsidian) ו-HOME', c11: 'מה הלאה' },
   info: {
     c0: ['מנוי Claude (מומלץ Max; ב-Pro נתקלים במגבלות השימוש בסבבי קריאייטיב ובבנייה)',
-      'פרופיל פייסבוק שמנהל את העסק', 'מחשב עם Windows או macOS'],
-    c11: ['`/morning` בכל יום עבודה', '`/next-round` פעם בשבוע', '`/sync` בסוף כל סשן'],
+      'פרופיל פייסבוק שמנהל את העסק, עם אימות דו-שלבי פעיל, מחובר כפרופיל האישי',
+      'Google Chrome, שבו ירוץ התוסף Claude in Chrome', 'טלפון לקודים; כרטיס לחשבון המודעות ול-fal (שום דבר לא מחויב כל עוד כל המודעות כבויות)',
+      'מחשב עם Windows או macOS'],
+    c11: ['`/morning` בכל יום עבודה', '`/sync` בסוף כל סשן', '`/next-round` פעם בשבוע',
+      'שתי רוטינות הזיכרון מתריעות לטלפון ולא פועלות לבד'],
   },
   items: {
     'install.git': 'Git מותקן', 'install.node': 'Node.js בגרסה 20 ומעלה מותקן', 'install.claude': 'Claude Code מותקן',
     'install.env': 'הקובץ `.env` נוצר מתוך `.env.example` (התוכן שלו לא מוצג אף פעם)',
     'install.mcpjson': 'הקובץ `.mcp.json` מגדיר את השרת `meta-ads`',
-    'install.approved': 'שני השרתים שב-`.mcp.json` אושרו ב-Claude Code',
+    'app.desktop': 'אפליקציית Claude למחשב מותקנת (לשונית Code שלה מריצה את הצוות)',
+    'install.approved': 'התיקייה נפתחה בלשונית Code ושני השרתים שב-`.mcp.json` אושרו',
+    'chrome.extension': 'Google Chrome עם התוסף Claude in Chrome מחובר (`list_connected_browsers` מציג אותו)',
+    'keys.table': '`/health --keys` כולו ירוק: כל ההתחברויות והמפתח האחד במקום',
     'obsidian.installed': 'Obsidian מותקן (חינמי, גם לשימוש מסחרי)',
     'obsidian.vault_opened': 'התיקייה רשומה ב-Obsidian ככספת (vault)',
     'obsidian.cli': 'ממשק שורת הפקודה של Obsidian פעיל',
@@ -164,10 +195,14 @@ const HE = {
     'setup.pages': 'דפי היעד נטענו ונבדקו', 'setup.files': 'קובצי `config/` נכתבו, בלי ממלאי מקום שנשארו',
     'setup.plan': 'תוכנית הקמפיין הראשון נוסחה בתיקייה `plans/`', 'health.run': 'הרצתם `/health` וקראתם את טבלת הירוק/צהוב/אדום',
     'flight.copy': 'נוסחי המודעות נכתבו', 'flight.compliance': 'בדיקת הציות עברה',
-    'flight.creative': 'הקריאייטיב מוכן (לפחות תמונה אחת)', 'flight.upload': 'המדיה הועלתה לחשבון המודעות',
-    'flight.build': 'הקמפיין נבנה במצב PAUSED', 'flight.preview': 'תמונות התצוגה המקדימה של Meta נשלחו לבעלים',
+    'flight.creative': 'התמונה מוכנה (המודעה הראשונה)', 'flight.video': 'הסרטון השקט נוצר מהתמונה וממשפט הפתיחה (10–15 שניות, מרונדר במחשב)',
+    'flight.upload': 'המדיה הועלתה לחשבון המודעות (ה-hash של התמונה, מזהה הסרטון)',
+    'flight.build': 'הקמפיין נבנה במצב PAUSED: סט מודעות אחד, שתי מודעות', 'flight.preview': 'תמונות התצוגה המקדימה של Meta לשתי המודעות נשלחו לבעלים',
   },
   hints: {
+    'app.desktop': 'סקריפט ההתקנה מתקין אותה; אחר כך פתחו את תיקיית הפרויקט בלשונית Code שלה',
+    'chrome.extension': 'באפליקציה: ראשי התיבות שלכם ← Settings ← Customize ← Connectors ← Claude in Chrome ← Configure; התוסף מחובר לאותו חשבון Claude; אחר כך הקלידו `/onboard`',
+    'keys.table': 'הקלידו `/onboard` בלשונית Code; הפרק האחרון שלו מריץ `/health --keys`',
     'obsidian.vault_opened': 'אין מה ללחוץ: סקריפט ההתקנה עושה את זה, או הריצו `node memory/tools/obsidian-setup.mjs` בתיקיית הפרויקט',
     'obsidian.cli': 'אין מה ללחוץ: סקריפט ההתקנה עושה את זה, או הריצו `node memory/tools/obsidian-setup.mjs` בתיקיית הפרויקט',
     'obsidian.hooks': 'הקובץ מגיע עם הכלי; אם נמחק או הוחלף, שחזרו את הבלוק שלו מ-`docs/hooks-paste-block.md`',
@@ -243,6 +278,15 @@ function obsidianApp(env) {   // true when the Obsidian app is where its install
       home && join(home, '.local', 'bin', 'obsidian'), home && join(home, '.local', 'share', 'flatpak', 'exports', 'bin', 'md.obsidian.Obsidian')];
   return places.some(p => p && existsSync(p));
 }
+function desktopApp(env) {   // true when the Claude desktop app is where its installers put it (the bootstrap and /health mark it too)
+  const home = env.HOME || env.USERPROFILE || '';
+  const places = WIN ? [env.LOCALAPPDATA && join(env.LOCALAPPDATA, 'Microsoft', 'WindowsApps', 'claude-desktop.exe'),   // the Store build's launcher
+    env.LOCALAPPDATA && join(env.LOCALAPPDATA, 'AnthropicClaude', 'claude.exe'),   // the downloaded per-user installer
+    env.LOCALAPPDATA && join(env.LOCALAPPDATA, 'Programs', 'Claude', 'Claude.exe'), env.ProgramFiles && join(env.ProgramFiles, 'Claude', 'Claude.exe')]
+    : MAC ? ['/Applications/Claude.app', home && join(home, 'Applications', 'Claude.app')]
+    : String(env.PATH || '').split(':').filter(Boolean).map(d => join(d, 'claude-desktop'));   // the apt package's command
+  return places.some(p => p && existsSync(p));
+}
 function obsidianConfig(env) {   // Obsidian's global config (obsidian.json) parsed, or null when absent or unreadable
   const home = env.HOME || env.USERPROFILE || '';
   const reg = WIN ? env.APPDATA && join(env.APPDATA, 'obsidian', 'obsidian.json')
@@ -277,7 +321,7 @@ function facts(root, env = process.env) {   // what the files say; .env is check
     built: Array.isArray(campaigns) && campaigns.some(c => c && /^(PAUSED|ACTIVE)$/i.test(String(c.status))),
     company: line('config/company.md', 'Short name').split(/;| \(/)[0].trim().slice(0, 60) || null,
     chat: line('config/operator.md', 'Chat language'),
-    obsidian: obsidianApp(env), ...(cfg => ({ vault: vaultListed(root, cfg), cli: !!cfg && cfg.cli === true }))(obsidianConfig(env)),
+    obsidian: obsidianApp(env), desktop: desktopApp(env), ...(cfg => ({ vault: vaultListed(root, cfg), cli: !!cfg && cfg.cli === true }))(obsidianConfig(env)),
     hooks: (read('.claude/settings.json') || '').includes('session-start.mjs'),
     business: (b => b !== null && !b.includes('<fill at /setup>'))(read('memory/business/company.md')),
     routines: ((read('config/operator.md') || '').match(/^\|\s*Nightly memory check\s*\|.*$/m) || [''])[0],
@@ -289,6 +333,7 @@ function fileAnswer(key, f) {   // the files' answer for one item: a status, or 
   if (key === 'install.mcpjson') return f.servers.includes('meta-ads') ? 'done' : 'todo';
   if (key === 'meta.people') return cellStatus(f.item('People and roles')?.status);
   if (key === 'obsidian.installed') return f.obsidian ? 'done' : null;
+  if (key === 'app.desktop') return f.desktop ? 'done' : null;
   if (key === 'obsidian.vault_opened') return f.vault ? 'done' : 'todo';
   if (key === 'obsidian.cli') return f.cli ? 'done' : 'todo';
   if (key === 'obsidian.hooks') return f.hooks ? 'done' : 'todo';
@@ -313,10 +358,11 @@ function buildModel(root, progress) {   // the files win, then the mark, then th
   const f = facts(root), marks = progress.marks;
   const lang = progress.lang || (/hebrew|עברית/i.test(f.chat) ? 'he' : 'en');
   const real = c => c != null && !String(c).includes('{{') && norm(c) !== '';
-  let done = 0, tracked = 0, next = null;
+  let done = 0, tracked = 0, next = null, a = 0, b = 1;
   const fallback = key => (key === 'fal.login' && !f.servers.includes('fal') ? 'na' : 'todo');
-  const chapters = CHAPTERS.map((c, n) => {
-    if (c.info) return { id: c.id, n, info: true };
+  const chapters = CHAPTERS.map(c => {
+    const n = c.part === 'B' ? 'B' + (b++) : 'A' + (a++);   // A0 … A10, B1 … B5: the video's chapter labels
+    if (c.info) return { id: c.id, n, part: c.part, info: true };
     const items = [];
     for (const key of c.items) {
       const status = fileAnswer(key, f) || marks[key] || fallback(key);
@@ -330,7 +376,7 @@ function buildModel(root, progress) {   // the files win, then the mark, then th
     const open = items.find(i => i.status === 'todo' || i.status === 'doing' || i.status === 'owner');
     if (!next && open) next = { key: open.key, status: open.status, chapter: c.id, n };
     done += d; tracked += t;
-    return { id: c.id, n, status, done: d, tracked: t, items };
+    return { id: c.id, n, part: c.part, status, done: d, tracked: t, items };
   });
   return { lang, company: f.company, generatedAt: new Date().toISOString(), done, tracked, next, chapters };
 }
@@ -341,7 +387,8 @@ function renderPage(m, S, G) {
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
   function fmt(s) { return esc(s).replace(/`([^`]+)`/g, '<code dir="ltr">$1</code>'); }
   function tpl(s, v) { return s.replace(/\{(\w+)\}/g, function (_, k) { return v[k]; }); }
-  var pct = m.tracked ? Math.round(100 * m.done / m.tracked) : 100, nx = m.next, h = '', when = m.generatedAt;
+  function hinted(it) { return it.status === 'owner' || (it.status === 'todo' && /^(obsidian|app|chrome|keys)[.]/.test(it.key)); }
+  var pct = m.tracked ? Math.round(100 * m.done / m.tracked) : 100, nx = m.next, h = '', when = m.generatedAt, part = '';
   h += '<h1>' + esc(S.title) + ' · ' + esc(m.company || S.defaultCompany) + '</h1>';
   h += '<div class="bar" role="progressbar" aria-label="' + esc(S.title) + '" aria-valuemin="0" aria-valuemax="' + m.tracked +
     '" aria-valuenow="' + m.done + '"><span style="width:' + pct + '%"></span></div>';
@@ -353,12 +400,13 @@ function renderPage(m, S, G) {
     if (nx.status === 'owner') h += esc(S.yourClick) + (S.hints[nx.key] ? ': ' + fmt(S.hints[nx.key]) : '');
     else if (nx.status === 'doing') h += esc(S.wizard);
     else h += esc(tpl(S.chapterN, { n: nx.n })) + ' · ' + fmt(S.chapters[nx.chapter]) +
-      (nx.key.indexOf('obsidian.') === 0 && S.hints[nx.key] ? ' · ' + fmt(S.hints[nx.key]) : '');
+      (hinted(nx) && S.hints[nx.key] ? ' · ' + fmt(S.hints[nx.key]) : '');
     h += '</p>';
   }
   h += '</section>';
   for (var i = 0; i < m.chapters.length; i++) {
-    var c = m.chapters[i], head = '<span class="num">' + c.n + '</span><span class="title">' + fmt(S.chapters[c.id]) + '</span>';
+    var c = m.chapters[i], head = '<span class="num">' + esc(c.n) + '</span><span class="title">' + fmt(S.chapters[c.id]) + '</span>';
+    if (c.part !== part) { part = c.part; h += '<h2 class="part">' + esc(S.parts[part]) + '</h2>'; }
     if (c.info) {
       h += '<section class="chapter info"><h2>' + head + '</h2><ul class="lines">';
       for (var j = 0; j < S.info[c.id].length; j++) h += '<li>' + fmt(S.info[c.id][j]) + '</li>';
@@ -369,8 +417,8 @@ function renderPage(m, S, G) {
       '" title="' + esc(S.status[c.status]) + '">' + G[c.status] + '</span>' + head +
       (c.tracked ? '<span class="cnt">' + c.done + '/' + c.tracked + '</span>' : '') + '</h2><ul class="items">';
     for (var k = 0; k < c.items.length; k++) {
-      // a hint shows on the Owner's turn, and on an open Obsidian item (it names the command that does it)
-      var it = c.items[k], hint = (it.status === 'owner' || (it.status === 'todo' && it.key.indexOf('obsidian.') === 0)) && S.hints[it.key];
+      // a hint shows on the Owner's turn, and on an open Obsidian, desktop-app, extension or keys-table item (it names what does it)
+      var it = c.items[k], hint = hinted(it) && S.hints[it.key];
       h += '<li class="st-' + it.status + '"><label><input type="checkbox" disabled' + (it.status === 'done' ? ' checked' : '') +
         '><span class="text"><span class="label">' + fmt(S.items[it.key]) + '</span> <span class="st">' + G[it.status] + ' ' +
         esc(S.status[it.status]) + '</span>' + (hint ? '<span class="hint">' + fmt(hint) + '</span>' : '') + '</span></label></li>';
@@ -395,7 +443,8 @@ h2{font-size:16px;line-height:1.35;margin:0 0 6px;font-weight:600;display:flex;f
 .count{margin:6px 0 16px;color:#475467;font-size:14px}
 .next{border:1px solid #D0D5DD;border-radius:8px;padding:12px 14px;margin:0 0 20px}.next h2{font-size:13px;color:#475467;margin:0 0 2px}
 .next p{margin:0}.next .what{font-weight:600}.next .who{color:#475467}.next.st-owner{border-color:#B45309}.next.st-owner .who{color:#B45309}
-.chapter{border-top:1px solid #EAECF0;padding:12px 0}.num{color:#475467;min-width:1.4em}.glyph{min-width:1em;text-align:center}
+.chapter{border-top:1px solid #EAECF0;padding:12px 0}.num{color:#475467;min-width:2.2em}.glyph{min-width:1em;text-align:center}
+h2.part{font-size:14px;color:#475467;margin:20px 0 6px;font-weight:600}
 .cnt{margin-inline-start:auto;color:#475467;font-size:13px;font-weight:400}
 .chapter.st-done .glyph{color:#0F6E56}.chapter.st-owner .glyph{color:#B45309}.chapter.st-todo .glyph{color:#475467}
 ul{list-style:none;margin:0;padding:0}.items li{padding:3px 0}.items label{display:flex;gap:8px;align-items:flex-start}
@@ -486,11 +535,13 @@ function openPage(file) {   // the default browser; a failure is reported, never
 
 function printText(model) {   // the checklist as plain text, for the wizard to echo in chat
   const S = STRINGS[model.lang], out = [`${S.title} · ${model.company || S.defaultCompany}: ${S.progress.replace('{done}', model.done).replace('{tracked}', model.tracked)}`];
+  let part = '';
   for (const c of model.chapters) {
+    if (c.part !== part) { part = c.part; out.push('', `== ${plain(S.parts[part])} ==`); }
     out.push('', `${c.n}. ${plain(S.chapters[c.id])}` + (c.info ? '' : `  ${GLYPHS[c.status]}${c.tracked ? ` ${c.done}/${c.tracked}` : ''}`));
     if (c.info) for (const l of S.info[c.id]) out.push(`   · ${plain(l)}`);
     else for (const it of c.items) {
-      const hinted = it.status === 'owner' || (it.status === 'todo' && it.key.startsWith('obsidian.'));
+      const hinted = it.status === 'owner' || (it.status === 'todo' && HINTED_TODO.test(it.key));
       const hint = hinted && S.hints[it.key] ? ` (${plain(S.hints[it.key])})` : '';
       out.push(`   ${GLYPHS[it.status]} ${plain(S.items[it.key])}: ${S.status[it.status]} [${it.key}]${hint}`);
     }

@@ -8,7 +8,7 @@ Before the harness can read your Meta account and build campaigns, Meta needs a 
 
 **Meta renames buttons and moves menus often; the outcomes stay the same.** Each step below names the outcome you are after (what must be true when you are done) as well as today's labels. If a label on your screen is different, look for the outcome. Wherever Meta offers a read, the harness checks the outcome itself.
 
-The harness clicks in Meta's consoles only in the installer-led mode (below), on the installer's word, and never past its hard-stop list. Otherwise it prepares the click list, waits for you, and checks.
+The harness clicks in Meta's consoles only in the two driven modes below: the keys pass (`/onboard`), in your own Chrome on your own go, and the installer-led mode, on the installer's word; never past the hard-stop list. Otherwise it prepares the click list, waits for you, and checks.
 
 ## Before you start
 
@@ -20,8 +20,9 @@ The harness clicks in Meta's consoles only in the installer-led mode (below), on
 - **A plain text editor** for one paste in step 7: Notepad on Windows, TextEdit on macOS.
 - **Time.** About two hours of clicks, best spread over a few days: Meta sometimes reviews a new ad account before it lets it spend.
 
-## Two ways to do these steps
+## Three ways to do these steps
 
+- **Yourself, with the harness driving your Chrome: `/onboard`, the keys pass.** You sit at your own computer, in the Claude desktop app's Code tab, with Google Chrome open and the Claude in Chrome extension signed in with the same Claude account. You type `/onboard`, and the harness leads these steps chapter by chapter (A3 to A10 of the video): it opens the screens in your Chrome, reads them, fills names and public ids, and clicks only when you type the go in the chat; at every hard stop it stops and says "your turn": any password or code, the payment card, accepting legal terms, generating the token and pasting it into `.env` (the harness then appends the two public ids itself, without opening the file). It ends with the keys table (`/health --keys`) all green, and it resumes at the first open chapter whenever a code or a review made it stop.
 - **Yourself, with the click lists.** You (the Owner) click through the steps on this page; `/setup` prints the same steps as short click lists and checks each outcome live.
 - **Installer-led, with the `setup-console` skill.** The person who installs the harness for you sits at your Meta consoles with your admin access for the setup day (`docs/client-intake.md` §1, option 0) and says "drive the consoles". The harness then drives these screens in the installer's browser: it clicks on the installer's word, one step at a time, and stops at its hard-stop list, where a person always does the step: any password or code, identity documents, the payment card, accepting legal terms (the Lead Ads terms, the developer terms), copying the token into `.env`, and Discard drafts or deletes. Afterwards you remove or downgrade the installer's access.
 
@@ -55,8 +56,9 @@ Most of the harness's connections are not keys in a file: they log in once, and 
 | The Graph tools (`meta-upload.mjs`, `meta-graph.mjs`) | a System User token | `META_MARKETING_TOKEN` in `.env` (plus the two public ids `META_AD_ACCOUNT_ID`, `META_PAGE_ID`) | the Owner generates it in Business Settings → System users and pastes it into `.env` with a text editor (step 7); never into the chat | `/health` 13 and 20 |
 | Vercel CLI (optional: the preview site and landing pages) | a CLI login | the Vercel CLI's own store in the user folder | `npx vercel@latest login` once | `/health` 7 |
 | HyperFrames (optional: videos), Obsidian (optional: the vault) | none | | | `/health` 14 and 19 |
-| Claude Code itself | the Claude account | Claude Code's own login | `claude login` | |
-| The browser extension (optional: the console steps and audience reads) | the Owner's browser session | the browser | sign in to facebook.com in that browser as the personal profile | |
+| The Claude desktop app (the Code tab: where the harness runs, with its own copy of Claude Code; the memory routines, Remote Control and the extension's pairing) | the Claude account | the app's own sign-in | sign in in the app, click the Code tab, open this folder | `/health` 26 |
+| Claude in Chrome (the extension in your own Chrome: the keys pass, later Ads Manager reads) | the extension's Claude sign-in and your browser's Facebook session | the extension and the browser | the Chrome Web Store → Add to Chrome → sign in with the same Claude account as the app; in the app: your initials → Settings → Customize → Connectors → Claude in Chrome → Configure; facebook.com signed in as your personal profile | `/health` 27 |
+| Claude Code in a terminal (optional) | the Claude account | Claude Code's own login | `claude login` | |
 
 Two optional lines sit commented in `.env.example` for things the harness does not do by default: `FAL_KEY` (a script of your own calling fal directly instead of through the MCP) and `VERCEL_TOKEN` (a scheduled deploy without an interactive login). Nothing shipped reads them; leave them commented unless a tool of your own needs them, and keep the rule: names in chat, values only in `.env`.
 
@@ -64,17 +66,17 @@ Two optional lines sit commented in `.env.example` for things the harness does n
 
 | Step | What | Needed when | Video chapter | Roughly |
 |---|---|---|---|---|
-| 1 | Business portfolio | always | 2 Meta business basics | 10 min |
-| 2 | Facebook Page | always | 2 Meta business basics | 5 min |
-| 3 | Ad account, payment method, phone | always | 2 Meta business basics | 15 min, then Meta's checks (minutes to days) |
-| 4 | People and roles | when the Operator is not the Owner | 2 Meta business basics | 5 min per person |
-| 5 | The Claude Code login to Meta | always | 3 Meta login | 5 min |
-| 6 | Pixel (dataset) | when an ad sends people to a website | 4 Pixel and tracking | 15 min, plus the website person's time |
-| 7 | Developer app and upload token | recommended (direct upload of your own image and video files; without it the harness uploads through a public URL) | 5 Developer app and upload token | 20 min |
-| 8 | WhatsApp number | for click-to-WhatsApp ads | 6 WhatsApp, lead forms, domain | 10 min |
-| 9 | Lead forms | for instant-form ads | 6 WhatsApp, lead forms, domain | 20 min per form |
-| 10 | Domain verification | recommended for ads that link to your website | 6 WhatsApp, lead forms, domain | 10 min, plus up to 72 hours for DNS |
-| 11 | Instagram | optional, to run Instagram placements under your own Instagram name | 2 Meta business basics | 10 min |
+| 1 | Business portfolio | always | A4 Meta business basics | 10 min |
+| 2 | Facebook Page | always | A4 Meta business basics | 5 min |
+| 3 | Ad account, payment method, phone | always | A4 Meta business basics | 15 min, then Meta's checks (minutes to days) |
+| 4 | People and roles | when the Operator is not the Owner | A4 Meta business basics | 5 min per person |
+| 5 | The Claude Code login to Meta | always | A5 The Meta login | 5 min |
+| 6 | Pixel (dataset) | when an ad sends people to a website | A6 The pixel | 15 min, plus the website person's time |
+| 7 | Developer app and upload token | recommended (direct upload of your own image and video files; without it the harness uploads through a public URL) | A7 The developer app, the System User, the token | 20 min |
+| 8 | WhatsApp number | for click-to-WhatsApp ads | A8 WhatsApp, lead forms, domain | 10 min |
+| 9 | Lead forms | for instant-form ads | A8 WhatsApp, lead forms, domain | 20 min per form |
+| 10 | Domain verification | recommended for ads that link to your website | A8 WhatsApp, lead forms, domain | 10 min, plus up to 72 hours for DNS |
+| 11 | Instagram | optional, to run Instagram placements under your own Instagram name | A4 Meta business basics | 10 min |
 
 Do the steps in this order. The harness checks steps 1 to 4 after step 5, once it can read the account.
 
@@ -261,7 +263,7 @@ The harness uploads image and video files from this computer into the ad account
 
 9. Still on the System User: Generate new token → choose the app → token expiration **Never**, if Meta offers the choice → tick **`ads_management`** and **`ads_read`**, and for lead forms and leads (the Graph tool, `docs/meta-graph.md`) **`leads_retrieval`**, **`pages_manage_ads`**, **`pages_read_engagement`** and **`pages_show_list`**; nothing else → Generate.
 10. Meta shows the token **once**. Copy it.
-11. Open the `.env` file in the harness folder with a text editor (Notepad on Windows, TextEdit on macOS). Paste the token right after `META_MARKETING_TOKEN=`, with no space and no quotes. Check that the line `META_AD_ACCOUNT_ID=` holds the ad account id from step 3, digits only (an id is not a secret), and `META_PAGE_ID=` the Page id from step 2. Save and close.
+11. Open the `.env` file in the harness folder with a text editor (Notepad on Windows, TextEdit on macOS). Paste the token right after `META_MARKETING_TOKEN=`, with no space and no quotes. Check that the line `META_AD_ACCOUNT_ID=` holds the ad account id from step 3, digits only (an id is not a secret), and `META_PAGE_ID=` the Page id from step 2. Save and close. (In `/onboard` you paste only the token: the harness appends the two id lines itself, without opening the file.)
 12. Back in Claude Code, ask "check the upload token". The harness runs `node creatives/tools/meta-upload.mjs --check`; you can also run it yourself in a terminal in the folder.
 
 **Never paste the token into the chat, an email, a message, a document or a screenshot.** It goes only into `.env`, which stays on this computer and is never uploaded. A token that reaches the chat, or anywhere else, is treated as leaked: revoke it and generate a new one (rotation, below). The harness will ask you to, and it never asks you for the value.

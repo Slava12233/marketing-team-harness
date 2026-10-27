@@ -27,7 +27,7 @@ Both are named in `config/operator.md`. If you have a **Product team** (the peop
 
 ## 3. Before your first session
 
-This is the path from an empty computer to your first `/setup`. The explainer video (§3d) shows every step on screen, and the Owner's clicks in Meta are written out one by one in `docs/meta-setup-guide.md`.
+This is the path from an empty computer to the first two ads built PAUSED, in two parts. **Part A, the keys pass:** every login and the one key the harness needs, collected in one guided pass (`/onboard`) in your own Chrome, ending with a table that is all green. **Part B, the run:** `/setup`, `/health`, the first flight. The explainer video (§3d) shows every chapter on screen; the Owner's clicks in Meta are written out one by one in `docs/meta-setup-guide.md`, for reference.
 
 ### 3a. The Claude plan
 
@@ -41,14 +41,13 @@ Claude Max is the working plan: the agents run on Opus and Sonnet, and creative 
    - Windows: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1`
    - macOS: `bash bootstrap.sh`
 
-   It checks, one at a time, Git, Node.js 20 or newer and Claude Code, reports whether a browser (Microsoft Edge or Google Chrome) is present, lists what is missing (Git, Node.js, Claude Code, FFmpeg, `playwright-core`, the HyperFrames plugin, Obsidian) and installs all of it after one confirmation: press Enter. Flags: `-Check` / `--check` only reports; `-Yes` / `--yes` installs without the question; `-Ask` / `--ask` asks per item; `-Help` / `--help`. It copies `.env.example` to `.env`, the file on this computer that will hold the upload token, and sets Obsidian up for the memory vault with no click (§8a). It then offers the optional extras of §3c (`playwright-core` and the HyperFrames plugin), y/n each. At the end it prints what is in place and what remains: the logins below and the Owner's Meta steps. It never asks for a password or a token. To get the report without installing anything, add `-Check` on Windows or `--check` on macOS. Running it again is safe. At the end it opens a progress page in your browser (`dashboard/setup.html`): a checklist of every setup step that the wizard ticks as it confirms each one; your own clicks in Meta show there as "your turn". Keep it open beside Claude Code; it refreshes itself.
-4. **Open the folder in Claude Code.** In the same terminal, type `claude`. The first time, Claude Code asks you to log in to your Claude account (§3a) and whether you trust this folder. It then asks whether to use the two MCP servers the folder brings in `.mcp.json`: `meta-ads` (Meta's official Ads server) and `fal` (picture and video generation). Approve both; neither can do anything until someone logs in.
-5. **Log in to Meta.** Type `/mcp`, pick `meta-ads` and choose to log in. The Facebook consent screen opens in the browser, and it must show **the Owner's** Facebook profile: the one that runs the company's Business portfolio and ad account. Grant this company's business, ad account and Page, and nothing else. If the company has no Business portfolio or ad account yet, the Owner does steps 1 to 4 of `docs/meta-setup-guide.md` first; the login can only grant what exists.
-6. **Log in to fal (optional).** `/mcp` → `fal` → log in with the company's fal account, when you want generated pictures or clips. fal is paid per run; every paid round is stated in money first and runs on the Owner's go.
-7. **Start a new session.** Type `/exit`, then `claude` again. Meta's tools load only into sessions started after the login: if they are missing, this is why.
-8. **Type `/setup`** (§4).
+   It checks, one at a time, Git, Node.js 20 or newer and Claude Code, then the Claude desktop app and Google Chrome (recommended: the app's Code tab is where the harness runs; the Claude in Chrome extension runs in Chrome, which the guided setup and the video use, or in Microsoft Edge), lists what is missing (Git, Node.js, Claude Code, the desktop app, Chrome, FFmpeg, `playwright-core`, the HyperFrames plugin, Obsidian) and installs all of it after one confirmation: press Enter. Flags: `-Check` / `--check` only reports; `-Yes` / `--yes` installs without the question; `-Ask` / `--ask` asks per item; `-Help` / `--help`. It copies `.env.example` to `.env`, the file on this computer that will hold the upload token, and sets Obsidian up for the memory vault with no click (§8a). At the end it prints what is in place and what remains: the app, the servers, the extension, `/onboard`. It never asks for a password or a token. To get the report without installing anything, add `-Check` on Windows or `--check` on macOS. Running it again is safe. At the end it opens a progress page in your browser (`dashboard/setup.html`): the chapters of Part A and Part B, each step ticked as the harness confirms it; your own clicks show there as "your turn". Keep it open beside the app; it refreshes itself.
+4. **Open the folder in the Claude desktop app.** Open the app (the Start menu on Windows, Applications on macOS), sign in with your Claude account (§3a; the sign-in is yours, never typed in a chat), click the **Code** tab, pick **Local** in the environment selector under the prompt box, then the folder control → **Open folder…** → the harness folder. Say yes when it asks whether you trust the folder. It then asks whether to use the two MCP servers the folder brings in `.mcp.json`: `meta-ads` (Meta's official Ads server) and `fal` (picture and video generation). Approve both; neither can do anything until someone logs in. (A terminal works too: type `claude` in the folder. The desktop app is the baseline because the memory routines, Remote Control and the pairing with the Chrome extension live there.)
+5. **Claude in Chrome.** In the app: your initials at the lower left → **Settings** → **Customize** → **Connectors** → **Claude in Chrome** → **Configure** → turn it on; when the extension is not installed yet, the app opens its Chrome Web Store page: **Add to Chrome**, then sign in to the extension **with the same Claude account** as the app and pin it. From a terminal session the same pairing is `/chrome` → **Enabled by default**. Then start a new session on the folder. The extension is the harness's hands in your own Chrome: it navigates, reads and fills on your word, and it never types a password or a code; at those screens it stops and says "your turn".
+6. **Type `/onboard`: the keys pass (Part A).** One guided pass through every login and the one key, in your Chrome, chapter by chapter: the extension check (A3); the Meta business basics with you at every hard stop (A4: the portfolio and the Page read, the ad account created with its time zone and currency confirmed by you in chat before Create, the card, the phone code); the Meta login (A5: `/mcp` → `meta-ads` → the consent screen in your browser, your own profile, this company's business, ad account and Page and nothing else; then a new session); the pixel (A6); the developer app, the System User and the token (A7: you generate the token and paste it into `.env` with a text editor, never into the chat; the harness adds the two public ids itself without opening the file); WhatsApp, lead forms and the domain (A8); fal (A9, optional, paid per run on the company's own account); and the keys table (A10: `/health --keys`, every row green). The pass stops wherever a code, a card or a review waits and resumes at the first open chapter the next time you type `/onboard`. Nothing is turned on and nothing spends.
+7. **Type `/setup`: the run (Part B, §4).** The interview, the first flight plan, then `/health` and the first flight built PAUSED: one still and one silent video, two ads in one ad set, shown to you as Meta's own preview images.
 
-**The Owner's Meta steps** (the Page; the Business portfolio; the ad account owned by the portfolio, with its payment method and a verified phone number; people and roles; the MCP login; the pixel / dataset, or "no website"; the developer app and the System User token in `.env`; the WhatsApp Business number linked to the Page; the Lead Ads terms and Leads Center access for whoever answers leads; the domain; Instagram linked for ads, optional; and, only with a product team, the lead webhook subscription) are in `docs/meta-setup-guide.md`, each with where to click, what you should see and what the harness checks. Do them before `/setup`, as the video does, or when `/setup` asks for them: it prints the same click lists and checks each outcome live.
+**The Owner's Meta steps** (the Page; the Business portfolio; the ad account owned by the portfolio, with its payment method and a verified phone number; people and roles; the MCP login; the pixel / dataset, or "no website"; the developer app and the System User token in `.env`; the WhatsApp Business number linked to the Page; the Lead Ads terms and Leads Center access for whoever answers leads; the domain; Instagram linked for ads, optional; and, only with a product team, the lead webhook subscription) are in `docs/meta-setup-guide.md`, each with where to click, what you should see and what the harness checks. `/onboard` leads them in your Chrome; without the extension, `/setup` prints the same click lists and checks each outcome live.
 
 **If the servers were not approved**, or the folder's servers are not offered, add them by hand in a terminal, then `/mcp` → the server → log in, and start a new session:
 
@@ -68,30 +67,42 @@ claude mcp add --transport http --scope user fal https://mcp.fal.ai/mcp-relay
 
 ### 3d. The explainer video
 
-One A-Z video in chapters, plus a short clip per chapter: [link to the explainer video and the setup guide]
+One A-Z video in two parts, plus a short clip per chapter: [link to the explainer video and the setup guide]. The Owner alone at their own laptop; the harness leads every step in the Owner's own Chrome; the Owner clicks only at the hard stops (passwords, codes, the card, legal terms, the token). It ends with both ads built PAUSED: nothing is turned on and no money moves. The progress page (`dashboard/setup.html`) carries the same chapter labels.
+
+**Part A: accounts and keys** (one pass; it ends with the keys table all green)
 
 | # | Chapter | What it covers | Link |
 |---|---|---|---|
-| 1 | Install | Download and unzip, the bootstrap, opening the folder in Claude Code, approving the two servers | [link to clip 1] |
-| 2 | Meta business basics | Business portfolio, Page, ad account (the currency and time zone are permanent), payment method, phone verification, people and roles; guide steps 1–4 and 11 | [link to clip 2] |
-| 3 | Meta login | `/mcp` → `meta-ads`, the consent screen, a new session, the account visible; guide step 5 | [link to clip 3] |
-| 4 | Pixel and tracking | The dataset in Events Manager, installing it, consent, test events, the no-website path; guide step 6 | [link to clip 4] |
-| 5 | Developer app and upload token | The app, the System User, the token into `.env` and never into chat, the check; guide step 7 | [link to clip 5] |
-| 6 | WhatsApp, lead forms, domain | The WhatsApp Business number, the Lead Ads terms and a form, lead delivery (Leads Center by default), domain verification; guide steps 8–10 | [link to clip 6] |
-| 7 | fal | Sign-up, credit, `/mcp` → `fal` → log in | [link to clip 7] |
-| 8 | `/setup` | The interview, rounds (a) to (i), and what it writes | [link to clip 8] |
-| 9 | `/health` | Reading the green/yellow/red table | [link to clip 9] |
-| 10 | First flight, PAUSED | Copy, the compliance gate, one still, the upload, the build PAUSED, Meta's preview images, the go rule (explained, not executed) | [link to clip 10] |
-| 11 | What's next | `/morning`, `/sync`, `/next-round` and the optional clips | [link to clip 11] |
+| A0 | Opening | The end state first: the keys table all green, the two paused ads as Meta's own previews, the control room pane; the two rules (nothing is turned on without the go line with the amount in the same message; no password or token ever in chat); what to have ready (a Claude account, the Facebook profile that administers the business with two-factor on, a phone for the codes, a card, whoever runs the website) | [link to clip A0] |
+| A1 | Install | Download and unzip, the bootstrap (Git, Node, Claude Code, the Claude desktop app, Google Chrome, FFmpeg, `playwright-core`, the HyperFrames plugin, Obsidian), `.env` copied, the progress page, "What remains" | [link to clip A1] |
+| A2 | The Claude desktop app | Open the app, sign in, the Code tab, open the folder, trust it, approve the two MCP servers | [link to clip A2] |
+| A3 | Claude in Chrome | Install the extension, sign in to it, the pairing in the app's Connectors; `/onboard` starts: the harness opens facebook.com in a new tab, reads the signed-in name, confirms the personal profile and two-factor | [link to clip A3] |
+| A4 | Meta business basics | The portfolio and the Page read; the ad account created (time zone and currency confirmed in chat before Create), payment method, phone verification; people and roles (n/a when you operate alone); guide steps 1–4 | [link to clip A4] |
+| A5 | The Meta login | `/mcp` → `meta-ads` → the consent screen in your browser, this business, its ad account and Page only; a new session; the live read shows this account alone; guide step 5 | [link to clip A5] |
+| A6 | The pixel | Events Manager, the dataset, the install path (a partner integration or the base code into a note for the website person, with the consent sentence), or the no-website path; guide step 6 | [link to clip A6] |
+| A7 | The developer app, the System User, the token | The app (Business, Marketing API), the System User with three assets (the ad account, the app, the Page "Everything"), the token: your hard stop, pasted into `.env` with Notepad, never into chat; the harness appends the two public ids itself; the three checks green; guide step 7 | [link to clip A7] |
+| A8 | WhatsApp, lead forms, domain | The WhatsApp Business number linked to the Page (the code is yours), the Lead Ads terms (only with instant forms), domain verification (the record into the note for the website person); guide steps 8–10 | [link to clip A8] |
+| A9 | fal | Sign-up, a small credit, `/mcp` → `fal` → log in, a new session, the balance read; optional | [link to clip A9] |
+| A10 | The keys table | `/health --keys`: the desktop app, Chrome and the extension, the Meta login and the account, the pixel, the upload token, the Graph token, the credential map, fal, the vault hooks, Obsidian: all green; "from here the team runs on its own" | [link to clip A10] |
+
+**Part B: the run**
+
+| # | Chapter | What it covers | Link |
+|---|---|---|---|
+| B1 | `/setup` | The interview, rounds (a) to (i), the console rows of Part A already green, the destination pages, `config/`, the vault's business notes, the memory routines registered (one question), the first flight plan inside the budget band and under the caps | [link to clip B1] |
+| B2 | `/health` | The whole green/yellow/red table, one line per red: what to do and who clicks | [link to clip B2] |
+| B3 | The first flight: two ads, PAUSED | The copy and the compliance gate, the still (fal on a stated cost and your go, or the renderer), the silent 12-second video made from the still and the hook and rendered locally, the uploads, one campaign, one ad set, two ads PAUSED, errors empty, Meta's own previews as images, the go rule explained and not typed | [link to clip B3] |
+| B4 | The control room and HOME | The control-room pane installed (your click: the line from `control-room/README.md`), `/team`; Obsidian: HOME, the Inbox (you write one line; tomorrow's `/morning` answers under it) | [link to clip B4] |
+| B5 | What's next | `/morning` every morning, `/sync` at the end of a session, `/next-round` weekly; the two routines that alert your phone and never act; the optional clips | [link to clip B5] |
 
 Optional clips:
 
 | Clip | What it covers | Link |
 |---|---|---|
-| HyperFrames | Installing the plugin and making a short silent ad video | [link to the HyperFrames clip] |
-| Vercel preview | Publishing a flight's preview site | [link to the Vercel preview clip] |
-| Control room | Installing and reading the side pane | [link to the control-room clip] |
-| Claude in Chrome | Letting the harness read Ads Manager screens in the Owner's browser | [link to the Claude in Chrome clip] |
+| O1 Organic posting | The weekly content calendar, a Page post handed to Meta's scheduler, the Instagram queue and its desktop-app task | [link to clip O1] |
+| O2 Vercel preview | `npx vercel@latest login` with the company's account; the Facebook-frame preview page of the flight | [link to clip O2] |
+| O3 Claude in Chrome for Ads Manager reads | The audience size on the paused set, read in your Chrome; the harness stops before any Publish | [link to clip O3] |
+| O4 The Mac bootstrap | `bash bootstrap.sh` on a Mac | [link to clip O4] |
 
 ## 4. Your first session: `/setup`, then the first ten minutes
 
@@ -109,7 +120,7 @@ Optional clips:
 | `config/product-team.md` | Where product truth lives and how requests are filed, or one line saying there is no product team |
 | `config/goals.md` | Goals and money, from round (i): the monthly budget band (in the account currency), the target cost per result for each funnel, the first funnel to launch, the hard caps (daily, weekly, monthly, per campaign), what success in 30 days means, how much risk you accept in tests, and when spend is reviewed |
 
-As it goes, the wizard prints the Meta console click lists (the steps of `docs/meta-setup-guide.md`, with Meta's addresses and what you should see) and checks each outcome live: it reads the Meta account and writes the ids it finds, runs the upload-token check, and opens each destination page. It then drafts `plans/<date>-first-flight-plan.md`: one campaign proposal per funnel, with budgets proposed inside the band and below the caps of `config/goals.md`, each labelled "Needs the Owner's go". At the end it lists the Owner's three one-time vault clicks (open the folder in Obsidian as a vault, turn on Obsidian's command line, paste the hooks block; §8a). It can also show you the fictional example in `examples/acme-fitness/` (in a scratch copy, never over your own config) so you can see a configured harness first. You can re-run `/setup` or edit any `config/` file by hand at any time.
+As it goes, the wizard reads the console rows that `/onboard` recorded (with the extension connected, any row still open runs as `/onboard`; without it, the wizard prints the click lists of `docs/meta-setup-guide.md`, with Meta's addresses and what you should see) and checks each outcome live: it reads the Meta account and writes the ids it finds, runs the upload-token check, and opens each destination page. It then drafts `plans/<date>-first-flight-plan.md`: one campaign proposal per funnel, the first funnel's with one still and one silent video (two ads in one ad set), with budgets proposed inside the band and below the caps of `config/goals.md`, each labelled "Needs the Owner's go". At the end it walks you through the control room (one install line, your click), HOME and the Inbox (§8a); nothing in Obsidian is a click. It can also show you the fictional example in `examples/acme-fitness/` (in a scratch copy, never over your own config) so you can see a configured harness first. You can re-run `/setup` or edit any `config/` file by hand at any time.
 
 **Every day after that:**
 
@@ -132,6 +143,7 @@ The times are set in `config/operator.md`; the control room, if installed, remin
 | Once a week, before the round | `/consolidate` (also runs by itself as the first step of `/next-round`) | The memory tidied: duplicates merged, old facts replaced, closed items archived, size limits kept; a short note of what changed |
 | Once a week, once a campaign has about a week of data | `/next-round` | The week's numbers, three specialist views (creative, copy, competitors) run in parallel, a compliance pass, and a numbered list you pick from. Only the picked items are built, paused, and the weekly review lands in `memory/reviews/`. Before there is data it runs as a labelled opinion |
 | Before any launch | `checklist.md` (§8) | Every gate done, or consciously marked n/a by its owner |
+| Once, before `/setup` | `/onboard` | The keys pass (Part A): every login and the one key, led in your own Chrome, ending with `/health --keys` all green; it resumes at the first open chapter |
 | Once, or when the company changes | `/setup` | `config/` rewritten from a fresh interview |
 
 ## 6. How to ask for things
@@ -245,7 +257,8 @@ The go checklist stays `checklist.md` (§8); it is not a vault note.
 | Direct upload tool | Sends image and video files from this computer into the ad account and returns the ids the ads need | the Owner's token in `.env` |
 | fal (optional) | Generates pictures and clips; paid, each round on the Owner's go | the company's fal account |
 | Vercel (optional) | The preview site for the team | the company's Vercel login |
-| Browser tools (optional) | Reads of Ads Manager screens and public pages; console clicks stay the Owner's | the Owner's browser |
+| The Claude desktop app | Where the harness runs (the Code tab, with its own copy of Claude Code); the memory routines, Remote Control and the pairing with the extension live there | the Owner's Claude account, signed in in the app |
+| Claude in Chrome (the extension) | The harness's hands in the Owner's own Chrome: `/onboard` drives the Meta consoles there on the Owner's go and stops at every hard stop; later, reads of Ads Manager screens. Console clicks past the hard-stop list stay the Owner's | the extension, signed in to the same Claude account as the app; the browser's own Facebook session |
 
 Both MCP servers come with the folder in `.mcp.json`: Claude Code asks you to approve them the first time you open the folder, and `/mcp` logs in or renews a login. `CLAUDE.md` → "Tool inventory" is the technical version, and "The campaign from A to Z" says which tool does which step.
 
@@ -255,7 +268,8 @@ Commands you type: `/setup`, `/morning`, `/health`, `/next-round`, `/sync`, `/co
 
 | Skill | One line |
 |---|---|
-| `setup` | The onboarding interview (rounds (a) to (i)) that writes `config/`, prints the Meta click lists and checks each outcome live, and drafts the first flight plan |
+| `onboard` | The keys pass (Part A): the harness leads every login and the one key in your own Chrome through the Claude in Chrome extension, stops at every hard stop, appends the two public ids to `.env` without opening it, and ends with the keys table all green |
+| `setup` | The onboarding interview (rounds (a) to (i)) that writes `config/`, hands the Meta console steps to `/onboard` (or prints them as click lists) and checks each outcome live, drafts the first flight plan (a still and a video), and walks you through the control room, HOME and the Inbox |
 | `memory-update` | How the vault is read at the start and written at every change and at the end |
 | `consolidate` | The weekly tidy of the vault: duplicates merged, stale facts replaced, closed items archived, size limits kept |
 | `meta-campaign-build` | How campaigns, ad sets and ads are built and changed through Meta's server, with every learned platform rule; uploads |
@@ -309,6 +323,8 @@ Claude delegates to these when a task is big or needs a second, independent read
 | HOME shows yesterday's numbers | The summary was not regenerated (a skipped `/morning`, or the script failed) | Type `/morning`, or ask Claude to run `build-hot`; `/health` line 17 shows it |
 | A new session does not seem to know the state | Claude Code was started from another folder, the folder was not trusted, or `.claude/settings.json` was deleted or replaced, so the summary is not loaded | Claude reads `memory/HOT.md` itself; start Claude Code from the harness folder and trust it; if `/health` shows the hooks red, restore the block from `docs/hooks-paste-block.md` (§8a) |
 | Obsidian opens on its start screen, or its command line does not answer | The setup tool has not run on this computer, or Obsidian was open while it ran | In the harness folder run `node memory/tools/obsidian-setup.mjs`, then close and reopen Obsidian once |
+| `/onboard` says the extension is not connected, or the session has no browser tools | The Claude in Chrome extension is not installed, not signed in to the same Claude account as the app, Chrome is closed, or the session started before the pairing | Open Chrome; in the app your initials → Settings → Customize → Connectors → Claude in Chrome → Configure (a terminal session: `/chrome` → Reconnect extension); check the extension's sign-in; start a new session on the folder; `/health` line 27 shows it |
+| `/health --keys` has a yellow or red row at the end of Part A | A login, the token or the extension is not in place yet | The row names the click and who makes it; the pass is not over until the table is green or the row is n/a by your word (fal skipped, no website) |
 
 **When a new version comes out.** You do not reinstall. Download the new zip, close Claude Code, open a terminal in the harness folder and run `bash upgrade.sh <the zip>` (macOS) or `powershell -ExecutionPolicy Bypass -File .\upgrade.ps1 <the zip>` (Windows); drag the zip into the window to fill in its path. It first shows a plan of what it will replace and add, and asks once; pressing Enter alone means no. Your settings in `config/`, your `.env`, your memory notes, plans, reports and creatives are never changed. Everything it overwrites is saved in `.upgrade-backup/` first, so you can always go back. Afterwards open a new session and run `/health`; once it is green you may delete the backup folder. If the plan lists a file as "CHANGED IN THIS COPY", read `docs/upgrade.md` before you say yes.
 
@@ -325,6 +341,9 @@ Claude delegates to these when a task is big or needs a second, independent read
 - **Flight:** one round of campaigns with its numbered creatives and its plan.
 - **Go:** the Owner's written instruction with the spend stated, in the same message.
 - **Gate:** an item in `checklist.md` that must be done before a campaign is turned on.
+- **Keys pass / `/onboard`:** Part A of the onboarding: one guided pass in your own Chrome through every login and the one key, with the harness driving and you at every hard stop.
+- **Keys table:** `/health --keys`, the Part A rows as one table; all green means every login and the one key are in place.
+- **Hard stop:** a screen only you touch: a password, a code, the card, legal terms, the token. The harness stops there and says "your turn".
 - **Sync:** the end-of-session write to the vault and the checklist.
 - **Vault:** the `memory/` folder of linked notes, opened in Obsidian; `memory/README.md` is its rulebook.
 - **HOME / Inbox:** the Owner's page in the vault / the note where the Owner writes and the harness answers.

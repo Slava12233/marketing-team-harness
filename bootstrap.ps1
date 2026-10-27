@@ -6,9 +6,9 @@
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Yes     install everything that is missing, with no question at all
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check   report only: no questions, no installs, nothing changed
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Help    show the usage
-# The one install takes every missing item, required and optional alike (Git, Node.js, Claude Code,
-# playwright-core, Obsidian for the memory vault, FFmpeg, the HyperFrames video plugin from vendor\hyperframes),
-# copies .env.example to .env, sets Obsidian up for the vault (memory/tools/obsidian-setup.mjs: the vault is
+# The one install takes every missing item, required, recommended and optional alike (Git, Node.js, Claude Code,
+# the Claude desktop app, Google Chrome, playwright-core, Obsidian for the memory vault, FFmpeg, the HyperFrames
+# video plugin from vendor\hyperframes), copies .env.example to .env, sets Obsidian up for the vault (memory/tools/obsidian-setup.mjs: the vault is
 # registered, the command line interface is on, the app opens; no click) and opens the setup progress page.
 # Enter at its question means Yes; Enter at an -Ask question means No.
 # Tags: [ok] already there, [installed] put in place by this run, [missing] not there, [skipped] an optional
@@ -19,7 +19,7 @@ param([switch]$Check, [switch]$Ask, [switch]$Yes, [switch]$Help)
 Set-StrictMode -Version 2
 $ErrorActionPreference = 'Continue'
 
-$Missing = $false; $Recheck = @(); $Done = $false; $Agreed = $false
+$Missing = $false; $Recheck = @(); $Done = $false; $Agreed = $false; $RecoMissing = @()
 $Plan = @(); $EnvTodo = $false; $PageTodo = $false; $Go = $false; $Declined = $false; $NoAnswer = $false
 function Say([string]$text) { Write-Host $text }
 function Note([string]$text) { Write-Host ('        ' + $text) }
@@ -211,18 +211,6 @@ if ((Test-Node) -ne 0) { Need 'Node.js' 'node' 'https://nodejs.org/en/download' 
 $rc = Test-Claude
 if ($rc -eq 1) { Need 'Claude Code' 'claude' } elseif ($rc -eq 2) { $Missing = $true }
 
-$browser = ''
-foreach ($base in @(${env:ProgramFiles(x86)}, $env:ProgramFiles)) {
-  if (-not $base) { continue }
-  if (-not $browser -and (Test-Path -LiteralPath (Join-Path $base 'Microsoft\Edge\Application\msedge.exe'))) { $browser = 'Microsoft Edge' }
-  if (-not $browser -and (Test-Path -LiteralPath (Join-Path $base 'Google\Chrome\Application\chrome.exe'))) { $browser = 'Google Chrome' }
-}
-if ($browser) { Say "[ok] A browser for ad screenshots is installed ($browser)." }
-else {
-  Say '[missing] Neither Microsoft Edge nor Google Chrome was found. Only the ad screenshots need one, so the setup goes on.'
-  Note 'Download one: https://www.microsoft.com/edge/download or https://www.google.com/chrome/'
-}
-
 function Copy-Env {   # copies .env.example to .env; an .env that exists by now is left as it is
   if (Test-Path -LiteralPath '.env' -PathType Leaf) { Say '[ok] .env exists (contents never shown).'; return }
   try {
@@ -236,6 +224,105 @@ elseif (-not (Test-Path -LiteralPath '.env.example' -PathType Leaf)) { Say '[mis
 elseif ($Mode -eq 'check') { Say '[missing] .env does not exist yet. Run this script without -Check to create it from .env.example.'; $Missing = $true }
 elseif ($Mode -eq 'ask') { Copy-Env }
 else { Say '[missing] .env does not exist yet.'; $EnvTodo = $true }
+
+# Recommended: the Claude desktop app and Google Chrome. The app's Code tab is where the harness runs (it carries
+# its own copy of Claude Code; the scheduled memory routines, Remote Control and the pairing with the Claude in
+# Chrome extension live there). The extension is the harness's hands in the Owner's own browser during /onboard,
+# and it runs in Chrome (or in Microsoft Edge; the guided setup and its video use Chrome, so Chrome is planned only
+# when neither browser is present). winget's Anthropic.Claude package
+# carries the Store build (an MSIX whose launcher, claude-desktop.exe, lands in the user's WindowsApps folder) and a
+# per-user exe installer (AnthropicClaude). Neither item fails the run when it is missing.
+Say ''
+Say 'Recommended'
+$ClaudeAppCmd = 'winget install --id Anthropic.Claude -e --source winget --accept-package-agreements --accept-source-agreements'
+$ClaudeAppPage = 'https://claude.ai/download'
+$ChromeCmd = 'winget install --id Google.Chrome -e --source winget --accept-package-agreements --accept-source-agreements'
+$ChromePage = 'https://www.google.com/chrome/'
+function Get-ClaudeAppPath {   # where the desktop app is, or '' when it is not there
+  $places = @()
+  if ($env:LOCALAPPDATA) {
+    $places += (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\claude-desktop.exe')
+    $places += (Join-Path $env:LOCALAPPDATA 'AnthropicClaude\claude.exe')
+    $places += (Join-Path $env:LOCALAPPDATA 'Programs\Claude\Claude.exe')
+  }
+  if ($env:ProgramFiles) { $places += (Join-Path $env:ProgramFiles 'Claude\Claude.exe') }
+  foreach ($p in $places) { if (Test-Path -LiteralPath $p -PathType Leaf) { return $p } }
+  $pkg = $null
+  try { $pkg = @(Get-AppxPackage -Name Claude -ErrorAction SilentlyContinue) } catch { $pkg = $null }
+  if ($pkg -and $pkg.Count -gt 0) { return ('the Microsoft Store build, version ' + $pkg[0].Version) }
+  return ''
+}
+function Get-ChromePath {   # chrome.exe of a machine or a per-user install, or ''
+  $places = @()
+  foreach ($base in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:ProgramW6432)) { if ($base) { $places += (Join-Path $base 'Google\Chrome\Application\chrome.exe') } }
+  if ($env:LOCALAPPDATA) { $places += (Join-Path $env:LOCALAPPDATA 'Google\Chrome\Application\chrome.exe') }
+  foreach ($p in $places) { if (Test-Path -LiteralPath $p -PathType Leaf) { return $p } }
+  return ''
+}
+function Test-Edge {   # true when Microsoft Edge is installed (enough for the ad screenshots, not for the extension)
+  foreach ($base in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:ProgramW6432)) {
+    if ($base -and (Test-Path -LiteralPath (Join-Path $base 'Microsoft\Edge\Application\msedge.exe') -PathType Leaf)) { return $true }
+  }
+  return $false
+}
+function Invoke-ClaudeApp {   # installs the desktop app (after its question under -Ask)
+  $script:Done = $false
+  $from = Get-PkgFrom
+  if (-not $from) {
+    Show-PkgHint 'the Claude desktop app' $ClaudeAppPage
+    Say ('[skipped] The Claude desktop app. Install it later from ' + $ClaudeAppPage + '; the harness also runs from a terminal (type claude in this folder).')
+    return
+  }
+  Offer 'the Claude desktop app' $false "the Claude desktop app from $from" $ClaudeAppCmd { & winget install --id Anthropic.Claude -e --source winget --accept-package-agreements --accept-source-agreements }
+  $p = Get-ClaudeAppPath
+  if ($script:Done -and $p) { Say "[installed] The Claude desktop app ($p)." }
+  elseif ($script:Done) { Say '[installed] The Claude desktop app. Open it from the Start menu, sign in, and click the Code tab.' }
+  else { Say ('[skipped] The Claude desktop app. Install it later with: ' + $ClaudeAppCmd + ' (or from ' + $ClaudeAppPage + ')') }
+}
+function Invoke-Chrome {   # installs Google Chrome (after its question under -Ask)
+  $script:Done = $false
+  $from = Get-PkgFrom
+  if (-not $from) {
+    Show-PkgHint 'Google Chrome' $ChromePage
+    Say ('[skipped] Google Chrome. Install it later from ' + $ChromePage)
+    return
+  }
+  Offer 'Google Chrome' $false "Google Chrome from $from" $ChromeCmd { & winget install --id Google.Chrome -e --source winget --accept-package-agreements --accept-source-agreements }
+  $p = Get-ChromePath
+  if ($script:Done -and $p) { Say "[installed] Google Chrome ($p)." }
+  elseif ($script:Done) { Say '[installed] Google Chrome. A new terminal window may be needed before this script finds it.' }
+  else { Say ('[skipped] Google Chrome. Install it later with: ' + $ChromeCmd + ' (or from ' + $ChromePage + ')') }
+}
+$appWhy = 'recommended: its Code tab is where the harness runs, with the memory routines and the Claude in Chrome pairing'
+$appPath = Get-ClaudeAppPath
+if ($appPath) { Say "[ok] The Claude desktop app is installed ($appPath)." }
+elseif ($Mode -eq 'check') { Say "[missing] The Claude desktop app is not installed ($appWhy). Run this script without -Check to install it."; $RecoMissing += 'the Claude desktop app' }
+elseif (($Mode -eq 'all') -and -not (Get-PkgFrom)) {
+  Say "[missing] The Claude desktop app is not installed ($appWhy)."
+  Show-PkgHint 'the Claude desktop app' $ClaudeAppPage; $RecoMissing += 'the Claude desktop app'
+}
+else {
+  Say "[missing] The Claude desktop app is not installed ($appWhy)."
+  if ($Mode -eq 'all') { $Plan += 'app' } else { Invoke-ClaudeApp }
+}
+$chromePath = Get-ChromePath
+if ($chromePath) { Say "[ok] Google Chrome is installed ($chromePath): for the Claude in Chrome extension and the ad screenshots." }
+elseif (Test-Edge) {
+  Say '[skipped] Google Chrome is not installed; Microsoft Edge was found, and the Claude in Chrome extension runs in Edge too.'
+  Note ('The guided setup and its video use Chrome. To add it: ' + $ChromeCmd + ' (or ' + $ChromePage + ')')
+}
+else {
+  $chromeWhy = 'recommended: the Claude in Chrome extension that /onboard uses and the ad screenshots need a browser, and neither Chrome nor Edge was found'
+  if ($Mode -eq 'check') { Say "[missing] Google Chrome is not installed ($chromeWhy). Run this script without -Check to install it."; $RecoMissing += 'Google Chrome' }
+  elseif (($Mode -eq 'all') -and -not (Get-PkgFrom)) {
+    Say "[missing] Google Chrome is not installed ($chromeWhy)."
+    Show-PkgHint 'Google Chrome' $ChromePage; $RecoMissing += 'Google Chrome'
+  }
+  else {
+    Say "[missing] Google Chrome is not installed ($chromeWhy)."
+    if ($Mode -eq 'all') { $Plan += 'chrome' } else { Invoke-Chrome }
+  }
+}
 
 Say ''
 Say 'Optional'
@@ -372,6 +459,8 @@ function Show-PlanLine([string]$item) {   # one line of the plan: the item and w
   if ($item -eq 'git') { Say ('  - Git, from ' + (Get-PkgFrom)) }
   elseif ($item -eq 'node') { Say ('  - Node.js LTS, from ' + (Get-PkgFrom)) }
   elseif ($item -eq 'claude') { Say '  - Claude Code, from claude.ai (the official installer; the npm registry if that fails)' }
+  elseif ($item -eq 'app') { Say ('  - The Claude desktop app (its Code tab is where the harness runs), from ' + (Get-PkgFrom)) }
+  elseif ($item -eq 'chrome') { Say ('  - Google Chrome (for the Claude in Chrome extension and the ad screenshots), from ' + (Get-PkgFrom)) }
   elseif ($item -eq 'playwright') { Say '  - playwright-core (a few megabytes), from the npm registry into node_modules in this folder' }
   elseif ($item -eq 'obsidian') { Say ('  - Obsidian for the memory vault (free, also for commercial use), from ' + (Get-PkgFrom)) }
   elseif ($item -eq 'ffmpeg') { Say ('  - FFmpeg, from ' + (Get-PkgFrom)) }
@@ -413,7 +502,7 @@ if ($Mode -eq 'all') {
       if ($EnvTodo) { Say '  - copy .env.example to .env (its contents are never shown)' }
       if ($PageTodo) { Say '  - open the setup progress page (dashboard/setup.html) in your browser' }
     }
-    if (($Plan -contains 'git') -or ($Plan -contains 'node') -or ($Plan -contains 'ffmpeg')) { Say 'winget may still show its own agreement prompts while it installs; answer them in this window.' }
+    if (($Plan -contains 'git') -or ($Plan -contains 'node') -or ($Plan -contains 'ffmpeg') -or ($Plan -contains 'app') -or ($Plan -contains 'chrome')) { Say 'winget may still show its own agreement prompts while it installs; answer them in this window.' }
     if ($Yes) { Say 'Install all of the above now? [Y/n]: yes (-Yes)'; $Go = $true }
     elseif (Confirm-All 'Install all of the above now?') { $Go = $true }
     else {
@@ -427,6 +516,8 @@ if ($Mode -eq 'all') {
     if ($Plan -contains 'git') { Put 'Git' 'git' }
     if ($Plan -contains 'node') { Put 'Node.js' 'node' }
     if ($Plan -contains 'claude') { Put 'Claude Code' 'claude' }
+    if ($Plan -contains 'app') { Invoke-ClaudeApp }
+    if ($Plan -contains 'chrome') { Invoke-Chrome }
     if ($EnvTodo) { Copy-Env }
     if ($Plan -contains 'playwright') { Install-PlaywrightNow }
     if ($Plan -contains 'obsidian') { Invoke-Obsidian }
@@ -497,34 +588,39 @@ elseif ($Missing) {
   if ($Mode -eq 'check') { Say '  First: run this script without -Check to install what is marked [missing] above.' }
   else { Say '  First: install what is marked [missing] above (run this script again, or install it by hand).' }
 }
-Say '  1. Open this folder in Claude Code: type claude in this folder (or open the folder in the Claude desktop app).'
+if ($RecoMissing.Count -gt 0) { Say ('  Also: ' + ($RecoMissing -join ' and ') + ' marked [missing] above: run this script again without -Check, or install from the page on that line.') }
+Say '  1. Open the Claude desktop app, sign in, click the Code tab and open this folder (Open folder...; trust it when asked).'
+Say "     A terminal works too (type claude in this folder), but the memory routines and the Claude in Chrome pairing are the app's."
 Say '  2. Claude Code asks you to approve the two servers in .mcp.json (meta-ads and fal): approve them.'
-Say '  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser where the Owner is signed in to Facebook.'
-Say '     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load.'
-Say '  4. Type /setup and answer the wizard.'
+Say '  3. Install the Claude in Chrome extension in Chrome and sign in to it with the same Claude account'
+Say '     (in the app: your initials at the lower left > Settings > Customize > Connectors > Claude in Chrome > Configure).'
+Say '  4. In the Code tab type /onboard: the keys pass. The harness leads every login and the one token in your own Chrome'
+Say '     and stops where only you can click (passwords, codes, the card, the terms, the token); it ends with the keys'
+Say '     table all green. The Meta and fal logins are chapters of it; docs/meta-setup-guide.md keeps every console step.'
+Say '  5. Then type /setup and answer the wizard.'
 if ($Routines -ge 2) { Say '     The two memory routines are already registered for this folder.' }
 else { Say '     It also registers two memory routines: a nightly check and a weekly review that alert your phone and never act.' }
-Say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
+Say "  6. The Owner's Meta console steps stay listed in docs/meta-setup-guide.md, with their pitfalls, for reference."
 # The memory vault in Obsidian: the result of obsidian-setup.mjs above, after a run that went ahead. Nothing
 # for the Owner to click; the memory hooks ship in .claude/settings.json.
 if (($Mode -ne 'check') -and -not $Declined) {
   if ($ObsSetup -eq 'ok') {
-    Say '  6. Obsidian is set up: the vault is registered, the command line interface is on, the app opened on your HOME page.'
+    Say '  7. Obsidian is set up: the vault is registered, the command line interface is on, the app opened on your HOME page.'
     Say '     (If Obsidian was already open before this run, close and reopen it once so its command line answers.)'
   }
   elseif ($ObsSetup -eq 'notool') {
-    Say '  6. Obsidian is not set up: memory/tools/obsidian-setup.mjs is missing. Unzip the harness again to get it.'
+    Say '  7. Obsidian is not set up: memory/tools/obsidian-setup.mjs is missing. Unzip the harness again to get it.'
   }
   elseif ($ObsSetup -eq 'noapp') {
-    Say '  6. Obsidian is not installed, so the memory vault is not set up in it yet (the notes work without it).'
+    Say '  7. Obsidian is not installed, so the memory vault is not set up in it yet (the notes work without it).'
     Say ('     Install it (run this script again, or get it free from ' + $ObsidianPage + '); then node memory/tools/obsidian-setup.mjs finishes it.')
   }
   elseif ($ObsSetup -eq 'nonode') {
-    Say '  6. Obsidian is installed but not set up yet: this window does not find Node.js.'
+    Say '  7. Obsidian is installed but not set up yet: this window does not find Node.js.'
     Say '     Open a new terminal window in this folder and run: node memory/tools/obsidian-setup.mjs'
   }
   else {
-    Say '  6. Obsidian could not be set up from here. Run: node memory/tools/obsidian-setup.mjs (it says why, and finishes it).'
+    Say '  7. Obsidian could not be set up from here. Run: node memory/tools/obsidian-setup.mjs (it says why, and finishes it).'
   }
 }
 # The setup progress page (dashboard/setup.html): written and opened at the end of a run that went ahead,
@@ -538,7 +634,8 @@ if (($Mode -ne 'check') -and -not $Declined -and (Test-Path -LiteralPath 'dashbo
     $markNode = if (($pageMajor -ge 20) -or ($Recheck -contains 'node')) { 'done' } else { 'todo' }
     $markClaude = if ((Get-Version 'claude') -or ($Recheck -contains 'claude')) { 'done' } else { 'todo' }
     $markObsidian = if ($obsNow) { 'done' } else { 'todo' }
-    $pageArgs = @('dashboard/setup-page.mjs', '--mark', "install.git=$markGit", '--mark', "install.node=$markNode", '--mark', "install.claude=$markClaude", '--mark', "obsidian.installed=$markObsidian")
+    $markApp = if (Get-ClaudeAppPath) { 'done' } else { 'todo' }
+    $pageArgs = @('dashboard/setup-page.mjs', '--mark', "install.git=$markGit", '--mark', "install.node=$markNode", '--mark', "install.claude=$markClaude", '--mark', "app.desktop=$markApp", '--mark', "obsidian.installed=$markObsidian")
     if ($ObsSetup -eq 'ok') { $pageArgs += @('--mark', 'obsidian.vault_opened=done', '--mark', 'obsidian.cli=done') }
     $pageArgs += '--open'
     Say ''

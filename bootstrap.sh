@@ -7,9 +7,9 @@
 #   bash bootstrap.sh --yes      install everything that is missing, with no question at all
 #   bash bootstrap.sh --check    report only: no questions, no installs, nothing changed
 #   bash bootstrap.sh --help     show the usage
-# The one install takes every missing item, required and optional alike (Git, Node.js, Claude Code,
-# playwright-core, Obsidian for the memory vault, FFmpeg, the HyperFrames video plugin from vendor/hyperframes),
-# copies .env.example to .env, sets Obsidian up for the vault (memory/tools/obsidian-setup.mjs: the vault is
+# The one install takes every missing item, required, recommended and optional alike (Git, Node.js, Claude Code,
+# the Claude desktop app, Google Chrome, playwright-core, Obsidian for the memory vault, FFmpeg, the HyperFrames
+# video plugin from vendor/hyperframes), copies .env.example to .env, sets Obsidian up for the vault (memory/tools/obsidian-setup.mjs: the vault is
 # registered, the command line interface is on, the app opens; no click) and opens the setup progress page.
 # Enter at its question means Yes; Enter at an --ask question means No.
 # Tags: [ok] already there, [installed] put in place by this run, [missing] not there, [skipped] an optional
@@ -18,7 +18,7 @@
 # only copied from .env.example.
 set -u
 
-MODE=all; CHECK=0; YES=0; ASKEACH=0; MISSING=0; RECHECK=""; AGREED=0
+MODE=all; CHECK=0; YES=0; ASKEACH=0; MISSING=0; RECHECK=""; AGREED=0; RECO_MISSING=""
 PLAN=""; ENV_TODO=0; PAGE_TODO=0; GO=0; DECLINED=0; NOANSWER=0; ANSWER=""
 say()  { printf '%s\n' "$*"; }
 note() { printf '        %s\n' "$*"; }
@@ -220,25 +220,6 @@ check_claude; rc=$?
 if [ "$rc" -eq 1 ]; then need claude "Claude Code" install_claude check_claude
 elif [ "$rc" -eq 2 ]; then MISSING=1; fi
 
-browser=""
-case "$OS" in
-  mac) for b in "Microsoft Edge" "Google Chrome"; do
-         [ -z "$browser" ] && [ -d "/Applications/$b.app" ] && browser="$b"; done ;;
-  win) for base in "$(printenv 'ProgramFiles(x86)')" "${PROGRAMFILES:-}"; do
-         [ -n "$base" ] || continue
-         base=$(cygpath -u "$base" 2>/dev/null || printf '%s' "$base")
-         [ -z "$browser" ] && [ -f "$base/Microsoft/Edge/Application/msedge.exe" ] && browser="Microsoft Edge"
-         [ -z "$browser" ] && [ -f "$base/Google/Chrome/Application/chrome.exe" ] && browser="Google Chrome"
-       done ;;
-  *) for c in microsoft-edge microsoft-edge-stable google-chrome google-chrome-stable chromium chromium-browser; do
-       [ -z "$browser" ] && command -v "$c" >/dev/null 2>&1 && browser="$c"; done ;;
-esac
-if [ -n "$browser" ]; then say "[ok] A browser for ad screenshots is installed ($browser)."
-else
-  say "[missing] Neither Microsoft Edge nor Google Chrome was found. Only the ad screenshots need one, so the setup goes on."
-  note "Download one: https://www.microsoft.com/edge/download or https://www.google.com/chrome/"
-fi
-
 copy_env() {   # copies .env.example to .env; an .env that exists by now is left as it is
   if [ -f .env ]; then say "[ok] .env exists (contents never shown)."; return; fi
   if cp .env.example .env; then
@@ -252,6 +233,128 @@ elif [ ! -f .env.example ]; then say "[missing] .env.example is missing, so .env
 elif [ "$MODE" = check ]; then say "[missing] .env does not exist yet. Run this script without --check to create it from .env.example."; MISSING=1
 elif [ "$MODE" = ask ]; then copy_env
 else say "[missing] .env does not exist yet."; ENV_TODO=1; fi
+
+# Recommended: the Claude desktop app and Google Chrome. The app's Code tab is where the harness runs (it carries
+# its own copy of Claude Code; the scheduled memory routines, Remote Control and the pairing with the Claude in
+# Chrome extension live there). The extension is the harness's hands in the Owner's own browser during /onboard,
+# and it runs in Chrome (or in Microsoft Edge; the guided setup and its video use Chrome, so Chrome is planned only
+# when neither browser is present). Installed with the Homebrew casks
+# (claude, google-chrome) on a Mac and winget (Anthropic.Claude, Google.Chrome) on Windows; on Linux the app comes
+# from Anthropic's apt package (claude-desktop) and the script only points to it. Neither item fails the run.
+say ""
+say "Recommended"
+CLAUDE_APP_PAGE=https://claude.ai/download
+CHROME_PAGE=https://www.google.com/chrome/
+winpath_u() { cygpath -u "$1" 2>/dev/null || printf '%s' "$1"; }
+claude_app_path() {   # where the desktop app is (printed), or nothing
+  local p
+  case "$OS" in
+    mac) for p in /Applications/Claude.app "$HOME/Applications/Claude.app"; do
+           [ -d "$p" ] && { say "$p"; return 0; }; done ;;
+    win) for p in "${LOCALAPPDATA:+$(winpath_u "$LOCALAPPDATA")/Microsoft/WindowsApps/claude-desktop.exe}" \
+                  "${LOCALAPPDATA:+$(winpath_u "$LOCALAPPDATA")/AnthropicClaude/claude.exe}" \
+                  "${LOCALAPPDATA:+$(winpath_u "$LOCALAPPDATA")/Programs/Claude/Claude.exe}" \
+                  "${PROGRAMFILES:+$(winpath_u "$PROGRAMFILES")/Claude/Claude.exe}"; do
+           [ -n "$p" ] && [ -f "$p" ] && { say "$p"; return 0; }; done
+         if command -v powershell.exe >/dev/null 2>&1 && powershell.exe -NoProfile -Command 'if (Get-AppxPackage -Name Claude -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }' >/dev/null 2>&1; then
+           say "the Microsoft Store build"; return 0; fi ;;
+    *) p=$(command -v claude-desktop 2>/dev/null) && { say "$p"; return 0; } ;;
+  esac
+  return 1
+}
+chrome_path() {   # Google Chrome (printed), or nothing
+  local p base
+  case "$OS" in
+    mac) [ -d "/Applications/Google Chrome.app" ] && { say "/Applications/Google Chrome.app"; return 0; } ;;
+    win) for base in "${PROGRAMFILES:-}" "$(printenv 'ProgramFiles(x86)')" "${LOCALAPPDATA:-}"; do
+           [ -n "$base" ] || continue
+           base=$(winpath_u "$base")
+           [ -f "$base/Google/Chrome/Application/chrome.exe" ] && { say "$base/Google/Chrome/Application/chrome.exe"; return 0; }
+         done ;;
+    *) for p in google-chrome google-chrome-stable; do
+         command -v "$p" >/dev/null 2>&1 && { say "$p"; return 0; }; done ;;
+  esac
+  return 1
+}
+edge_found() {   # true when Microsoft Edge is installed
+  local base
+  case "$OS" in
+    mac) [ -d "/Applications/Microsoft Edge.app" ] ;;
+    win) for base in "${PROGRAMFILES:-}" "$(printenv 'ProgramFiles(x86)')"; do
+           [ -n "$base" ] && [ -f "$(winpath_u "$base")/Microsoft/Edge/Application/msedge.exe" ] && return 0; done; return 1 ;;
+    *) command -v microsoft-edge >/dev/null 2>&1 || command -v microsoft-edge-stable >/dev/null 2>&1 ;;
+  esac
+}
+app_from() { if [ "$OS" = win ] || [ "$OS" = mac ]; then pkg_from; fi; }   # nothing on Linux: apt, by hand
+app_hint() {   # what to do instead when this script cannot install the app here
+  if [ "$OS" = linux ]; then
+    note "Install it from Anthropic's apt repository: sudo apt install claude-desktop (the steps are at https://code.claude.com/docs/en/desktop-linux),"
+    note "or run the harness from a terminal: type claude in this folder."
+  else pkg_hint "the Claude desktop app" "$CLAUDE_APP_PAGE"; fi
+}
+cask_pkg() {   # cask_pkg <name> <Homebrew cask> <winget id>: installs with winget (Windows) or a Homebrew cask (Mac)
+  local from; from=$(app_from)
+  [ -n "$from" ] || return 1
+  if [ "$OS" = win ]; then offer "$1" 0 "$1 from $from" "winget install --id $3 -e --source winget --accept-package-agreements --accept-source-agreements"
+  else offer "$1" 0 "$1 from $from" "$BREW install --cask $2"; fi
+}
+do_claude_app() {   # installs the desktop app (after its question under --ask)
+  local p
+  if [ -z "$(app_from)" ]; then
+    app_hint
+    say "[skipped] The Claude desktop app. Install it later; the harness also runs from a terminal."; return 1
+  fi
+  if cask_pkg "the Claude desktop app" claude Anthropic.Claude; then
+    p=$(claude_app_path)
+    if [ -n "$p" ]; then say "[installed] The Claude desktop app ($p)."
+    else say "[installed] The Claude desktop app. Open it, sign in, and click the Code tab."; fi
+    return 0
+  fi
+  say "[skipped] The Claude desktop app. Install it later from $CLAUDE_APP_PAGE"; return 1
+}
+do_chrome() {   # installs Google Chrome (after its question under --ask)
+  local p
+  if [ -z "$(app_from)" ]; then
+    pkg_hint "Google Chrome" "$CHROME_PAGE"
+    say "[skipped] Google Chrome. Install it later from $CHROME_PAGE"; return 1
+  fi
+  if cask_pkg "Google Chrome" google-chrome Google.Chrome; then
+    p=$(chrome_path)
+    if [ -n "$p" ]; then say "[installed] Google Chrome ($p)."
+    else say "[installed] Google Chrome. A new terminal window may be needed before this script finds it."; fi
+    return 0
+  fi
+  say "[skipped] Google Chrome. Install it later from $CHROME_PAGE"; return 1
+}
+APP_WHY="recommended: its Code tab is where the harness runs, with the memory routines and the Claude in Chrome pairing"
+app_path=$(claude_app_path)
+if [ -n "$app_path" ]; then say "[ok] The Claude desktop app is installed ($app_path)."
+elif [ "$MODE" = check ]; then say "[missing] The Claude desktop app is not installed ($APP_WHY). Run this script without --check to install it."; RECO_MISSING="$RECO_MISSING app"
+elif [ "$MODE" = all ] && [ -z "$(app_from)" ]; then
+  say "[missing] The Claude desktop app is not installed ($APP_WHY)."
+  app_hint; RECO_MISSING="$RECO_MISSING app"
+else
+  say "[missing] The Claude desktop app is not installed ($APP_WHY)."
+  if [ "$MODE" = all ]; then PLAN="$PLAN app"; else do_claude_app; fi
+fi
+chrome_now=$(chrome_path)
+if [ -n "$chrome_now" ]; then say "[ok] Google Chrome is installed ($chrome_now): for the Claude in Chrome extension and the ad screenshots."
+elif edge_found; then
+  say "[skipped] Google Chrome is not installed; Microsoft Edge was found, and the Claude in Chrome extension runs in Edge too."
+  if [ "$OS" = win ]; then note "The guided setup and its video use Chrome. To add it: winget install --id Google.Chrome -e --source winget (or $CHROME_PAGE)"
+  elif [ "$OS" = mac ]; then note "The guided setup and its video use Chrome. To add it: brew install --cask google-chrome (or $CHROME_PAGE)"
+  else note "The guided setup and its video use Chrome. To add it: $CHROME_PAGE"; fi
+else
+  CHROME_WHY="recommended: the Claude in Chrome extension that /onboard uses and the ad screenshots need a browser, and neither Chrome nor Edge was found"
+  if [ "$MODE" = check ]; then say "[missing] Google Chrome is not installed ($CHROME_WHY). Run this script without --check to install it."; RECO_MISSING="$RECO_MISSING chrome"
+  elif [ "$MODE" = all ] && [ -z "$(app_from)" ]; then
+    say "[missing] Google Chrome is not installed ($CHROME_WHY)."
+    pkg_hint "Google Chrome" "$CHROME_PAGE"; RECO_MISSING="$RECO_MISSING chrome"
+  else
+    say "[missing] Google Chrome is not installed ($CHROME_WHY)."
+    if [ "$MODE" = all ]; then PLAN="$PLAN chrome"; else do_chrome; fi
+  fi
+fi
 
 say ""
 say "Optional"
@@ -274,7 +377,6 @@ fi
 # memory/tools/obsidian-setup.mjs registers the vault, turns on the command line interface and starts the app,
 # so the Owner clicks nothing in Obsidian. The memory hooks ship in .claude/settings.json.
 OBSIDIAN_PAGE=https://obsidian.md/download
-winpath_u() { cygpath -u "$1" 2>/dev/null || printf '%s' "$1"; }
 obsidian_path() {   # the Obsidian app found (printed), or nothing
   local p
   case "$OS" in
@@ -391,6 +493,8 @@ plan_line() {   # one line of the plan: the item and where it comes from
     git)         say "  - Git, from $(pkg_from)" ;;
     node)        if [ "$OS" = win ]; then say "  - Node.js LTS, from $(pkg_from)"; else say "  - Node.js, from $(pkg_from)"; fi ;;
     claude)      say "  - Claude Code, from claude.ai (the official installer; the npm registry if that fails)" ;;
+    app)         say "  - The Claude desktop app (its Code tab is where the harness runs), from $(app_from)" ;;
+    chrome)      say "  - Google Chrome (for the Claude in Chrome extension and the ad screenshots), from $(app_from)" ;;
     playwright)  say "  - playwright-core (a few megabytes), from the npm registry into node_modules in this folder" ;;
     obsidian)    say "  - Obsidian for the memory vault (free, also for commercial use), from $(obsidian_from)" ;;
     ffmpeg)      say "  - FFmpeg, from $(pkg_from)" ;;
@@ -427,7 +531,7 @@ if [ "$MODE" = all ]; then
       [ "$ENV_TODO" = 1 ] && say "  - copy .env.example to .env (its contents are never shown)"
       [ "$PAGE_TODO" = 1 ] && say "  - open the setup progress page (dashboard/setup.html) in your browser"
     fi
-    if [ "$OS" = win ] && { in_plan git || in_plan node || in_plan ffmpeg; }; then
+    if [ "$OS" = win ] && { in_plan git || in_plan node || in_plan ffmpeg || in_plan app || in_plan chrome; }; then
       say "winget may still show its own agreement prompts while it installs; answer them in this window."
     fi
     if [ "$YES" = 1 ]; then say "Install all of the above now? [Y/n]: yes (--yes)"; GO=1
@@ -443,6 +547,8 @@ if [ "$MODE" = all ]; then
     in_plan git && put "Git" install_git check_git
     in_plan node && put "Node.js" install_node check_node
     in_plan claude && put "Claude Code" install_claude check_claude
+    in_plan app && do_claude_app
+    in_plan chrome && do_chrome
     [ "$ENV_TODO" = 1 ] && copy_env
     in_plan playwright && playwright_now
     in_plan obsidian && do_obsidian
@@ -508,26 +614,36 @@ elif [ "$MISSING" = 1 ]; then
   if [ "$MODE" = check ]; then say "  First: run this script without --check to install what is marked [missing] above."
   else say "  First: install what is marked [missing] above (run this script again, or install it by hand)."; fi
 fi
-say "  1. Open this folder in Claude Code: type claude in this folder (or open the folder in the Claude desktop app)."
+if [ -n "$RECO_MISSING" ]; then
+  reco=""
+  case " $RECO_MISSING " in *" app "*) reco="the Claude desktop app" ;; esac
+  case " $RECO_MISSING " in *" chrome "*) reco="${reco:+$reco and }Google Chrome" ;; esac
+  say "  Also: $reco marked [missing] above: run this script again without --check, or install from the page on that line."
+fi
+say "  1. Open the Claude desktop app, sign in, click the Code tab and open this folder (Open folder...; trust it when asked)."
+say "     A terminal works too (type claude in this folder), but the memory routines and the Claude in Chrome pairing are the app's."
 say "  2. Claude Code asks you to approve the two servers in .mcp.json (meta-ads and fal): approve them."
-say "  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser where the Owner is signed in to Facebook."
-say "     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load."
-say "  4. Type /setup and answer the wizard."
+say "  3. Install the Claude in Chrome extension in Chrome and sign in to it with the same Claude account"
+say "     (in the app: your initials at the lower left > Settings > Customize > Connectors > Claude in Chrome > Configure)."
+say "  4. In the Code tab type /onboard: the keys pass. The harness leads every login and the one token in your own Chrome"
+say "     and stops where only you can click (passwords, codes, the card, the terms, the token); it ends with the keys"
+say "     table all green. The Meta and fal logins are chapters of it; docs/meta-setup-guide.md keeps every console step."
+say "  5. Then type /setup and answer the wizard."
 if [ "$ROUTINES" -ge 2 ]; then say "     The two memory routines are already registered for this folder."
 else say "     It also registers two memory routines: a nightly check and a weekly review that alert your phone and never act."; fi
-say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
+say "  6. The Owner's Meta console steps stay listed in docs/meta-setup-guide.md, with their pitfalls, for reference."
 # The memory vault in Obsidian: the result of obsidian-setup.mjs above, after a run that went ahead. Nothing
 # for the Owner to click; the memory hooks ship in .claude/settings.json.
 if [ "$MODE" != check ] && [ "$DECLINED" = 0 ]; then
   case "$OBS_SETUP" in
-    ok)     say "  6. Obsidian is set up: the vault is registered, the command line interface is on, the app opened on your HOME page."
+    ok)     say "  7. Obsidian is set up: the vault is registered, the command line interface is on, the app opened on your HOME page."
             say "     (If Obsidian was already open before this run, close and reopen it once so its command line answers.)" ;;
-    notool) say "  6. Obsidian is not set up: memory/tools/obsidian-setup.mjs is missing. Unzip the harness again to get it." ;;
-    noapp)  say "  6. Obsidian is not installed, so the memory vault is not set up in it yet (the notes work without it)."
+    notool) say "  7. Obsidian is not set up: memory/tools/obsidian-setup.mjs is missing. Unzip the harness again to get it." ;;
+    noapp)  say "  7. Obsidian is not installed, so the memory vault is not set up in it yet (the notes work without it)."
             say "     Install it (run this script again, or get it free from $OBSIDIAN_PAGE); then node memory/tools/obsidian-setup.mjs finishes it." ;;
-    nonode) say "  6. Obsidian is installed but not set up yet: this window does not find Node.js."
+    nonode) say "  7. Obsidian is installed but not set up yet: this window does not find Node.js."
             say "     Open a new terminal window in this folder and run: node memory/tools/obsidian-setup.mjs" ;;
-    *)      say "  6. Obsidian could not be set up from here. Run: node memory/tools/obsidian-setup.mjs (it says why, and finishes it)." ;;
+    *)      say "  7. Obsidian could not be set up from here. Run: node memory/tools/obsidian-setup.mjs (it says why, and finishes it)." ;;
   esac
 fi
 # The setup progress page (dashboard/setup.html): written and opened at the end of a run that went ahead,
@@ -541,11 +657,12 @@ if [ "$MODE" != check ] && [ "$DECLINED" = 0 ] && [ -f dashboard/setup-page.mjs 
     mark_node=todo; { [ "$pg_major" -ge 20 ] || ran check_node; } && mark_node=done
     mark_claude=todo; { [ -n "$(claude_v)" ] || ran check_claude; } && mark_claude=done
     mark_obsidian=todo; [ -n "$obs_now" ] && mark_obsidian=done
+    mark_app=todo; [ -n "$(claude_app_path)" ] && mark_app=done
     obs_marks=()
     [ "$OBS_SETUP" = ok ] && obs_marks=(--mark "obsidian.vault_opened=done" --mark "obsidian.cli=done")
     say ""
     if node dashboard/setup-page.mjs --mark "install.git=$mark_git" --mark "install.node=$mark_node" \
-         --mark "install.claude=$mark_claude" --mark "obsidian.installed=$mark_obsidian" ${obs_marks[@]+"${obs_marks[@]}"} --open >/dev/null 2>&1
+         --mark "install.claude=$mark_claude" --mark "app.desktop=$mark_app" --mark "obsidian.installed=$mark_obsidian" ${obs_marks[@]+"${obs_marks[@]}"} --open >/dev/null 2>&1
     then say "A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html"
     else say "The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later."; fi
   elif [ "$PAGE_TODO" = 1 ]; then

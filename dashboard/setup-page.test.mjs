@@ -53,9 +53,9 @@ function page(dir) {   // the written page, its embedded data, and the status of
 test('bare template: everything to do except .mcp.json; offline; optional rows hidden', () => withCopy(false, dir => {
   const r = run(dir, '--print');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, SEALED ? /^setup page: 1\/47 done, next: Git installed/m : /^setup page: \d+\/47 done, next: Git installed/m);
+  assert.match(r.stdout, SEALED ? /^setup page: 1\/51 done, next: Git installed/m : /^setup page: \d+\/51 done, next: Git installed/m);
   const { html, st } = page(dir);
-  const app = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli'];
+  const app = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'app.desktop'];   // machine-wide installs off Windows
   for (const [k, s] of Object.entries(st)) {
     if (!SEALED && app.includes(k)) continue;
     assert.equal(s, k === 'install.mcpjson' ? 'done' : 'todo', k);
@@ -107,9 +107,10 @@ test('both string tables cover every chapter, item, status and hint; the embedde
   run(dir, '--mark', 'meta.webhook=todo', '--mark', 'meta.instagram=todo');   // marks show the optional rows (placeholders here)
   const { html, data } = page(dir);
   const keys = data.model.chapters.flatMap(c => (c.items || []).map(i => i.key));
-  assert.equal(keys.length, 49);
+  assert.equal(keys.length, 53);
   for (const lang of ['en', 'he']) {
     const S = data.strings[lang];
+    for (const p of ['A', 'B']) assert.ok(S.parts[p], `${lang} part ${p}`);
     for (const c of data.model.chapters) {
       assert.ok(S.chapters[c.id], `${lang} chapter ${c.id}`);
       if (c.info) assert.ok(S.info[c.id] && S.info[c.id].length, `${lang} info lines ${c.id}`);
@@ -135,7 +136,8 @@ test('the memory vault chapter: app, Obsidian config, shipped hooks and business
   let { html, data, st } = page(dir);
   const ch = data.model.chapters.find(c => c.id === 'vault');
   assert.deepEqual(ch.items.map(i => i.key), keys);
-  assert.equal(data.model.chapters.indexOf(ch), 2, 'right after the Install chapter');
+  assert.equal(data.model.chapters.indexOf(ch), 14, 'in Part B, after the first flight: the video\'s chapter B4');
+  assert.equal(ch.n, 'B4');
   assert.equal(st['obsidian.hooks'], 'todo', 'no settings file in this copy');
   assert.equal(st['memory.business_filled'], 'todo');
   assert.equal(st['memory.routines'], 'todo', 'no routine row in this copy');
@@ -196,4 +198,36 @@ test('the memory vault chapter: app, Obsidian config, shipped hooks and business
   assert.equal(st['memory.business_filled'], 'done');
   assert.equal(st['memory.routines'], 'done');
   assert.equal(data.model.chapters.find(c => c.id === 'vault').status, 'done');
+}));
+
+test('two parts in the video\'s order: labels A0–A10 and B1–B5, the desktop app answered by a file, the new items marked', () => withCopy(false, dir => {
+  let r = run(dir, '--print');
+  assert.equal(r.status, 0, r.stderr);
+  let { html, data, st } = page(dir);
+  assert.deepEqual(data.model.chapters.map(c => c.n), ['A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'B1', 'B2', 'B3', 'B4', 'B5']);
+  assert.deepEqual(data.model.chapters.filter(c => c.part === 'B').map(c => c.id), ['c8', 'c9', 'c10', 'vault', 'c11']);
+  assert.equal(data.model.chapters.find(c => c.id === 'app').items.map(i => i.key).join(' '), 'app.desktop install.approved');
+  assert.equal(data.model.chapters.find(c => c.id === 'keys').items[0].key, 'keys.table');
+  assert.ok(data.model.chapters.find(c => c.id === 'c10').items.some(i => i.key === 'flight.video'), 'the video ad is a step of the first flight');
+  assert.match(html, /<h2 class="part">Part A: accounts and keys/);
+  assert.match(html, /<h2 class="part">Part B: the run<\/h2>/);
+  assert.match(r.stdout, /== Part A: accounts and keys/);
+  assert.match(r.stdout, /^A3\. Claude in Chrome/m);
+  assert.match(r.stdout, /^B3\. First flight built PAUSED/m);
+  for (const k of ['chrome.extension', 'keys.table', 'flight.video']) assert.equal(st[k], 'todo', k);
+  if (SEALED) assert.equal(st['app.desktop'], 'todo', 'no app under the sandboxed folders');
+  assert.match(html, /<span class="hint">[^<]*Connectors/, 'an open extension item shows the Owner\'s path');
+  // marks on the new items count; then the desktop app is answered by its launcher once that file is there
+  r = run(dir, '--mark', 'chrome.extension=done', '--mark', 'keys.table=done', '--mark', 'flight.video=done', '--mark', 'app.desktop=done');
+  assert.equal(r.status, 0, r.stderr);
+  ({ st } = page(dir));
+  for (const k of ['chrome.extension', 'keys.table', 'flight.video', 'app.desktop']) assert.equal(st[k], 'done', k);
+  writeFileSync(join(dir, 'dashboard', 'setup-progress.json'), '{"marks":{}}');
+  const a = away(dir);
+  if (process.platform === 'win32') { mkdirSync(join(a, 'Microsoft', 'WindowsApps'), { recursive: true }); writeFileSync(join(a, 'Microsoft', 'WindowsApps', 'claude-desktop.exe'), ''); }
+  else if (process.platform === 'darwin') mkdirSync(join(a, 'Applications', 'Claude.app'), { recursive: true });
+  assert.equal(run(dir).status, 0);
+  ({ st } = page(dir));
+  if (process.platform !== 'linux') assert.equal(st['app.desktop'], 'done', 'the launcher file answers');
+  assert.equal(st['chrome.extension'], 'todo', 'no mark left');
 }));

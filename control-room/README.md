@@ -75,7 +75,7 @@ claude plugin install marketing-team --marketplace "<absolute path to this repos
 
 Claude Code then asks `Add marketplace?` (answer `y`) and a scope (user scope first; press Enter). That answer is the Owner's click that turns the control room on; it ends with `Installed marketing-team. Plugin is now active.` and runs in that session at once and in every session started after. Because the marketplace is a folder and the entry is a relative path, Claude Code reads the mod from this folder itself: after editing the mod, run `/reload-plugins`.
 
-In the desktop app, where `/plugin` does not run: click + next to the prompt box, then Plugins, Add marketplace with the folder's path, then Add plugin.
+In the desktop app, where `/plugin` does not run: click + next to the prompt box, then Plugins, Add marketplace with the folder's path, then Add plugin. `/setup` step 7 (chapter B4 of the onboarding) names this line for the Owner and stops; the pane opens at the next session start, and `/team` reopens it.
 
 **Alternative for sessions started by another host:** name the folder in `CLAUDE_CODE_PLUGIN_DIRS` (in the process environment or the `env` block of the user's `~/.claude/settings.json`, never a project's settings). That edit is also the Owner's.
 

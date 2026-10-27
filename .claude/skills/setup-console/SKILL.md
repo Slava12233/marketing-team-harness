@@ -14,7 +14,11 @@ The steps, their outcomes and their pitfalls are those of `docs/meta-setup-guide
 - The installer is at the client's consoles with the client's admin access, and the Owner (the client) agreed to an installer-led setup (`docs/client-intake.md` §1, option 0).
 - **The go.** Every click that changes something (create, add, assign, connect, save, invite, verify) runs only on a go typed in chat **in the same message**, naming the step or the click ("go: step 7, create the system user"). In this mode the installer types it, sitting with the Owner or holding the Owner's written OK for the setup day (recorded as a `checklist.md` note). One message may cover the clicks of one step; a go never carries over to the next step. Navigation, reads and screenshots need no go.
 - **Never a password typed by the harness.** When Meta asks for a password, a code or a re-login, the harness stops and the human types it.
-- Not for: the Owner alone at home (use the click lists of `/setup` step 2 and `docs/meta-setup-guide.md`); building campaigns (`meta-campaign-build`); anything in Ads Manager beyond reads.
+- Not for: the Owner alone at home (with the extension connected, `/onboard`; without it, the click lists of `/setup` step 2 and `docs/meta-setup-guide.md`); building campaigns (`meta-campaign-build`); anything in Ads Manager beyond reads.
+
+## Owner mode: `/onboard`
+
+The same steps run in **Owner mode** when the Owner is alone at their own computer, in the Claude desktop app's Code tab, with the Claude in Chrome extension connected to their own Chrome: that is the `onboard` skill (`.claude/skills/onboard/SKILL.md`, chapters A3–A10 of the onboarding). It reuses every step body, the hard-stop list, the traps and the marks of this page and changes only who clicks and whose word the go is: the Owner clicks every hard stop, the go is the Owner's own, typed in chat in the same message, the app-roles step (7d) is n/a because the Owner's own profile creates the app, the two public ids are appended to `.env` by the harness (never a read), the fal sign-up and login are a chapter, and the pass ends with the keys table (`/health --keys`) all green instead of an installer's access to remove. When a step on this page says "the installer", read "the Owner" there.
 
 ## Prerequisites (check them in this order; stop at the first missing one)
 
