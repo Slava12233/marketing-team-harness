@@ -1,6 +1,8 @@
 # Scheduling the morning run and the client report
 
-How the Owner or the Operator makes `/morning` and the weekly client report (`/client-report`) run by themselves on their own computer. **The harness never touches your scheduler**: it does not create, change or delete a scheduled task, a launchd job or a crontab line. You set it up once with the steps below, and you can remove it the same way.
+How the Owner or the Operator makes `/morning` and the weekly client report (`/client-report`) run by themselves on their own computer. **The harness never touches your machine's scheduler**: it does not create, change or delete a Task Scheduler task, a launchd job or a crontab line. You set it up once with the steps below, and you can remove it the same way.
+
+**The one exception: the two memory routines.** A nightly memory check and a weekly consolidation review (`.claude/routines/README.md`) are registered by `/setup` step 5.6, after one question, as scheduled tasks inside the Claude desktop app (not the operating system's scheduler). They are read-only, alert the Owner's phone through Remote Control, and are changed or removed in the app's Scheduled list. Without the desktop app, run their prompts with the steps below instead.
 
 Lines marked **verify on your machine** were written from the tools' documentation and could not be tested on every system; run them by hand once before you rely on them.
 

@@ -471,6 +471,25 @@ if (-not $Declined) {
   }
 }
 
+# The memory routines (.claude/routines/): a nightly memory check and a weekly consolidation review that alert
+# the Owner's phone and never act. The desktop app keeps their schedules itself, so only /setup (step 5.6) can
+# register them; this script counts the scheduled tasks whose prompt names this folder and never creates one.
+$Routines = 0
+$taskDir = Join-Path $HOME '.claude\scheduled-tasks'
+if (Test-Path -LiteralPath $taskDir -PathType Container) {
+  $herePath = (Get-Location).Path.Replace('/', '\').TrimEnd('\').ToLowerInvariant()
+  foreach ($d in Get-ChildItem -LiteralPath $taskDir -Directory -ErrorAction SilentlyContinue) {
+    $skill = Join-Path $d.FullName 'SKILL.md'
+    if (-not (Test-Path -LiteralPath $skill -PathType Leaf)) { continue }
+    $body = (Get-Content -LiteralPath $skill -Raw -ErrorAction SilentlyContinue)
+    if ($body -and $body.Replace('/', '\').ToLowerInvariant().Contains($herePath)) { $Routines++ }
+  }
+}
+if ($Mode -eq 'check') {
+  if ($Routines -ge 2) { Say "[ok] The memory routines are registered for this folder ($Routines scheduled tasks)." }
+  else { Say '[todo] The memory routines are not registered yet: /setup registers them in the Claude desktop app (one question).' }
+}
+
 Say ''
 Say 'What remains'
 if ($Declined) { Say '  First: run this script again and press Enter at the question to install what is marked [missing] above.' }
@@ -483,6 +502,8 @@ Say '  2. Claude Code asks you to approve the two servers in .mcp.json (meta-ads
 Say '  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser where the Owner is signed in to Facebook.'
 Say '     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load.'
 Say '  4. Type /setup and answer the wizard.'
+if ($Routines -ge 2) { Say '     The two memory routines are already registered for this folder.' }
+else { Say '     It also registers two memory routines: a nightly check and a weekly review that alert your phone and never act.' }
 Say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
 # The memory vault in Obsidian: the result of obsidian-setup.mjs above, after a run that went ahead. Nothing
 # for the Owner to click; the memory hooks ship in .claude/settings.json.

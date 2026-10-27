@@ -26,6 +26,14 @@
 | Weekly round | `/next-round` | {{NEXT_ROUND_DAY_TIME}} |
 <!-- setup: local times in the timezone above; the control room shows a toast when one is due -->
 
+## Memory routines
+
+| Routine | Task id | Schedule | Prompt |
+|---|---|---|---|
+| Nightly memory check | {{NIGHTLY_TASK_ID}} | {{NIGHTLY_SCHEDULE}} | `.claude/routines/nightly-memory-check.md` |
+| Weekly consolidation review | {{WEEKLY_TASK_ID}} | {{WEEKLY_SCHEDULE}} | `.claude/routines/weekly-consolidate-review.md` |
+<!-- setup: step 5.6 registers both as scheduled tasks in the Claude desktop app (recommended: nightly 23:00 on working days; weekly 21:00 the evening before the first working day), read-only, alerting the Owner's phone through Remote Control; "not registered: <reason>" when the Operator declined or the app is not used -->
+
 ## The phrasing of a go
 
 {{GO_PHRASING}}

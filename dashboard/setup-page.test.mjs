@@ -53,7 +53,7 @@ function page(dir) {   // the written page, its embedded data, and the status of
 test('bare template: everything to do except .mcp.json; offline; optional rows hidden', () => withCopy(false, dir => {
   const r = run(dir, '--print');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, SEALED ? /^setup page: 1\/46 done, next: Git installed/m : /^setup page: \d+\/46 done, next: Git installed/m);
+  assert.match(r.stdout, SEALED ? /^setup page: 1\/47 done, next: Git installed/m : /^setup page: \d+\/47 done, next: Git installed/m);
   const { html, st } = page(dir);
   const app = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli'];
   for (const [k, s] of Object.entries(st)) {
@@ -107,7 +107,7 @@ test('both string tables cover every chapter, item, status and hint; the embedde
   run(dir, '--mark', 'meta.webhook=todo', '--mark', 'meta.instagram=todo');   // marks show the optional rows (placeholders here)
   const { html, data } = page(dir);
   const keys = data.model.chapters.flatMap(c => (c.items || []).map(i => i.key));
-  assert.equal(keys.length, 48);
+  assert.equal(keys.length, 49);
   for (const lang of ['en', 'he']) {
     const S = data.strings[lang];
     for (const c of data.model.chapters) {
@@ -129,7 +129,7 @@ test('both string tables cover every chapter, item, status and hint; the embedde
 }));
 
 test('the memory vault chapter: app, Obsidian config, shipped hooks and business note answered by files; never a click', () => withCopy(false, dir => {
-  const keys = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled'];
+  const keys = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled', 'memory.routines'];
   let r = run(dir, '--print');
   assert.equal(r.status, 0, r.stderr);
   let { html, data, st } = page(dir);
@@ -138,6 +138,7 @@ test('the memory vault chapter: app, Obsidian config, shipped hooks and business
   assert.equal(data.model.chapters.indexOf(ch), 2, 'right after the Install chapter');
   assert.equal(st['obsidian.hooks'], 'todo', 'no settings file in this copy');
   assert.equal(st['memory.business_filled'], 'todo');
+  assert.equal(st['memory.routines'], 'todo', 'no routine row in this copy');
   assert.equal(st['obsidian.vault_opened'], 'todo');
   assert.equal(st['obsidian.cli'], 'todo');
   if (SEALED) assert.equal(st['obsidian.installed'], 'todo');
@@ -182,9 +183,17 @@ test('the memory vault chapter: app, Obsidian config, shipped hooks and business
   assert.equal(st['memory.business_filled'], 'todo', 'a placeholder is left');
   writeFileSync(join(reg, 'obsidian.json'), JSON.stringify({ vaults, cli: true }));
   writeFileSync(join(dir, 'memory', 'business', 'company.md'), '# Company\n\nName: Example Co\n');
+  // the routines row of config/operator.md: declined is n/a, registered is done; never a click
+  mkdirSync(join(dir, 'config'), { recursive: true });
+  const op = join(dir, 'config', 'operator.md');
+  writeFileSync(op, '## Memory routines\n\n| Nightly memory check | not registered: declined | | |\n');
+  assert.equal(run(dir).status, 0);
+  assert.equal(page(dir).st['memory.routines'], 'na');
+  writeFileSync(op, '## Memory routines\n\n| Nightly memory check | harness-nightly-memory-check | 0 23 * * 1-5 | x |\n');
   assert.equal(run(dir).status, 0);
   ({ data, st } = page(dir));
   assert.equal(st['obsidian.cli'], 'done');
   assert.equal(st['memory.business_filled'], 'done');
+  assert.equal(st['memory.routines'], 'done');
   assert.equal(data.model.chapters.find(c => c.id === 'vault').status, 'done');
 }));

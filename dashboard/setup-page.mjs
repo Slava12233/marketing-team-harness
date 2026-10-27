@@ -24,7 +24,7 @@ const GLYPHS = { done: '✓', todo: '○', doing: '◐', owner: '●', na: '–'
 const CHAPTERS = [
   { id: 'c0', info: true },
   { id: 'c1', items: ['install.git', 'install.node', 'install.claude', 'install.env', 'install.mcpjson', 'install.approved'] },
-  { id: 'vault', items: ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled'] },
+  { id: 'vault', items: ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled', 'memory.routines'] },
   { id: 'c2', items: ['meta.portfolio', 'meta.page', 'meta.adaccount', 'meta.payment', 'meta.phone', 'meta.people'] },
   { id: 'c3', items: ['meta.login', 'login.tools'] },
   { id: 'c4', items: ['meta.pixel'] },
@@ -79,6 +79,7 @@ const EN = {
     'obsidian.cli': "Obsidian's command line interface on",
     'obsidian.hooks': 'Memory hooks in `.claude/settings.json` (shipped)',
     'memory.business_filled': 'The business note `memory/business/company.md` filled in by `/setup`',
+    'memory.routines': 'The two memory routines registered (nightly check, weekly review; phone alerts)',
     'meta.portfolio': 'Business portfolio', 'meta.page': 'Facebook Page', 'meta.adaccount': 'Ad account owned by the portfolio',
     'meta.payment': 'Payment method on the ad account', 'meta.phone': 'Phone number verified on the ad account',
     'meta.people': 'People and roles', 'meta.login': 'Meta login in Claude Code (`meta-ads`)',
@@ -104,6 +105,7 @@ const EN = {
     'obsidian.vault_opened': 'Nothing to click: the bootstrap does it, or run `node memory/tools/obsidian-setup.mjs` in the harness folder',
     'obsidian.cli': 'Nothing to click: the bootstrap does it, or run `node memory/tools/obsidian-setup.mjs` in the harness folder',
     'obsidian.hooks': 'The file ships with the harness; if it was deleted or replaced, restore its block from `docs/hooks-paste-block.md`',
+    'memory.routines': 'Nothing to click: `/setup` step 5.6 registers them in the Claude desktop app (one question)',
     'meta.portfolio': 'Business Settings → Business portfolio', 'meta.page': 'Business Settings → Accounts → Pages',
     'meta.adaccount': 'Business Settings → Accounts → Ad accounts (time zone and currency are permanent)',
     'meta.payment': 'Ad account → Payment settings',
@@ -144,6 +146,7 @@ const HE = {
     'obsidian.cli': 'ממשק שורת הפקודה של Obsidian פעיל',
     'obsidian.hooks': 'ה-hooks של הזיכרון בקובץ `.claude/settings.json` (מגיעים עם הכלי)',
     'memory.business_filled': 'פתק העסק `memory/business/company.md` מולא על ידי `/setup`',
+    'memory.routines': 'שתי רוטינות הזיכרון נרשמו (בדיקה לילית, סקירה שבועית; התראות לטלפון)',
     'meta.portfolio': 'תיק עסקי', 'meta.page': 'עמוד פייסבוק', 'meta.adaccount': 'חשבון מודעות בבעלות התיק העסקי',
     'meta.payment': 'אמצעי תשלום בחשבון המודעות', 'meta.phone': 'מספר טלפון מאומת בחשבון המודעות',
     'meta.people': 'אנשים ותפקידים', 'meta.login': 'התחברות ל-Meta ב-Claude Code דרך `meta-ads`',
@@ -168,6 +171,7 @@ const HE = {
     'obsidian.vault_opened': 'אין מה ללחוץ: סקריפט ההתקנה עושה את זה, או הריצו `node memory/tools/obsidian-setup.mjs` בתיקיית הפרויקט',
     'obsidian.cli': 'אין מה ללחוץ: סקריפט ההתקנה עושה את זה, או הריצו `node memory/tools/obsidian-setup.mjs` בתיקיית הפרויקט',
     'obsidian.hooks': 'הקובץ מגיע עם הכלי; אם נמחק או הוחלף, שחזרו את הבלוק שלו מ-`docs/hooks-paste-block.md`',
+    'memory.routines': 'אין מה ללחוץ: שלב 5.6 של `/setup` רושם אותן באפליקציית Claude (שאלה אחת)',
     'meta.portfolio': 'הגדרות העסק ← תיק עסקי', 'meta.page': 'הגדרות העסק ← חשבונות ← עמודים',
     'meta.adaccount': 'הגדרות העסק ← חשבונות ← חשבונות מודעות (אזור הזמן והמטבע קבועים לתמיד)',
     'meta.payment': 'חשבון המודעות ← הגדרות תשלום',
@@ -276,6 +280,7 @@ function facts(root, env = process.env) {   // what the files say; .env is check
     obsidian: obsidianApp(env), ...(cfg => ({ vault: vaultListed(root, cfg), cli: !!cfg && cfg.cli === true }))(obsidianConfig(env)),
     hooks: (read('.claude/settings.json') || '').includes('session-start.mjs'),
     business: (b => b !== null && !b.includes('<fill at /setup>'))(read('memory/business/company.md')),
+    routines: ((read('config/operator.md') || '').match(/^\|\s*Nightly memory check\s*\|.*$/m) || [''])[0],
   };
 }
 
@@ -288,6 +293,7 @@ function fileAnswer(key, f) {   // the files' answer for one item: a status, or 
   if (key === 'obsidian.cli') return f.cli ? 'done' : 'todo';
   if (key === 'obsidian.hooks') return f.hooks ? 'done' : 'todo';
   if (key === 'memory.business_filled') return f.business ? 'done' : 'todo';
+  if (key === 'memory.routines') return !f.routines || f.routines.includes('{{') ? null : /not registered/i.test(f.routines) ? 'na' : 'done';
   if (CONSOLE[key]) {
     const row = f.step(CONSOLE[key]);
     if (key === 'meta.pixel' && (f.pixelNoSite || /no website/.test(norm(row?.status)) || norm(row?.note).startsWith('no website'))) return 'na';

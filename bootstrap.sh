@@ -483,6 +483,24 @@ if [ "$DECLINED" = 0 ]; then
   fi
 fi
 
+# The memory routines (.claude/routines/): a nightly memory check and a weekly consolidation review that alert
+# the Owner's phone and never act. The desktop app keeps their schedules itself, so only /setup (step 5.6) can
+# register them; this script counts the scheduled tasks whose prompt names this folder and never creates one.
+ROUTINES=0
+TASK_DIR="$HOME/.claude/scheduled-tasks"
+if [ -d "$TASK_DIR" ]; then
+  HERE_PATH=$(pwd -W 2>/dev/null || pwd)   # Git Bash: the Windows form the prompts carry
+  HERE_KEY=$(printf '%s' "$HERE_PATH" | tr '\\' '/' | tr '[:upper:]' '[:lower:]')
+  for skill in "$TASK_DIR"/*/SKILL.md; do
+    [ -f "$skill" ] || continue
+    if tr '\\' '/' < "$skill" | tr '[:upper:]' '[:lower:]' | grep -qF "$HERE_KEY"; then ROUTINES=$((ROUTINES + 1)); fi
+  done
+fi
+if [ "$MODE" = check ]; then
+  if [ "$ROUTINES" -ge 2 ]; then say "[ok] The memory routines are registered for this folder ($ROUTINES scheduled tasks)."
+  else say "[todo] The memory routines are not registered yet: /setup registers them in the Claude desktop app (one question)."; fi
+fi
+
 say ""
 say "What remains"
 if [ "$DECLINED" = 1 ]; then say "  First: run this script again and press Enter at the question to install what is marked [missing] above."
@@ -495,6 +513,8 @@ say "  2. Claude Code asks you to approve the two servers in .mcp.json (meta-ads
 say "  3. In Claude Code type /mcp, pick meta-ads and log in, in the browser where the Owner is signed in to Facebook."
 say "     Then pick fal and log in (optional: paid pictures). Start a new session afterwards so the tools load."
 say "  4. Type /setup and answer the wizard."
+if [ "$ROUTINES" -ge 2 ]; then say "     The two memory routines are already registered for this folder."
+else say "     It also registers two memory routines: a nightly check and a weekly review that alert your phone and never act."; fi
 say "  5. The Owner's Meta console steps are listed by the wizard and in docs/meta-setup-guide.md."
 # The memory vault in Obsidian: the result of obsidian-setup.mjs above, after a run that went ahead. Nothing
 # for the Owner to click; the memory hooks ship in .claude/settings.json.
