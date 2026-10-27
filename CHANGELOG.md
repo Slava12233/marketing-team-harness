@@ -39,6 +39,7 @@ The product build of 2026-10-26: what a buyer needs to go from a computer withou
 
 ### Changed
 
+- `memory/tools/tools.test.mjs` pins the clock of its two `build-hot.mjs --check` calls (`--now`, the same fixed date the in-process build uses), so the hash-check test no longer depends on the day it runs: HOME's launch countdown differed between the two from the day after the fixture's date, and the suite failed although nothing was broken.
 - Instant-form leads arrive through Meta's own delivery by default (Leads Center, email notifications, CRM integrations); the lead webhook is an advanced path that needs a developer.
 - `README.md` and `ONBOARDING.md` rewritten around the bootstrap script, the approve-then-log-in connections and the setup chapters.
 - `control-room/`: the money tile reads `money.caps` entries as `{ label, amount, period }` (copied from `config/goals.md` by `/morning` and `/sync`); `health` gained checks 14 (bootstrap) and 15 (money vs caps); the example company gained `config/goals.md`, a Money section in its first-flight plan and a Leads Center checklist row.

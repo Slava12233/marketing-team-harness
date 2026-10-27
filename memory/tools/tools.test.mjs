@@ -287,7 +287,7 @@ test('the hash check fails on a hand edit of HOT, a capability note or HOME\'s b
   const root = fixture();
   assert.equal(run('build-capabilities.mjs', ['--root', root]).status, 0);
   buildAll(root, { now: FIXED_NOW });
-  assert.equal(run('build-hot.mjs', ['--check', '--root', root]).status, 0);
+  assert.equal(run('build-hot.mjs', ['--check', '--root', root, '--now', FIXED_NOW.toISOString()]).status, 0);
   assert.equal(run('build-capabilities.mjs', ['--check', '--root', root]).status, 0);
   assert.deepEqual(lint(root, { today: '2026-10-26' }).findings.filter(f => /hash|hand-edited/.test(f.reason)), []);
   const hotPath = path.join(root, HOT_REL);
@@ -298,7 +298,7 @@ test('the hash check fails on a hand edit of HOT, a capability note or HOME\'s b
   fs.writeFileSync(homePath, fs.readFileSync(homePath, 'utf8').replace('### Today', '### My day'), 'utf8');
   const hits = lint(root, { today: '2026-10-26' }).findings.filter(f => f.level === 'FAIL' && /hand-edited/.test(f.reason)).map(f => f.rel).sort();
   assert.deepEqual(hits, [HOT_REL, 'memory/HOME.md', 'memory/capabilities/skills.md'].sort());
-  const check = run('build-hot.mjs', ['--check', '--root', root]);
+  const check = run('build-hot.mjs', ['--check', '--root', root, '--now', FIXED_NOW.toISOString()]);
   assert.equal(check.status, 1);
   assert.match(check.stdout, /would change .*memory\/HOT\.md/);
   assert.equal(run('build-capabilities.mjs', ['--check', '--root', root]).status, 1);
