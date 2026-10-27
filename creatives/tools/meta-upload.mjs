@@ -155,7 +155,10 @@ async function graph(method, p, { query = {}, form } = {}) {
     const e = json.error || {};
     const code = [e.code, e.error_subcode].filter(Boolean).join("/");
     const msg = e.error_user_msg || e.message || text.slice(0, 300);
-    throw new Error(scrub(`Graph ${method} /${endpoint} -> HTTP ${res.status}${code ? ` (code ${code})` : ""}: ${msg}`));
+    const hint = String(e.code) === "200" && endpoint === "me"
+      ? "\n  Code 200 on GET /me is not a permission problem: Meta has blocked the developer account of the app's admin (developers.facebook.com shows \"Account confirmation needed\"). The admin finishes that checkpoint signed in as their PERSONAL profile (not switched into the Page); the same token works again within minutes. No new token, no retry."
+      : "";
+    throw new Error(scrub(`Graph ${method} /${endpoint} -> HTTP ${res.status}${code ? ` (code ${code})` : ""}: ${msg}${hint}`));
   }
   return json;
 }

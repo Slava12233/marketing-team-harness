@@ -69,6 +69,8 @@ Every note under `learnings/meta-platform/`. The template ships these; add each 
 - [[2026-10-25-whatsapp-ad-metrics-meaning]]
 - [[2026-10-26-page-welcome-message-exact-spec]]
 - [[2026-10-26-whatsapp-inbox-reads]]
+- [[2026-10-27-code-200-api-access-blocked-is-the-developer-account]]
+- [[2026-10-27-page-must-be-assigned-to-the-system-user]]
 
 ## Learnings that affect a build
 - every note under `learnings/tooling/` and `learnings/money/` (grep `memory/INDEX.md` for `learnings/tooling` and `learnings/money`)

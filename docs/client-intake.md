@@ -16,6 +16,8 @@
 
 You keep ownership of everything: your Business portfolio, your Page, your ad account, your pixel and your WhatsApp number stay yours, billed to your payment method. You lend access to named assets and can take it back at any time from the same screens.
 
+**0. Installer-led setup** (when someone installs the harness for you and sets up your Meta consoles with you): add the installer's Facebook profile as Admin of your Business portfolio for the setup day (Users → People → Add → Admin access); remove or downgrade it afterwards. *You keep:* the portfolio and every asset, the payment method, every password and code (the installer's harness never types one), and the System User, its token and the developer app, which belong to your portfolio and keep working after the installer's access is gone.
+
 **Partner access, in one line:** your Business portfolio shares chosen assets with the Operator's Business portfolio, with the permissions you pick; nobody gets your login, and you can remove the partner at any time.
 
 **The click list** (Meta renames buttons now and then; the outcome is what matters):
@@ -44,6 +46,7 @@ You keep ownership of everything: your Business portfolio, your Page, your ad ac
 | Instagram account for ads (name, or "none") | |
 | Pixel / dataset name, or "no pixel" or "no website" | |
 | WhatsApp number for ads: a name for it only (e.g. "sales line"), never the number | |
+| Installer-led setup day: installer added as Admin? (yes, on date / not yet / not used) | |
 | Partner access given? (yes, on date / not yet) | |
 | Who in your company can click in these Meta screens (a role or first name) | |
 

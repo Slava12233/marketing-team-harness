@@ -8,7 +8,7 @@ Before the harness can read your Meta account and build campaigns, Meta needs a 
 
 **Meta renames buttons and moves menus often; the outcomes stay the same.** Each step below names the outcome you are after (what must be true when you are done) as well as today's labels. If a label on your screen is different, look for the outcome. Wherever Meta offers a read, the harness checks the outcome itself.
 
-The harness never clicks in Meta's consoles. It prepares the click list, waits for you, and checks.
+The harness clicks in Meta's consoles only in the installer-led mode (below), on the installer's word, and never past its hard-stop list. Otherwise it prepares the click list, waits for you, and checks.
 
 ## Before you start
 
@@ -19,6 +19,13 @@ The harness never clicks in Meta's consoles. It prepares the click list, waits f
 - **The WhatsApp Business app on the business phone**, holding the business number, if you plan click-to-WhatsApp ads (step 8).
 - **A plain text editor** for one paste in step 7: Notepad on Windows, TextEdit on macOS.
 - **Time.** About two hours of clicks, best spread over a few days: Meta sometimes reviews a new ad account before it lets it spend.
+
+## Two ways to do these steps
+
+- **Yourself, with the click lists.** You (the Owner) click through the steps on this page; `/setup` prints the same steps as short click lists and checks each outcome live.
+- **Installer-led, with the `setup-console` skill.** The person who installs the harness for you sits at your Meta consoles with your admin access for the setup day (`docs/client-intake.md` §1, option 0) and says "drive the consoles". The harness then drives these screens in the installer's browser: it clicks on the installer's word, one step at a time, and stops at its hard-stop list, where a person always does the step: any password or code, identity documents, the payment card, accepting legal terms (the Lead Ads terms, the developer terms), copying the token into `.env`, and Discard drafts or deletes. Afterwards you remove or downgrade the installer's access.
+
+The steps, their outcomes and their pitfalls are the same either way.
 
 ## Words used on this page
 
@@ -227,15 +234,18 @@ The harness uploads image and video files from this computer into the ad account
 **Clicks: the System User**
 
 7. Business Settings → Users → System users → Add. Name it (for example `marketing-uploads`), choose the role **Employee** (not Admin) → Create.
-8. Select it → assign assets (Add assets):
-   - Ad accounts → the company's ad account → **Manage campaigns** → Save.
+8. Select it → assign assets (Add assets). It needs **three** assets; assign all three now:
+   - Ad accounts → the company's ad account → **Manage campaigns** (in the new screens: Full control) → Save.
    - Apps → the app from click 2 → **Develop app** → Save.
+   - Facebook Pages → the company's Page → **Full access ("Everything")** → Save. Without the Page, every Page call (lead forms, leads) is refused with code 10, even when the token holds the Page permissions.
+
+   In the new Business Settings screens the path is: System users → the user → "…" → **Assign assets** → Facebook Pages → tick the Page → Full access "Everything" → Assign assets → "Assets assigned" (the ad account and the app the same way). The Page's own screen under Accounts → Pages has "Assign people" as a second way to the same outcome.
 
 **Clicks: the token**
 
-9. Still on the System User: Generate new token → choose the app → token expiration **Never**, if Meta offers the choice → tick **`ads_management`** and **`ads_read`**, nothing else → Generate.
+9. Still on the System User: Generate new token → choose the app → token expiration **Never**, if Meta offers the choice → tick **`ads_management`** and **`ads_read`**, and for lead forms and leads (the Graph tool, `docs/meta-graph.md`) **`leads_retrieval`**, **`pages_manage_ads`**, **`pages_read_engagement`** and **`pages_show_list`**; nothing else → Generate.
 10. Meta shows the token **once**. Copy it.
-11. Open the `.env` file in the harness folder with a text editor (Notepad on Windows, TextEdit on macOS). Paste the token right after `META_MARKETING_TOKEN=`, with no space and no quotes. Check that the line `META_AD_ACCOUNT_ID=` holds the ad account id from step 3, digits only (an id is not a secret). Save and close.
+11. Open the `.env` file in the harness folder with a text editor (Notepad on Windows, TextEdit on macOS). Paste the token right after `META_MARKETING_TOKEN=`, with no space and no quotes. Check that the line `META_AD_ACCOUNT_ID=` holds the ad account id from step 3, digits only (an id is not a secret), and `META_PAGE_ID=` the Page id from step 2. Save and close.
 12. Back in Claude Code, ask "check the upload token". The harness runs `node creatives/tools/meta-upload.mjs --check`; you can also run it yourself in a terminal in the folder.
 
 **Never paste the token into the chat, an email, a message, a document or a screenshot.** It goes only into `.env`, which stays on this computer and is never uploaded. A token that reaches the chat, or anywhere else, is treated as leaked: revoke it and generate a new one (rotation, below). The harness will ask you to, and it never asks you for the value.
@@ -249,7 +259,7 @@ The harness uploads image and video files from this computer into the ad account
 - Notepad may save the file as `.env.txt`. In Save as, choose "All files" and keep the name `.env`. In TextEdit, choose Format → Make Plain Text before you save.
 - "Generate new token" is greyed out, or the app is missing from its list: the app is not in Business Settings → Accounts → Apps (click 6), or the System User does not have the app (click 8).
 - `ads_management` is not in the list of permissions: the Marketing API product is missing from the app (click 4).
-- The check reports code 190: the token is wrong, expired or revoked; rotate it (revoke first, then generate; see Rotation below). Code 200: the System User is missing the ad account or a permission; fix click 8, then revoke and generate again. The harness reports these codes and never retries blindly.
+- The check reports code 190: the token is wrong, expired or revoked; rotate it (revoke first, then generate; see Rotation below). Code 200: the System User is missing the ad account or a permission; fix click 8, then revoke and generate again (but code 200 with "API access blocked", even on the most basic call, is a blocked developer account: see "If you get stuck"). Code 10 on the lead-form or lead commands: the Page is not among the System User's assets (click 8). The harness reports these codes and never retries blindly.
 - The check says `META_AD_ACCOUNT_ID` is not set: fill in that line (click 11).
 - If Meta insists on a business verification or an app review before it lets you generate the token, write down its exact message and tell the Operator. Meanwhile the harness can still read and build; only the direct uploads wait.
 - **Rotation** (every few months, when someone with access leaves, and at once after any leak): on the System User, Revoke tokens (choose the app) → Generate new token with the same choices → paste it over the old value in `.env` → run the check. Revoke first, then generate: Meta's revoke can stop every token the System User holds for that app, including one generated a minute earlier.
@@ -367,6 +377,8 @@ An instant form opens inside Facebook or Instagram when someone taps the ad, wit
 
 - Write down the step number, what you clicked and Meta's exact message. Copy the text, or take a screenshot that shows **no token, no password and no customer data**. Give it to the Operator, or type it into the Claude Code chat: the harness can read Meta's own help articles and adjust the click list.
 - If a label in this guide is not on your screen, look for the outcome the step names; Meta moves things.
+- **"API access blocked" on every call.** The upload or Graph check fails with HTTP 400, code 200 and "API access blocked", even on the most basic call (who am I). This is not a missing permission: Meta has blocked the developer account of the app's admin, and `https://developers.facebook.com` shows "Account confirmation needed". Clear that account confirmation (next entry); do not generate a new token. Once it clears, the existing token works again within minutes: run the check once more.
+- **Confirm Account shows "Sorry, something went wrong".** Meta's checkpoint ("Confirm your identity", with a code sent to the admin's email) opens only while facebook.com is signed in as the admin's **personal profile**; while the browser is "switched into" the Page, it fails with that message. Switch back to your own profile (profile menu → your name), open the checkpoint again and type the code. A developer app marked "Unpublished" (Development mode) is normal and not the cause: System User tokens work in Development mode.
 - If Meta has disabled or restricted something, Account Quality (`https://www.facebook.com/accountquality`) shows the reason and the review option. Requesting a review is the Owner's.
 - Never share a password, and never paste a token into the chat.
 

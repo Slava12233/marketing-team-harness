@@ -306,15 +306,19 @@ const req = (method, p, params = {}, token = "[token]", note) => ({ method, path
 function ownerFixList(code) {
   return [
     `Meta refused the token or the app (code ${code}). Nothing was retried. The Owner's fix list (console clicks; names only, never paste a token in chat):`,
+    "  0. Code 200 \"API access blocked\" on GET /me (the most basic call) is NOT a permission problem: Meta has blocked the",
+    "     developer account of the app's admin (developers.facebook.com shows \"Account confirmation needed\"). The admin opens",
+    "     developers.facebook.com in a browser where facebook.com is signed in as their PERSONAL profile (not switched into the Page),",
+    "     clicks Confirm Account and finishes the checkpoint (a code to their email); the existing token works again within minutes.",
     "  1. App mode: the developer app (Business type) is in Business Settings > Accounts > Apps and is Live, or in",
     "     Development with the System User among its roles.",
     "  2. System User asset access: Business Settings > Users > System users > the System User > Assign assets:",
-    "     the ad account with Manage campaigns (full control); the Page with ads and leads access for lead-forms and leads;",
-    "     and the app itself (Develop app).",
+    "     the ad account with Manage campaigns (full control); the Page with Full access (\"Everything\") for lead-forms and leads",
+    "     (without the Page every Page endpoint answers code 10 even with pages_* permissions on the token); and the app itself.",
     "  3. Token permissions: on the System User, Revoke tokens for the app first, then Generate new token with",
     "     ads_management and ads_read (plus leads_retrieval, pages_manage_ads, pages_read_engagement and pages_show_list",
     "     for lead forms and leads); paste it into .env as META_MARKETING_TOKEN, then run: node creatives/tools/meta-graph.mjs check",
-    "  Code 190 means the token is invalid, expired or revoked (step 3). Code 200 or 10 means a missing asset or permission (steps 1-3).",
+    "  Code 190 means the token is invalid, expired or revoked (step 3). Code 200 on /me means step 0; code 200 or 10 on a specific object means a missing asset or permission (steps 1-3).",
   ].join("\n");
 }
 
