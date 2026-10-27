@@ -35,6 +35,30 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__meta-ads__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/account-guard.mjs",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__meta-ads__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/account-guard.mjs",
+            "timeout": 20
+          }
+        ]
+      }
     ]
   }
 }
