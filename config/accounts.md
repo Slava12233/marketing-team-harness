@@ -1,4 +1,4 @@
-<!-- Written by /setup on {{DATE}}. Edit by hand or re-run /setup. -->
+<!-- Written by /setup on 2026-10-29. Edit by hand or re-run /setup. -->
 
 # Accounts and connections
 
@@ -8,41 +8,38 @@ Ids are public identifiers, not secrets. Secrets (tokens, API keys) never go her
 
 | Field | Value |
 |---|---|
-| `meta_ad_account_id` | {{META_AD_ACCOUNT_ID}} |
-| `business_portfolio_id` | {{BUSINESS_PORTFOLIO_ID}} |
-| `page_id` | {{PAGE_ID}} |
-| `page_duplicates_to_avoid` | {{PAGE_DUPLICATES}} |
-| `instagram_account_id` | {{INSTAGRAM_ACCOUNT_ID}} |
-| `pixel_id` (dataset) | {{PIXEL_ID}} |
-| `lead_form_ids` | {{LEAD_FORM_IDS}} |
-| `lead_delivery` | {{LEAD_DELIVERY}} |
-| `catalog_id` | {{CATALOG_ID}} |
-| `product_feed_ids` | {{PRODUCT_FEED_IDS}} |
-| `product_set_ids` | {{PRODUCT_SET_IDS}} |
-| `whatsapp_number_names` | {{WHATSAPP_NUMBER_NAMES}} |
-| `currency` | {{CURRENCY}} |
-| `min_daily_budget` | {{MIN_DAILY_BUDGET}} |
-<!-- setup: meta_ad_account_id = digits only, no act_ prefix (the same value goes in .env as META_AD_ACCOUNT_ID); page duplicates = other Pages the login sees that must never be used; instagram = "not linked for ads" is a valid value; pixel_id = "none (no website)" is a valid value when every funnel is click-to-WhatsApp or an instant form; lead_form_ids = id and name per form, from Business Suite's forms library; lead_delivery = how instant-form leads reach the person who answers them: Leads Center (default) / email notifications / CSV download / CRM: <name> / webhook (advanced; URL below), or "n/a (no instant forms)"; catalog_id, product_feed_ids, product_set_ids = "none" unless the company runs catalog ads; whatsapp_number_names = a label per number (never the number itself in a shared file if the Owner prefers); currency = the account currency (ISO code); min_daily_budget = as the account reports it, in the minor unit and the major unit -->
+| `meta_ad_account_id` | 1010578430110331 |
+| `business_portfolio_id` | 809438743967672 ("הבית של כל הבתים", the company portfolio, where the System User lives; the ad account itself is owned by portfolio 486542035414450 "גליה זיו" and shared into it) |
+| `page_id` | 108204445697760 ("Habait - Home is Habait", owned by portfolio 809438743967672; Lead Ads terms accepted per ads_get_ad_account_pages 2026-10-29) |
+| `page_duplicates_to_avoid` | 720136941422640 ("Habait - Home is Habait", same name, promoted under the ad account, Lead Ads terms not accepted; never use) |
+| `instagram_account_id` | none linked (ads_get_ig_accounts 2026-10-29 returned none) |
+| `pixel_id` (dataset) | none (no website) |
+| `lead_form_ids` | 51 forms already on Page 108204445697760 (meta-graph lead-forms list, 2026-10-29); the flight's form is chosen in /setup |
+| `lead_delivery` | n/a (no instant forms: the first funnel is click-to-WhatsApp; chats arrive in the WhatsApp Business app "Habait main", answered by the Owner) |
+| `catalog_id` | none |
+| `product_feed_ids` | none |
+| `product_set_ids` | none |
+| `whatsapp_number_names` | Habait main (WhatsApp Business App account "הבית" 916666450823323, owned by portfolio 809438743967672; linked to the Page per the Owner, 2026-10-29) |
+| `currency` | ILS |
+| `min_daily_budget` | 314 (minor unit) = 3.14 ILS; live read 2026-10-29, ads_get_ad_accounts |
 
 ## Analytics and attribution
 
 | Field | Value |
 |---|---|
-| `ga_measurement_id` | {{GA_MEASUREMENT_ID}} |
-| Pixel events (event → page → consent) | {{PIXEL_EVENTS}} |
-| `ref` parameter | {{REF_PARAMETER}} |
-| `utm_*` parameters | {{UTM_PARAMETERS}} |
-| What reaches the database | {{ATTRIBUTION_IN_DATABASE}} |
-| Conversions API | {{CONVERSIONS_API}} |
-<!-- setup: pixel events = which event fires on which page and under which consent (e.g. PageView after cookie consent); ref = its allowed format and the table/field it lands in; utm = analytics only or stored; "none" and "not verified" are valid values -->
+| `ga_measurement_id` | none (no website) |
+| Pixel events (event → page → consent) | none (no website; Meta counts WhatsApp conversations itself) |
+| `ref` parameter | a short ref code per ad inside the pre-filled WhatsApp message (page_welcome_message), e.g. "#D1"; the Owner sees it in the first message of the chat |
+| `utm_*` parameters | n/a (no website) |
+| What reaches the database | none (no database; the ref code is read in the WhatsApp chat) |
+| Conversions API | none |
 
 ## Lead webhook (advanced, optional)
 
 | Field | Value |
 |---|---|
-| `lead_webhook_url` | {{LEAD_WEBHOOK_URL}} |
-| Status | {{LEAD_WEBHOOK_STATUS}} |
-<!-- setup: lead_webhook_url defaults to "none: leads are read in Leads Center"; a URL only when config/product-team.md names a product team that runs an endpoint for Meta's leadgen webhook; Status = not built / live and idle / live, and note any alerting that is off -->
+| `lead_webhook_url` | none: leads arrive as WhatsApp chats in "Habait main" |
+| Status | n/a |
 
 ## MCP servers and logins
 
@@ -50,29 +47,27 @@ The MCP servers are declared in the repository's `.mcp.json` (project scope): op
 
 | Server | Registered name | Login held by |
 |---|---|---|
-| Meta Ads MCP | `meta-ads` | {{META_LOGIN_HOLDER}} |
-| fal MCP (optional) | `fal` | {{FAL_LOGIN_HOLDER}} |
-| Vercel CLI (optional) | n/a | {{VERCEL_LOGIN_HOLDER}} |
-| HyperFrames plugin (optional, video) | `hyperframes` | {{HYPERFRAMES_PLUGIN}} |
-| System User for uploads | {{SYSTEM_USER_NAME}} | {{SYSTEM_USER_OWNER}} |
-<!-- setup: names only, never a token or password; "not connected" is a valid value; the HyperFrames plugin has no login: write "installed" or "not installed" -->
+| Meta Ads MCP | `meta-ads` | slava lebovkin (the Owner) |
+| fal MCP (optional) | `fal` | the Owner (fal login live, status ready, 2026-10-29) |
+| Vercel CLI (optional) | n/a | not used (no website) |
+| HyperFrames plugin (optional, video) | `hyperframes` | installed (0.8.160, user scope; 2026-10-29) |
+| System User for uploads | habait-uploder (id 61595878706083, Employee; assets: Page 108204445697760 full, ad account 1010578430110331 full, app "Habait" 29427574316847178 full; screen 2026-10-29) | the Owner (portfolio 809438743967672) |
 
 ## Console steps (the Owner's clicks)
 
 | Step | Status | Date | Note |
 |---|---|---|---|
-| Business portfolio | {{STATUS}} | {{DATE}} | |
-| Page | {{STATUS}} | {{DATE}} | |
-| Ad account owned by the portfolio | {{STATUS}} | {{DATE}} | |
-| Payment method on the ad account | {{STATUS}} | {{DATE}} | required before any ad can run |
-| Phone number verified on the ad account | {{STATUS}} | {{DATE}} | required before any activation (Ads Manager error #3858013) |
-| MCP login (`meta-ads`) | {{STATUS}} | {{DATE}} | |
-| Pixel / dataset created and installed (or "no website") | {{STATUS}} | {{DATE}} | `pixel_id` above; "no website" is valid for click-to-WhatsApp and instant-form funnels |
-| Developer app (Business type) + System User token in `.env` | {{STATUS}} | {{DATE}} | checked with `meta-upload.mjs --check` |
-| WhatsApp Business number linked to the Page | {{STATUS}} | {{DATE}} | only for click-to-WhatsApp |
-| Lead Ads terms accepted on the Page | {{STATUS}} | {{DATE}} | only for instant-form ads |
-| Leads Center access for whoever answers leads | {{STATUS}} | {{DATE}} | only for instant-form ads; the person under replies in `config/operator.md`; notifications confirmed before the first lead ad runs |
-| Domain verified | {{STATUS}} | {{DATE}} | the website's domain in Business Settings; n/a with no website |
-| Instagram linked for ads (optional) | {{STATUS}} | {{DATE}} | |
-| Lead webhook subscription (advanced, only with a product team) | {{STATUS}} | {{DATE}} | developer app with Webhooks (`leadgen`) + a Page token, every running form id registered; n/a while `lead_webhook_url` is none |
-<!-- setup: status is done / open / n/a / unknown; every row also goes into checklist.md (status open, done or n/a) with owner "Owner" unless named -->
+| Business portfolio | done | 2026-10-29 | 809438743967672, Owner is admin; unverified (screen, 2026-10-29) |
+| Page | done | 2026-10-29 | 108204445697760 (screen + ads_get_user_pages, 2026-10-29); duplicate 720136941422640 to avoid |
+| Ad account owned by the portfolio | done | 2026-10-29 | 1010578430110331 owned by 486542035414450 and shared into 809438743967672 (screen + ads_get_ad_accounts, 2026-10-29) |
+| Payment method on the ad account | done | 2026-10-29 | required before any ad can run |
+| Phone number verified on the ad account | done | 2026-10-29 | required before any activation (Ads Manager error #3858013) |
+| MCP login (`meta-ads`) | done | 2026-10-29 | |
+| Pixel / dataset created and installed (or "no website") | n/a | 2026-10-29 | `pixel_id` above; "no website" is valid for click-to-WhatsApp and instant-form funnels |
+| Developer app (Business type) + System User token in `.env` | done | 2026-10-29 | app "Habait" 29427574316847178 + system user habait-uploder (reused); meta-upload --check ok (adimages, advideos), meta-graph check ok (6 permissions), lead-forms list ok; checked with `meta-upload.mjs --check` |
+| WhatsApp Business number linked to the Page | done | 2026-10-29 | only for click-to-WhatsApp |
+| Lead Ads terms accepted on the Page | done | 2026-10-29 | only for instant-form ads |
+| Leads Center access for whoever answers leads | n/a | 2026-10-29 | only for instant-form ads; the person under replies in `config/operator.md`; notifications confirmed before the first lead ad runs |
+| Domain verified | n/a | 2026-10-29 | the website's domain in Business Settings; n/a with no website |
+| Instagram linked for ads (optional) | open | 2026-10-29 | Instagram habait.ai is in portfolio 809438743967672 but not linked to the ad account (ads_get_ig_accounts returned none) |
+| Lead webhook subscription (advanced, only with a product team) | n/a | 2026-10-29 | developer app with Webhooks (`leadgen`) + a Page token, every running form id registered; n/a while `lead_webhook_url` is none |

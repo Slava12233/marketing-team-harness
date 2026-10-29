@@ -1,30 +1,33 @@
 ---
 type: business
 created: 2026-10-26
-updated: 2026-10-26
-status: draft
+updated: 2026-10-29
+status: active
 maintained_by: harness
 categories: [business]
-summary: "Who the company markets to: each audience, its geo and language, its pains with sources and dates, what it must never be addressed as, exclusions, special ad category; filled by /setup from config/audiences.md."
+summary: "One audience: small and mid-size residential developers in Israel, Hebrew, special ad category NONE (B2B); pains are the Owner's draft, unverified; filled by /setup 2026-10-29."
 evidence: "config/audiences.md"
 ---
 
 # Audiences
 
-Template: `/setup` fills this note from `config/audiences.md` and the interview, then sets `status: active`. Until then every `<fill at /setup>` is empty. After setup, a change is written to `config/audiences.md` first and then here (see [[memory/README|README]] §2).
+Filled by `/setup` on 2026-10-29 from `config/audiences.md`. A change is written to `config/audiences.md` first and then here (see [[memory/README|README]] §2).
 
 ## Who we market to
 
-- `<fill at /setup>` (one bullet per audience: who they are, geo, language, special ad category; and who is not marketed to)
+- **Real-estate developers:** owners and managers of small and mid-size residential development companies in Israel, planning or selling a project; all of Israel; Hebrew; special ad category NONE (B2B service, no home offered to people; confirm in Ads Manager before the build; HOUSING if an ad shows a specific apartment or project for sale).
+- **Not marketed to:** home buyers and consumers looking for an apartment; named individuals from any list; the other team's audiences on the shared account.
 
 ## Pains
 
-- `<fill at /setup>` (each pain with its source and date; an unverified figure is never quoted in an ad)
+- presales that move slowly before permit and financing milestones (Owner's draft, 2026-10-29; unverified)
+- marketing agencies that cost a lot and bring weak leads (Owner's draft, 2026-10-29; unverified)
+- no time in-house to run marketing (Owner's draft, 2026-10-29; unverified)
 
 ## Per-audience notes
 
-- `<fill at /setup>` (anything one audience needs that the others do not: a second language, a B2B angle, a separate destination)
+- B2B: peer-to-peer tone, plural "אתכם" ([[brand]]); the result is a WhatsApp conversation ([[funnels]]).
 
 ## How we may address them
 
-- `<fill at /setup>` (what each audience must not be addressed as; language and intent framings that are fine)
+- Never by financial status ("in trouble", "can't sell"), religion, origin, ethnicity, age, health or family status. A business framing ("for developers who want buyers for their project") is fine.

@@ -1,44 +1,44 @@
 ---
 type: business
 created: 2026-10-26
-updated: 2026-10-26
-status: draft
+updated: 2026-10-29
+status: active
 maintained_by: harness
 categories: [business]
-summary: "The funnels: entry, destination per language, conversion event, what counts as a result, attribution, pixel, analytics and lead delivery; filled by /setup from config/product.md and config/accounts.md."
+summary: "One funnel: developers → click-to-WhatsApp (Hebrew) → a conversation in 'Habait main'; no website, no pixel, a ref code in the pre-filled message; filled by /setup 2026-10-29."
 evidence: "config/product.md; config/accounts.md"
 ---
 
 # Funnels
 
-Template: `/setup` fills this note from `config/product.md` (the funnels table) and `config/accounts.md` (pixel, attribution, lead delivery) and the interview, then sets `status: active`. Until then every `<fill at /setup>` is empty. After setup, a change is written to `config/product.md` (the funnels table) and `config/accounts.md` (pixel, attribution, lead delivery) first and then here (see [[memory/README|README]] §2).
+Filled by `/setup` on 2026-10-29 from `config/product.md` and `config/accounts.md`. A change is written there first and then here (see [[memory/README|README]] §2).
 
 ## The funnels
 
 | Name | Audience | Entry | Destination URL | Conversion event | What counts as a result |
 |---|---|---|---|---|---|
-| `<fill at /setup>` | | | | | |
+| developers-whatsapp | Real-estate developers ([[audiences]]) | click-to-WhatsApp ad (Hebrew) | none (no website): WhatsApp "Habait main", pre-filled message with the ad's ref code | none (no pixel); Meta's messaging conversation started | a conversation started (the developer sends the pre-filled message); quality counted weekly by the Owner |
 
 ## Language and destination match
 
-- `<fill at /setup>` (which ad language goes to which URL; pages that paid traffic must never reach)
+- Hebrew ads → WhatsApp "Habait main" only. habait.biz and habait.ai never receive paid traffic (the Owner, 2026-10-29).
 
 ## Attribution that reaches the database
 
-- `<fill at /setup>` (the `ref` parameter and its format, `utm_*`, what is stored where)
+- No database. A short ref code per ad (e.g. "#D1") inside the pre-filled message (`page_welcome_message`); no `utm_*`.
 
 ## Meta pixel
 
-- `<fill at /setup>` (the dataset id from `config/accounts.md`, which events fire on which page, after which consent; or "no website")
+- none (no website); Meta counts the conversations itself
 
 ## Google Analytics
 
-- `<fill at /setup>` (measurement id and consent mode, or "none")
+- none
 
 ## Lead delivery
 
-- `<fill at /setup>` (Meta's Leads Center by default; email notifications, CSV, a CRM by name, or a webhook only with a product team)
+- WhatsApp Business app "Habait main" (WhatsApp Business App account `916666450823323`, portfolio `809438743967672`), answered by the Owner within 1 hour on working days. Leads Center n/a (no instant forms in this funnel). Lead Ads terms are accepted on the Page should a form be added later.
 
 ## Live on the website
 
-- `<fill at /setup>` (what a live check of each destination page showed, with its date)
+- n/a (no website), 2026-10-29

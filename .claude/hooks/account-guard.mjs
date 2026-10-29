@@ -31,7 +31,7 @@
 //   The hook always exits 0 when it cannot decide (no input, no config, a parse error): it never blocks by
 //   accident, it blocks only on evidence.
 // Dry check from the harness folder:
-//   echo '{"hook_event_name":"PreToolUse","tool_name":"mcp__meta-ads__ads_create_campaign","tool_input":{"ad_account_id":"1"}}' | node .claude/hooks/account-guard.mjs ; echo exit $?
+//   echo '{"hook_event_name":"PreToolUse","tool_name":"mcp__meta-ads__ads_create_campaign","tool_input":{"ad_account_id":"1000000000000001"}}' | node .claude/hooks/account-guard.mjs ; echo exit $?
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -19,5 +19,14 @@
   "word-count": true,
   "file-recovery": true,
   "sync": false,
-  "bases": true
+  "bases": true,
+  "footnotes": false,
+  "slash-command": false,
+  "zk-prefixer": false,
+  "random-note": false,
+  "slides": false,
+  "audio-recorder": false,
+  "workspaces": false,
+  "publish": false,
+  "webviewer": false
 }

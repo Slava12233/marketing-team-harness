@@ -1,21 +1,113 @@
 {
-  "company": null,
-  "generatedAt": null,
+  "company": "Habait",
+  "generatedAt": "2026-10-29T20:11+02:00",
   "launch": null,
   "routines": {
-    "timezone": null,
-    "items": []
+    "timezone": "Asia/Jerusalem",
+    "items": [
+      {
+        "id": "morning",
+        "label": "Morning",
+        "command": "morning",
+        "time": "08:30",
+        "days": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "id": "sync",
+        "label": "Session close",
+        "command": "sync",
+        "time": "18:00",
+        "days": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "id": "next-round",
+        "label": "Weekly round",
+        "command": "next-round",
+        "time": "10:00",
+        "days": [
+          0
+        ]
+      }
+    ]
   },
   "working": [],
-  "tasks": [],
+  "tasks": [
+    {
+      "title": "`/health` (the full check)",
+      "owner": "Claude"
+    },
+    {
+      "title": "The Owner's open clicks in `checklist.md` (two-factor first)",
+      "owner": "Claude"
+    },
+    {
+      "title": "The first flight: copy → creative brief → still + silent video → compliance → upload → build PAUSED (per `plans/2026-10-29-first-flight-plan.md`)",
+      "owner": "Claude"
+    }
+  ],
   "money": {
-    "currency": null,
-    "dailySpend": null,
-    "caps": [],
-    "liveToday": null,
-    "nextGo": null
+    "currency": "ILS",
+    "dailySpend": "not read yet for Habait's own campaigns (none exist); the whole account's spend is read at the first `/morning`",
+    "caps": [
+      {
+        "label": "Daily (all campaigns together)",
+        "amount": 40,
+        "period": "day"
+      },
+      {
+        "label": "Weekly (all campaigns together)",
+        "amount": 280,
+        "period": "week"
+      },
+      {
+        "label": "Monthly (all campaigns together, calendar month)",
+        "amount": 1000,
+        "period": "month"
+      },
+      {
+        "label": "Per campaign (its lifetime spending limit)",
+        "amount": 1000,
+        "period": "campaign"
+      }
+    ],
+    "liveToday": "nothing of this harness",
+    "nextGo": "none pending; the first flight's go comes after the build, the render check and the numbered recap"
   },
   "campaigns": [],
-  "team": {},
-  "skillsUsed": []
+  "team": {
+    "Measure": [
+      "performance-analyst",
+      "signals-auditor",
+      "cro-auditor"
+    ],
+    "Create": [
+      "creative-director",
+      "copywriter",
+      "competitor-researcher"
+    ],
+    "Gate": [
+      "compliance-reviewer",
+      "test-designer"
+    ],
+    "Build": [
+      "media-buyer"
+    ],
+    "Close": [
+      "harness-librarian"
+    ]
+  },
+  "skillsUsed": [],
+  "updatedBy": "/sync"
 }
