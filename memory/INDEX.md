@@ -5,14 +5,14 @@ status: active
 maintained_by: generated
 categories: [memory]
 summary: One line per note in the vault, grouped by folder; generated, grep it.
-generated_at: 2026-10-29T20:11+02:00
-content_hash: d3421ff600abfa07
+generated_at: 2026-10-29T21:14+02:00
+content_hash: 318ec7c457548856
 ---
 
 # INDEX
 
 Never hand-edit; run node memory/tools/build-hot.mjs
-91 notes (HOT and this index are not listed). One line each: `- [[name]] · type · summary`. Grep it; never read it whole past 300 lines.
+94 notes (HOT and this index are not listed). One line each: `- [[name]] · type · summary`. Grep it; never read it whole past 300 lines.
 
 ## memory
 - [[HOME]] · map · The Owner's page in Hebrew - today, money vs caps, open items by owner (generated block), then the dashboards and the links.
@@ -37,17 +37,19 @@ Never hand-edit; run node memory/tools/build-hot.mjs
 
 ## memory/campaigns
 - [[memory/campaigns/_about|_about]] · contract · One note per campaign, named after the campaign; ids, ad sets, ads, status, caps, dates and links, no live metrics.
+- [[test-harness-pipeline]] · campaign · Pipeline test campaign 'TEST — harness pipeline — do not activate': fal creatives → compliance → upload → PAUSED click-to-WhatsApp build; never activated, left paused by the Owner's choice.
 
 ## memory/capabilities
 - [[memory/capabilities/_about|_about]] · contract · Generated: skills, agents, commands, connections and hooks, from .claude/ and .mcp.json.
 - [[agents]] · capability · The 10 sub-agents under .claude/agents with model, job and tool access, generated.
-- [[commands]] · capability · The 6 workflow commands (/morning, /health, /next-round, /sync, /consolidate, /setup) and what each writes, generated from their skills.
+- [[commands]] · capability · The 8 workflow commands (/connect, /campaign, /morning, /health, /next-round, /sync, /consolidate, /setup) and what each writes, generated from their skills.
 - [[connections]] · capability · The 2 MCP servers and tool families the harness knows (name, URL, tool prefix), generated; no tokens.
 - [[hooks]] · capability · The 4 hook scripts under .claude/hooks, their events and whether project settings install them, generated.
-- [[skills]] · capability · The 42 skills under .claude/skills (14 third-party, pinned in skills-lock.json), generated.
+- [[skills]] · capability · The 44 skills under .claude/skills (14 third-party, pinned in skills-lock.json), generated.
 
 ## memory/decisions
 - [[memory/decisions/_about|_about]] · contract · One note per ruling by the Owner, YYYY-MM-DD-slug.md; never edited, superseded by a newer note.
+- [[2026-10-29-onboarding-in-two-parts]] · decision · The Owner's rulings of 2026-10-29 on the onboarding: two parts (/connect, /campaign), the chosen language rules every surface, the token moves clipboard → .env by env-set.mjs unseen, fal through its MCP login, the inventory before any creation, full research, the campaign built PAUSED with creative…
 - [[2026-10-29-shared-ad-account-own-campaigns-only]] · decision · Ad account 1010578430110331 is shared with another team; this harness builds and touches only its own campaigns, the other team's objects are read-only.
 
 ## memory/experiments
@@ -151,4 +153,5 @@ Never hand-edit; run node memory/tools/build-hot.mjs
 
 ## plans
 - [[2026-10-29-first-flight-plan]] · plan · First flight for Habait: one paused click-to-WhatsApp campaign to real-estate developers in Israel, ₪25/day for 30 days (₪750, inside the ₪500–₪1,000 band and every cap), one still and one silent video; nothing built.
+- [[2026-10-29-test-flight-0]] · plan · Pipeline test (the Owner's ask 2026-10-29): fal creatives → compliance → upload → a PAUSED click-to-WhatsApp campaign 'TEST — harness pipeline — do not activate'; never activated, left paused.
 - [[experiments-log]] · plan · Experiments log

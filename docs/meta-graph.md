@@ -42,7 +42,7 @@ The token is the one from step 7 of `docs/meta-setup-guide.md` (the developer ap
 
 1. Business Settings → Users → System users → the System User → Assign assets → **Pages** → the company's Page, with the access that covers ads and leads. (The ad account and the app are already assigned from step 7.)
 2. On the same System User: **Revoke tokens** for the app first, then **Generate new token** for the app with `ads_management`, `ads_read`, and for lead forms and leads also `leads_retrieval`, `pages_manage_ads`, `pages_read_engagement` and `pages_show_list`.
-3. Meta shows the token once. Open `.env` in a text editor, paste it after `META_MARKETING_TOKEN=` (no space, no quotes), add the Page id after `META_PAGE_ID=`, save.
+3. Meta shows the token once, with a Copy button. Click Copy, then in a terminal in the harness folder run `node creatives/tools/env-set.mjs --from-clipboard META_MARKETING_TOKEN` (it writes the line, clears the clipboard and prints only the character count); the Page id the same way (`printf '%s' <id> | node creatives/tools/env-set.mjs --from-stdin META_PAGE_ID --min-length 6`). In `/connect` the harness does all of this on the Owner's go. Fallback without a clipboard tool: open `.env` in a text editor, paste after `META_MARKETING_TOKEN=` (no space, no quotes), add the Page id after `META_PAGE_ID=`, save.
 4. Ask the harness to "check the Graph token" (it runs `node creatives/tools/meta-graph.mjs check`).
 5. For lead forms, the Page must have accepted Meta's Lead Ads terms (a console step in `config/accounts.md` and `checklist.md`).
 
@@ -208,7 +208,7 @@ Notes:
 | You see | What it means | What to do |
 |---|---|---|
 | exit 2, "No .env" or "is not set" | `.env` is missing or a line is empty | The Owner fills `.env` (names only in chat) |
-| exit 1, code 190 | The token is wrong, expired or revoked | The Owner revokes, generates a new token, pastes it into `.env`, runs `check` |
+| exit 1, code 190 | The token is wrong, expired or revoked | The Owner revokes, generates a new token, Copy → `env-set.mjs --from-clipboard META_MARKETING_TOKEN`, runs `check` |
 | exit 1, code 200 or 10 | A permission or an asset is missing (often the Page for the lead subcommands) | The Owner follows the printed fix list |
 | exit 2, "inside the repository" | `leads --out` points into the harness folder | Choose a folder outside it, such as Downloads |
 | exit 2, "is refused: this tool only creates rules that PAUSE or send a NOTIFICATION" | The rule spec asks for another action | Change the action, or leave budget moves to the Owner's go |

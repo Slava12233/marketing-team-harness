@@ -5,8 +5,8 @@ status: active
 maintained_by: generated
 categories: [memory]
 summary: What every session must know, generated from the vault notes; injected by the SessionStart hook.
-generated_at: 2026-10-29T20:00+02:00
-content_hash: d69c80fb66787641
+generated_at: 2026-10-29T21:14+02:00
+content_hash: 15a396279119cef5
 ---
 
 # HOT
@@ -17,9 +17,11 @@ Read the note before you act; re-read live before you change; names and public i
 ## Now · [[current]] · as_of 2026-10-29 19:45 Asia/Jerusalem
 Plan to read first: plans/2026-10-29-first-flight-plan.md
 Next actions:
-1. `/health` (the full check)
+1. `/health` (the full check; the onboarding now runs as `/connect` then `/campaign`, decision [[2026-10-29-onboarding-in-two-parts]])
 2. The Owner's open clicks in `checklist.md` (two-factor first)
-3. The first flight: copy → creative brief → still + silent video → compliance → upload → build PAUSED (per `plans/2026-10-29-first-flight-plan.md`)
+3. The first flight through `/campaign` steps 2–9: the market research → the plan's recap and the Owner's picks → copy → compliance → still + silent video → upload → build PAUSED → previews (per `plans/2026-10-29-first-flight-plan.md`)
+Campaigns, active or paused (1):
+- [[test-harness-pipeline]] (pipeline test, never activate) · `120249096272270532` · PAUSED · ₪25 CBO (never on) · spend cap ₪750 · none · none · 1 (`120249096273870532`) · 2 (`120249096283730532`, `120249096284360532`) · 2026-10-29 20:3x
 
 ## Money vs caps · config/goals.md
 - Daily (all campaigns together) · Amount ₪40 · Set by slava lebovkin, 2026-10-29

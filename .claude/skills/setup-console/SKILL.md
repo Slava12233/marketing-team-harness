@@ -14,7 +14,7 @@ The steps, their outcomes and their pitfalls are those of `docs/meta-setup-guide
 - The installer is at the client's consoles with the client's admin access, and the Owner (the client) agreed to an installer-led setup (`docs/client-intake.md` §1, option 0).
 - **The go.** Every click that changes something (create, add, assign, connect, save, invite, verify) runs only on a go typed in chat **in the same message**, naming the step or the click ("go: step 7, create the system user"). In this mode the installer types it, sitting with the Owner or holding the Owner's written OK for the setup day (recorded as a `checklist.md` note). One message may cover the clicks of one step; a go never carries over to the next step. Navigation, reads and screenshots need no go.
 - **Never a password typed by the harness.** When Meta asks for a password, a code or a re-login, the harness stops and the human types it.
-- Not for: the Owner alone at home (with the extension connected, `/onboard`; without it, the click lists of `/setup` step 2 and `docs/meta-setup-guide.md`); building campaigns (`meta-campaign-build`); anything in Ads Manager beyond reads.
+- Not for: the Owner alone at home (with the extension connected, `/connect`, whose console chapters are `onboard`; without it, the click lists of `setup` step 2 and `docs/meta-setup-guide.md`); building campaigns (`/campaign`, `meta-campaign-build`); anything in Ads Manager beyond reads.
 
 ## Owner mode: `/onboard`
 
@@ -40,7 +40,7 @@ Start the progress page beside the browser: `node dashboard/setup-page.mjs --ope
 | The payment card or any payment method detail | Navigates to Billing and payments, stops before the form |
 | Accepting legal terms: Lead Ads terms, the developer platform terms, System User or other policy acknowledgements, any "I agree" box | Shows the screen, stops; the human reads and accepts |
 | The MCP login's consent screen (granting the harness's login its businesses, ad accounts and Pages) | The Owner does it in `/mcp`, with the Owner's own profile (step 5) |
-| The token: the Generate token dialog, the value, and copying it into `.env` | Stops before Generate token; never screenshots, reads or lists the page while the token is on screen; the human pastes it into `.env` and closes the dialog first |
+| The token's value | Never screenshotted, read, listed or typed by the harness. On the go it clicks Generate and then Copy (step 7g) using only `find` for the Copy control, and `creatives/tools/env-set.mjs --from-clipboard` moves the clipboard into `.env` and clears it: the value passes through neither the chat nor the harness. If the extension cannot click Copy, the human clicks it |
 | Ads Manager "Discard drafts", deleting or archiving any live object, removing a person, partner or asset | Prepares the click list; the Owner clicks |
 | Requesting a review or appeal (Account Quality) | Shows the reason; the Owner requests it |
 
@@ -125,7 +125,21 @@ The longest step. The token belongs to a System User, not to a person, so it sur
 - **Facebook Pages** → tick the Page from step 2 → **Full access, "Everything"** → **Assign assets** → the screen says "Assets assigned".
 Screenshot the user's assigned-assets list showing all three. Without the Page, every Page endpoint (lead forms, leads) answers code 10 even when the token carries the `pages_*` permissions (trap 1). The Page's own screen in Business Settings has "Assign people" as a second way to the same outcome.
 
-**7g. The token: hard stop.** Navigate to the System User's screen and stop with "Generate token" visible. Say: "Your turn. Generate token → pick the app → expiration Never if offered → tick `ads_management`, `ads_read`, `leads_retrieval`, `pages_manage_ads`, `pages_read_engagement`, `pages_show_list` → Generate → copy it → open `.env` in a text editor → paste after `META_MARKETING_TOKEN=` (no space, no quotes); `META_AD_ACCOUNT_ID=` the ad account id in digits, `META_PAGE_ID=` the Page id (both public ids, printed here for you) → save → close the dialog in Meta → tell me 'done'." Until "done", no screenshot, `read_page` or `get_page_text` on that tab. If the token reaches the chat, it is burned: revoke and generate again (revoke first, then generate).
+**7g. The token: the clipboard route (the value never passes through the chat or the harness).** Navigate to the System User's screen with "Generate token" visible and state the plan: Generate token → the app from 7b → expiration Never if offered → tick `ads_management`, `ads_read`, `leads_retrieval`, `pages_manage_ads`, `pages_read_engagement`, `pages_show_list` → Generate → Copy → the tool. On the go ("go: 7g, generate the token"):
+1. Click Generate token, pick the app, the expiration and the six permissions (reads and screenshots are fine here: no token is on screen yet), then click Generate.
+2. **From this click until the dialog is closed:** no screenshot, no `read_page`, no `get_page_text`, no `javascript_tool` on that tab. The only allowed read is `find` with the query `Copy` (it returns the control's role and name, not the dialog's text); click the ref it returns. If `find` returns nothing, the human clicks Copy and says "copied".
+3. Run from the repository root (`timeout 60` where the shell has it):
+   ```
+   timeout 60 node creatives/tools/env-set.mjs --from-clipboard META_MARKETING_TOKEN
+   ```
+   It reads the clipboard, writes the one `META_MARKETING_TOKEN=` line into `.env` (every older line of that name replaced), restricts the file to the current user, clears the clipboard, and prints the name and the character count only. "not written: the value is empty" or "shorter than 20 characters" means the Copy did not land: the human clicks Copy, and the tool runs once more (one retry, never a loop). Never `cat`, `grep`, `sed` or open `.env` to check: `--check META_MARKETING_TOKEN` prints the count.
+4. Close the dialog (its Close or Done control; or the human), then screenshots are allowed again.
+5. The two public ids, also through the tool (never a read of the file; both are the same values as in `config/accounts.md`):
+   ```
+   printf '%s' <the ad account id, digits only> | node creatives/tools/env-set.mjs --from-stdin META_AD_ACCOUNT_ID --min-length 6
+   printf '%s' <the Page id, digits only> | node creatives/tools/env-set.mjs --from-stdin META_PAGE_ID --min-length 6
+   ```
+If the token ever reaches the chat (a screenshot, a read, a paste), it is burned: the human revokes it (System users → Revoke tokens, the app), `node creatives/tools/env-set.mjs --unset META_MARKETING_TOKEN`, and 7g runs again (revoke first, then generate). The manual paste of `docs/meta-setup-guide.md` step 7 (Notepad, TextEdit) remains the last fallback when no clipboard tool exists on the machine.
 
 **7h. Live checks**, one at a time:
 ```
@@ -135,7 +149,7 @@ timeout 60 node creatives/tools/meta-graph.mjs lead-forms list
 ```
 Green: the token holder is the System User, the ad account with status 1, `adimages ok, advideos ok`; `check` reports the six permissions; `lead-forms list` answers (an empty list is a pass). Code 10 on `lead-forms list` → trap 1. HTTP 400 code 200 "API access blocked" on every call, `check` included → trap 2. Code 190 → the token is wrong or revoked: the human revokes and generates again. One run per check; no blind retry.
 
-- **Records:** in `config/accounts.md`, the app name and App ID, the System User's name and its three assets, the check results (names only: token present, account reachable, permissions, error code if any); row "Developer app (Business type) + System User token in `.env`"; marks `meta.apptoken=done`, `token.check=done` (`owner` while 7g waits).
+- **Records:** in `config/accounts.md`, the app name and App ID, the System User's name and its three assets, the check results (names only: token present and its character count, account reachable, permissions, error code if any); row "Developer app (Business type) + System User token in `.env`"; marks `meta.apptoken=done`, `token.check=done` (`owner` while 7g waits for a human click).
 
 ## Step 8. WhatsApp number  (mark `meta.whatsapp`)
 

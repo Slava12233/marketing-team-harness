@@ -11,12 +11,12 @@ summary: The Owner's page in Hebrew - today, money vs caps, open items by owner 
 # המשרד של צוות השיווק
 
 %% generated:start %%
-%% content_hash: 455e9c40b2d8135d · generated_at: 2026-10-29T20:00+02:00 · Never hand-edit; run node memory/tools/build-hot.mjs %%
+%% content_hash: c6eb18a2452ef8ae · generated_at: 2026-10-29T21:14+02:00 · Never hand-edit; run node memory/tools/build-hot.mjs %%
 ### היום
 2026-10-29 · מצב נכון ל-2026-10-29 19:45 Asia/Jerusalem ([[current]])
-1. `/health` (the full check)
+1. `/health` (the full check; the onboarding now runs as `/connect` then `/campaign`, decision [[2026-10-29-onboarding-in-two-parts]])
 2. The Owner's open clicks in `checklist.md` (two-factor first)
-3. The first flight: copy → creative brief → still + silent video → compliance → upload → build PAUSED (per `plans/2026-10-29-first-flight-plan.md`)
+3. The first flight through `/campaign` steps 2–9: the market research → the plan's recap and the Owner's picks → copy → compliance → still + silent video → upload → build PAUSED → previews (per…
 
 ### כסף מול תקרות
 - Daily (all campaigns together) · Amount ₪40 · Set by slava lebovkin, 2026-10-29

@@ -1,6 +1,6 @@
 {
   "company": "Habait",
-  "generatedAt": "2026-10-29T20:11+02:00",
+  "generatedAt": "2026-10-29T21:14+02:00",
   "launch": null,
   "routines": {
     "timezone": "Asia/Jerusalem",
@@ -45,7 +45,7 @@
   "working": [],
   "tasks": [
     {
-      "title": "`/health` (the full check)",
+      "title": "`/health` (the full check; the onboarding now runs as `/connect` then `/campaign`, decision [[2026-10-29-onboarding-in-two-parts]])",
       "owner": "Claude"
     },
     {
@@ -53,7 +53,7 @@
       "owner": "Claude"
     },
     {
-      "title": "The first flight: copy → creative brief → still + silent video → compliance → upload → build PAUSED (per `plans/2026-10-29-first-flight-plan.md`)",
+      "title": "The first flight through `/campaign` steps 2–9: the market research → the plan's recap and the Owner's picks → copy → compliance → still + silent video → upload → build PAUSED → previews (per `plans/2026-10-29-first-flight-plan.md`)",
       "owner": "Claude"
     }
   ],
@@ -82,10 +82,19 @@
         "period": "campaign"
       }
     ],
-    "liveToday": "nothing of this harness",
+    "liveToday": "nothing of this harness (the test campaign is PAUSED, ₪0)",
     "nextGo": "none pending; the first flight's go comes after the build, the render check and the numbered recap"
   },
-  "campaigns": [],
+  "campaigns": [
+    {
+      "id": "120249096272270532",
+      "name": "test-harness-pipeline",
+      "label": "Pipeline test campaign 'TEST — harness pipeline — do not activate': fal creatives → compliance → upload → PAUSED click-to-WhatsApp build; never activated, left paused by the Owner's choice.",
+      "status": "PAUSED",
+      "spent": null,
+      "result": null
+    }
+  ],
   "team": {
     "Measure": [
       "performance-analyst",

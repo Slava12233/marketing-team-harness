@@ -25,19 +25,20 @@ Filled by `/setup` on 2026-10-29. Every fact carries the time of the live read t
 
 | Campaign | Id | Status | Daily budget | Cap | Start | End | Ad sets | Ads | Last verified |
 |---|---|---|---|---|---|---|---|---|---|
+| [[test-harness-pipeline]] (pipeline test, never activate) | `120249096272270532` | PAUSED | ₪25 CBO (never on) | spend cap ₪750 | none | none | 1 (`120249096273870532`) | 2 (`120249096283730532`, `120249096284360532`) | 2026-10-29 20:3x |
 
-None built by this harness yet (2026-10-29). The other team's campaigns in the account are not listed here.
+The other team's campaigns in the account are not listed here. The real first flight (`plans/2026-10-29-first-flight-plan.md`) is not built yet.
 
 ## Money (from the last live read)
 
 - Daily spend: not read yet for Habait's own campaigns (none exist); the whole account's spend is read at the first `/morning`
-- Live today: nothing of this harness
+- Live today: nothing of this harness (the test campaign is PAUSED, ₪0)
 - Next go: none pending; the first flight's go comes after the build, the render check and the numbered recap
 
 ## Account (names and public ids only)
 
 - **Ad account:** `1010578430110331` "הבית של כל הבתים בע\"מ", ILS, ACTIVE, payment method present, minimum daily budget 314 (₪3.14), Asia/Jerusalem; owned by portfolio `486542035414450`, shared into the company portfolio `809438743967672` (2026-10-29 19:3x, ads_get_ad_accounts and meta-graph check)
-- **Drafts or real objects:** unknown until the first build (see [[2026-10-20-some-accounts-create-real-paused-objects]])
+- **Drafts or real objects:** real PAUSED objects (first create 2026-10-29, campaign `120249096272270532`), although the MCP tool texts say "draft mode" (see [[2026-10-20-some-accounts-create-real-paused-objects]])
 - **Business portfolio, Page, Instagram, WhatsApp numbers (by name):** portfolio `809438743967672` "הבית של כל הבתים" (unverified); Page `108204445697760` "Habait - Home is Habait" (Lead Ads terms accepted), duplicate `720136941422640` never used; Instagram none linked to the ad account (habait.ai is in the portfolio); WhatsApp "Habait main" (WhatsApp Business App account `916666450823323`)
 
 ## Tracking and plumbing
@@ -56,6 +57,6 @@ None built by this harness yet (2026-10-29). The other team's campaigns in the a
 
 ## Next actions
 
-1. `/health` (the full check)
+1. `/health` (the full check; the onboarding now runs as `/connect` then `/campaign`, decision [[2026-10-29-onboarding-in-two-parts]])
 2. The Owner's open clicks in `checklist.md` (two-factor first)
-3. The first flight: copy → creative brief → still + silent video → compliance → upload → build PAUSED (per `plans/2026-10-29-first-flight-plan.md`)
+3. The first flight through `/campaign` steps 2–9: the market research → the plan's recap and the Owner's picks → copy → compliance → still + silent video → upload → build PAUSED → previews (per `plans/2026-10-29-first-flight-plan.md`)

@@ -19,6 +19,7 @@ dashboard/state.local.json
 # Generated per company by dashboard/setup-page.mjs
 dashboard/setup.html
 dashboard/setup-progress.json
+dashboard/bootstrap-result.json
 dashboard/*.tmp
 
 # Release zips built by release.sh / release.ps1

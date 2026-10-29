@@ -18,7 +18,7 @@ import {
 } from './lib.mjs';
 
 const GEN_LINE = 'Never hand-edit; run node memory/tools/build-capabilities.mjs';
-const COMMANDS = ['morning', 'health', 'next-round', 'sync', 'consolidate', 'setup'];
+const COMMANDS = ['connect', 'campaign', 'morning', 'health', 'next-round', 'sync', 'consolidate', 'setup'];
 
 const cell = (s, max = 600) => scrubSecrets(oneLine(str(s), max)).replace(/\|/g, '\\|') || '—';
 const table = (header, rows) => [

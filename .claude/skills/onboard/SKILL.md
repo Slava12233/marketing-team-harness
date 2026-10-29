@@ -5,6 +5,8 @@ description: "The buyer-mode keys pass, Part A of the onboarding (chapters A3 to
 
 # /onboard: the keys pass, in the Owner's own Chrome
 
+**Routing (since 2026-10-29).** `/onboard` is the console part of **`/connect`** (Part 1 of the onboarding): typing `/onboard` runs `/connect`, which asks the language first, checks the prerequisites, asks what already exists in Meta and verifies it in the Owner's Chrome, then runs the chapters below from the first one not `done` or `n/a`, and ends with `/health`. The chapters stay here as the shared step bodies.
+
 One guided pass that collects every login and the one key the harness needs, then stops. "All the keys in `.env`" is one key: the Meta System User token (plus two public ids). Every other connection is a login made in the browser or in the app and stored by Claude Code or the tool (the credential map at the top of `.env.example`). After this pass the harness runs on its own: `/setup`, `/health`, the first flight built PAUSED (Part B).
 
 The **Owner** sits at their own computer, in the Claude desktop app's Code tab, with Chrome open and the Claude in Chrome extension signed in. The harness navigates, reads, fills and clicks in that Chrome **on the Owner's go typed in chat**, and stops at the hard-stop list of `.claude/skills/setup-console/SKILL.md`, where the Owner does the step. The screens, outcomes, traps and records are those of `setup-console` (its steps 1–11) and `docs/meta-setup-guide.md`; this page says only what differs in Owner mode and how the chapters run. Project rules (`CLAUDE.md`) win on any conflict.
@@ -31,7 +33,7 @@ The **Owner** sits at their own computer, in the Claude desktop app's Code tab, 
 |---|---|---|
 | Who sits at the consoles | the installer, with the client's admin access | the Owner, with their own personal Facebook profile (two-factor on) |
 | The go | typed by the installer, holding the Owner's written OK | typed by the Owner, in the same message, naming the chapter or the click ("go: A7, create the system user"); one message may cover one chapter's clicks; a go never carries over |
-| Hard stops | the list in `setup-console` | the same list, plus: the Claude sign-in inside the extension (A3), the fal sign-up and its card (A9), the WhatsApp number itself (A8: the Owner types it; a phone number never passes through the chat) |
+| Hard stops | the list in `setup-console` | the same list, plus: the Claude sign-in inside the extension (A3), the fal sign-up and its card (A9), the WhatsApp number itself (A8: the Owner types it; a phone number never passes through the chat). The token is not a paste any more: its value moves clipboard → `.env` through `env-set.mjs` on the Owner's go (A7), unseen by both |
 | App roles (step 7d) | the Owner added as Administrator of the app | n/a: the Owner's own profile creates the app |
 | The MCP login (step 5) | the Owner's profile, with the installer standing by | the Owner's profile; the consent screen is the Owner's alone |
 | Screens that list other businesses (the portfolio switcher, the Login for Business chooser) | read | read, **never screenshotted**: describe the outcome ("the company's portfolio is selected"), name no other business |
@@ -40,7 +42,7 @@ The **Owner** sits at their own computer, in the Claude desktop app's Code tab, 
 
 Everything else is `setup-console` as written: how every step runs (navigate, say the plan, click on the go, screenshot after every state change, live check, record), the traps table, the session-log line format (`- HH:MM — onboard A7f: …`), names and public ids only.
 
-**Screenshots.** As in `setup-console`: one after every state change and at every stop, sent to the chat (and as a file when the host has a file-sending tool), copies only outside the repository. Never a screenshot of a token, a password field with a value, a card form, a lead, or a screen that lists another business. From "Generate token" until the Owner says the dialog is closed: no screenshot, `read_page` or `get_page_text` on that tab.
+**Screenshots.** As in `setup-console`: one after every state change and at every stop, sent to the chat (and as a file when the host has a file-sending tool), copies only outside the repository. Never a screenshot of a token, a password field with a value, a card form, a lead, or a screen that lists another business. From the click on Generate until the token dialog is closed: no screenshot, `read_page`, `get_page_text` or `javascript_tool` on that tab; only `find` for the Copy control (7g).
 
 ## The chapters
 
@@ -71,13 +73,7 @@ Everything else is `setup-console` as written: how every step runs (navigate, sa
 ### A7. The developer app, the System User, the token  (`setup-console` steps 7a–7h; marks `meta.apptoken`, `token.check`)
 
 - 7a–7c and 7e–7f as written, on the Owner's go; the developer terms and any code are the Owner's; 7d is n/a (the Owner's own profile creates the app). The app stays Unpublished (trap 4). The System User gets its three assets at creation (the ad account with full control, the app, the Page "Everything").
-- **7g, the token: the Owner's hard stop.** Stop with Generate token visible and say: "Your turn. Generate token → pick the app → expiration Never if offered → tick `ads_management`, `ads_read`, `leads_retrieval`, `pages_manage_ads`, `pages_read_engagement`, `pages_show_list` → Generate → copy it → open `.env` in the harness folder with Notepad (or TextEdit) → paste it right after `META_MARKETING_TOKEN=`, no space, no quotes; **leave the two id lines alone, I add them** → save → close the editor → close the dialog in Meta → tell me 'done'." Until "done": nothing is read or screenshotted on that tab. A token that reaches the chat is burned: revoke first, then generate again.
-- **The two public ids, appended, never read.** From the repository root, after "done":
-  ```
-  printf 'META_AD_ACCOUNT_ID=%s\n' <the ad account id, digits only> >> .env
-  printf 'META_PAGE_ID=%s\n' <the Page id, digits only> >> .env
-  ```
-  Both are public ids (the same values as in `config/accounts.md`). The two Graph tools take the last non-empty line of a name, so the empty template lines above them do no harm. Never `cat`, `grep`, `sed -i` or open the file to "check": `/health` 25 counts the names only.
+- **7g, the token: the clipboard route, on the Owner's go** ("go: A7, generate the token"), exactly as `setup-console` 7g: the harness clicks Generate token, the app, Never, the six permissions and Generate; from that click until the dialog is closed it reads nothing on that tab except `find` for the Copy control, clicks Copy, and runs `timeout 60 node creatives/tools/env-set.mjs --from-clipboard META_MARKETING_TOKEN`, which moves the clipboard into `.env`, clears the clipboard and prints the name and the character count only. The Owner never sees, copies or pastes the value; the harness never does either. If `find` finds no Copy control, say "your turn: click Copy, then tell me 'copied'" and run the tool. Then the two public ids through the same tool (`--from-stdin META_AD_ACCOUNT_ID --min-length 6`, `--from-stdin META_PAGE_ID --min-length 6`; never a read of the file). A token that reaches the chat is burned: the Owner revokes it, `env-set.mjs --unset META_MARKETING_TOKEN`, generate again (revoke first, then generate).
 - **7h, the live checks**, one at a time, as written (`meta-upload.mjs --check`, `meta-graph.mjs check`, `lead-forms list`); code 10 → trap 1, code 200 "API access blocked" → trap 2, code 190 → the Owner revokes and generates again. Records: the app name and App ID, the System User's name and its three assets, the check results by name; `--mark meta.apptoken=done --mark token.check=done`.
 
 ### A8. WhatsApp, lead forms, domain  (`setup-console` steps 8–10; marks `meta.whatsapp`, `meta.leadads`, `meta.leadscenter`, `meta.domain`)

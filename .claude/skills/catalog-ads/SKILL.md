@@ -15,7 +15,7 @@ A thin routing skill. The build itself, with every call and rule, is in `meta-ca
 
 **Not for:** a company without a product list (services, lead generation, a single offer: use the funnels in `config/product.md`); products in a special ad category that forbids the targeting a catalog campaign needs (check `config/claims.md` and the table in `audience-research`; when unsure, the Owner); a store whose feed does not exist yet (the first task is then a request to whoever runs the store, or a "Needs product team" plan).
 
-## Intake (one round of four questions through the question tool, English, recommended option first; a second round only if needed)
+## Intake (one round of four questions through the question tool, in the chat language, recommended option first; a second round only if needed)
 1. **Store platform and feed.** Which platform runs the store, and does its Meta integration already sync products (recommended: use the integration's feed), or is there a feed URL (CSV, XML) to fetch on a schedule?
 2. **Feed URL ownership.** Who owns the feed URL, and does it need credentials (a password, or a token inside the URL)? Credentials are the Owner's: entered by the Owner in Commerce Manager, recorded here by name only, never pasted in chat.
 3. **Currency and count.** The feed's currency (it must match the account currency in `config/accounts.md`, or a feed rule maps it) and the product count (all, in stock, the share with images).

@@ -28,6 +28,7 @@ CHANGELOG.md
 docs/
 bootstrap.sh
 bootstrap.ps1
+bootstrap.test.mjs
 release.sh
 release.ps1
 upgrade.sh

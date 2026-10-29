@@ -21,7 +21,7 @@ The ad buys a click; the reply decides whether the click becomes a customer. Thi
 7. `config/intake.md`, section 8 "The lead path", when it exists: the Owner's own answers on hours, the reply promise, what qualified, booked and closed mean.
 8. The platform notes: [[2026-10-26-page-welcome-message-exact-spec]], [[2026-10-26-whatsapp-inbox-reads]], [[2026-10-21-instant-form-button-types]] (under `memory/learnings/meta-platform/`), and `memory/business/funnels.md`.
 
-A fact the files do not give (hours, the reply promise, what "qualified" means) is asked of the Operator with AskUserQuestion (English, four questions a round, recommended option first); never invented. "Not stated" is written as such and becomes an open question in the kit.
+A fact the files do not give (hours, the reply promise, what "qualified" means) is asked of the Operator with AskUserQuestion (in the chat language, four questions a round, recommended option first); never invented. "Not stated" is written as such and becomes an open question in the kit.
 
 ## The kit, section by section
 

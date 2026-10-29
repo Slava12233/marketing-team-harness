@@ -107,7 +107,7 @@ test('both string tables cover every chapter, item, status and hint; the embedde
   run(dir, '--mark', 'meta.webhook=todo', '--mark', 'meta.instagram=todo');   // marks show the optional rows (placeholders here)
   const { html, data } = page(dir);
   const keys = data.model.chapters.flatMap(c => (c.items || []).map(i => i.key));
-  assert.equal(keys.length, 53);
+  assert.equal(keys.length, 54);
   for (const lang of ['en', 'he']) {
     const S = data.strings[lang];
     for (const p of ['A', 'B']) assert.ok(S.parts[p], `${lang} part ${p}`);
@@ -201,7 +201,7 @@ test('the memory vault chapter: app, Obsidian config, shipped hooks and business
 }));
 
 test('two parts in the video\'s order: labels A0–A10 and B1–B5, the desktop app answered by a file, the new items marked', () => withCopy(false, dir => {
-  let r = run(dir, '--print');
+  let r = run(dir, '--lang', 'en', '--print');   // the fixture copies the real config/, whose chat language may be Hebrew
   assert.equal(r.status, 0, r.stderr);
   let { html, data, st } = page(dir);
   assert.deepEqual(data.model.chapters.map(c => c.n), ['A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'B1', 'B2', 'B3', 'B4', 'B5']);
@@ -209,11 +209,11 @@ test('two parts in the video\'s order: labels A0–A10 and B1–B5, the desktop 
   assert.equal(data.model.chapters.find(c => c.id === 'app').items.map(i => i.key).join(' '), 'app.desktop install.approved');
   assert.equal(data.model.chapters.find(c => c.id === 'keys').items[0].key, 'keys.table');
   assert.ok(data.model.chapters.find(c => c.id === 'c10').items.some(i => i.key === 'flight.video'), 'the video ad is a step of the first flight');
-  assert.match(html, /<h2 class="part">Part A: accounts and keys/);
-  assert.match(html, /<h2 class="part">Part B: the run<\/h2>/);
-  assert.match(r.stdout, /== Part A: accounts and keys/);
+  assert.match(html, /<h2 class="part">Part A, \/connect: accounts and keys/);
+  assert.match(html, /<h2 class="part">Part B, \/campaign: the first campaign<\/h2>/);
+  assert.match(r.stdout, /== Part A, \/connect: accounts and keys/);
   assert.match(r.stdout, /^A3\. Claude in Chrome/m);
-  assert.match(r.stdout, /^B3\. First flight built PAUSED/m);
+  assert.match(r.stdout, /^B3\. First campaign built PAUSED/m);
   for (const k of ['chrome.extension', 'keys.table', 'flight.video']) assert.equal(st[k], 'todo', k);
   if (SEALED) assert.equal(st['app.desktop'], 'todo', 'no app under the sandboxed folders');
   assert.match(html, /<span class="hint">[^<]*Connectors/, 'an open extension item shows the Owner\'s path');

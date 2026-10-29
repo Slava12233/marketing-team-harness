@@ -8,7 +8,7 @@
 #       hidden by an ignore rule (it would be missing from the zip), dist/ is ignored
 #   (b) bash docs/scrub-check.sh prints "scrub gate: clean"
 #   (b2) the node test suites pass, one after the other, each bounded at 300 s (timeout 300 node --test <file>):
-#        memory/tools/tools.test.mjs, dashboard/setup-page.test.mjs, .claude/hooks/account-guard.test.mjs and
+#        memory/tools/tools.test.mjs, dashboard/setup-page.test.mjs, .claude/hooks/account-guard.test.mjs, bootstrap.test.mjs and
 #        every creatives/tools/*.test.mjs; --skip-tests bypasses them with a printed warning (then run
 #        docs/regression-run.md before publishing)
 #   (b3) docs/release-manifest.txt ("<sha256>  <path>" for every tracked file but itself, LF) matches the tree;
@@ -100,7 +100,7 @@ else
     if command -v "$t" >/dev/null 2>&1; then TIMEOUT_BIN="$t"; break; fi
   done
   [ -n "$TIMEOUT_BIN" ] || refuse "timeout was not found: install GNU coreutils (macOS: brew install coreutils) so every suite runs with a time bound."
-  SUITES=(memory/tools/tools.test.mjs dashboard/setup-page.test.mjs .claude/hooks/account-guard.test.mjs)
+  SUITES=(memory/tools/tools.test.mjs dashboard/setup-page.test.mjs .claude/hooks/account-guard.test.mjs bootstrap.test.mjs)
   for f in "${SUITES[@]}"; do [ -f "$f" ] || refuse "the test suite $f is missing."; done
   for f in creatives/tools/*.test.mjs; do [ -f "$f" ] && SUITES+=("$f"); done
   for f in "${SUITES[@]}"; do

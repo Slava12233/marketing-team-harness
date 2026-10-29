@@ -8,7 +8,7 @@ Before the harness can read your Meta account and build campaigns, Meta needs a 
 
 **Meta renames buttons and moves menus often; the outcomes stay the same.** Each step below names the outcome you are after (what must be true when you are done) as well as today's labels. If a label on your screen is different, look for the outcome. Wherever Meta offers a read, the harness checks the outcome itself.
 
-The harness clicks in Meta's consoles only in the two driven modes below: the keys pass (`/onboard`), in your own Chrome on your own go, and the installer-led mode, on the installer's word; never past the hard-stop list. Otherwise it prepares the click list, waits for you, and checks.
+The harness clicks in Meta's consoles only in the two driven modes below: the connections pass (`/connect`; `/onboard` routes to it), in your own Chrome on your own go, and the installer-led mode, on the installer's word; never past the hard-stop list. Otherwise it prepares the click list, waits for you, and checks.
 
 ## Before you start
 
@@ -17,12 +17,12 @@ The harness clicks in Meta's consoles only in the two driven modes below: the ke
 - **A payment card** (or another payment method Meta accepts in your country) for the ad account. Nothing is charged until a campaign runs, and the harness builds everything paused.
 - **The contact of whoever runs the website**: an agency, a freelancer, or your own login to the website builder. You need them for the pixel (step 6) and the domain (step 10).
 - **The WhatsApp Business app on the business phone**, holding the business number, if you plan click-to-WhatsApp ads (step 8).
-- **A plain text editor** for one paste in step 7: Notepad on Windows, TextEdit on macOS.
+- **A plain text editor** (Notepad on Windows, TextEdit on macOS), only as the fallback for the token in step 7 when the clipboard tool cannot be used.
 - **Time.** About two hours of clicks, best spread over a few days: Meta sometimes reviews a new ad account before it lets it spend.
 
 ## Three ways to do these steps
 
-- **Yourself, with the harness driving your Chrome: `/onboard`, the keys pass.** You sit at your own computer, in the Claude desktop app's Code tab, with Google Chrome open and the Claude in Chrome extension signed in with the same Claude account. You type `/onboard`, and the harness leads these steps chapter by chapter (A3 to A10 of the video): it opens the screens in your Chrome, reads them, fills names and public ids, and clicks only when you type the go in the chat; at every hard stop it stops and says "your turn": any password or code, the payment card, accepting legal terms, generating the token and pasting it into `.env` (the harness then appends the two public ids itself, without opening the file). It ends with the keys table (`/health --keys`) all green, and it resumes at the first open chapter whenever a code or a review made it stop.
+- **Yourself, with the harness driving your Chrome: `/connect`, the connections pass.** You sit at your own computer, in the Claude desktop app's Code tab, with Google Chrome open and the Claude in Chrome extension signed in with the same Claude account. You type `/connect`; it asks your language, then what you already have in Meta, and the harness leads these steps chapter by chapter (A3 to A10 of the video): it opens the screens in your Chrome, reads them, fills names and public ids, and clicks only when you type the go in the chat; at every hard stop it stops and says "your turn": any password or code, the payment card, accepting legal terms. The token is not a hard stop any more: on your go the harness clicks Generate and Copy and a tool moves it from the clipboard into `.env` and clears the clipboard, so nobody sees or pastes it; the two public ids go the same way. It ends with the keys table (`/health --keys`) all green and the full `/health`, and it resumes at the first open chapter whenever a code or a review made it stop.
 - **Yourself, with the click lists.** You (the Owner) click through the steps on this page; `/setup` prints the same steps as short click lists and checks each outcome live.
 - **Installer-led, with the `setup-console` skill.** The person who installs the harness for you sits at your Meta consoles with your admin access for the setup day (`docs/client-intake.md` §1, option 0) and says "drive the consoles". The harness then drives these screens in the installer's browser: it clicks on the installer's word, one step at a time, and stops at its hard-stop list, where a person always does the step: any password or code, identity documents, the payment card, accepting legal terms (the Lead Ads terms, the developer terms), copying the token into `.env`, and Discard drafts or deletes. Afterwards you remove or downgrade the installer's access.
 
@@ -53,7 +53,7 @@ Most of the harness's connections are not keys in a file: they log in once, and 
 |---|---|---|---|---|
 | Meta Ads MCP (`meta-ads`) | OAuth, the Owner's Facebook login | Claude Code's credential store | `/mcp` → `meta-ads` → log in, in the browser where the Owner is signed in (step 5) | `/health` 1 and 2 |
 | fal MCP (`fal`, optional: generated pictures) | OAuth, a fal login | Claude Code's credential store | `/mcp` → `fal` → log in | `/health` 8 |
-| The Graph tools (`meta-upload.mjs`, `meta-graph.mjs`) | a System User token | `META_MARKETING_TOKEN` in `.env` (plus the two public ids `META_AD_ACCOUNT_ID`, `META_PAGE_ID`) | the Owner generates it in Business Settings → System users and pastes it into `.env` with a text editor (step 7); never into the chat | `/health` 13 and 20 |
+| The Graph tools (`meta-upload.mjs`, `meta-graph.mjs`) | a System User token | `META_MARKETING_TOKEN` in `.env` (plus the two public ids `META_AD_ACCOUNT_ID`, `META_PAGE_ID`) | generated in Business Settings → System users (in `/connect` the harness clicks it on the Owner's go) and moved from the clipboard into `.env` by `creatives/tools/env-set.mjs --from-clipboard`, unseen (step 7); never into the chat; the text-editor paste is the fallback | `/health` 13 and 20 |
 | Vercel CLI (optional: the preview site and landing pages) | a CLI login | the Vercel CLI's own store in the user folder | `npx vercel@latest login` once | `/health` 7 |
 | HyperFrames (optional: videos), Obsidian (optional: the vault) | none | | | `/health` 14 and 19 |
 | The Claude desktop app (the Code tab: where the harness runs, with its own copy of Claude Code; the memory routines, Remote Control and the extension's pairing) | the Claude account | the app's own sign-in | sign in in the app, click the Code tab, open this folder | `/health` 26 |
@@ -233,7 +233,7 @@ Skip this step if no ad will send people to a website; see "No website yet" unde
 
 ## Step 7. The developer app and the upload token
 
-The harness uploads image and video files from this computer into the ad account with a small tool, `creatives/tools/meta-upload.mjs`. The tool needs a token: a password for a System User of your portfolio. This step creates the app, the System User and the token. It looks technical, but it is only clicks and one paste.
+The harness uploads image and video files from this computer into the ad account with a small tool, `creatives/tools/meta-upload.mjs`. The tool needs a token: a password for a System User of your portfolio. This step creates the app, the System User and the token. It looks technical, but it is only clicks: in `/connect` the harness clicks them in your Chrome on your go, and a small tool (`creatives/tools/env-set.mjs`) moves the token from the clipboard into `.env` and clears the clipboard, so neither you nor the harness ever sees or pastes the value. The clicks below are the same steps for the case without the extension.
 
 **Where:** `https://developers.facebook.com/apps` (the app); Business Settings → Accounts → Apps (`https://business.facebook.com/settings/apps`); Business Settings → Users → System users (`https://business.facebook.com/settings/system-users`).
 
@@ -262,11 +262,15 @@ The harness uploads image and video files from this computer into the ad account
 **Clicks: the token**
 
 9. Still on the System User: Generate new token → choose the app → token expiration **Never**, if Meta offers the choice → tick **`ads_management`** and **`ads_read`**, and for lead forms and leads (the Graph tool, `docs/meta-graph.md`) **`leads_retrieval`**, **`pages_manage_ads`**, **`pages_read_engagement`** and **`pages_show_list`**; nothing else → Generate.
-10. Meta shows the token **once**. Copy it.
-11. Open the `.env` file in the harness folder with a text editor (Notepad on Windows, TextEdit on macOS). Paste the token right after `META_MARKETING_TOKEN=`, with no space and no quotes. Check that the line `META_AD_ACCOUNT_ID=` holds the ad account id from step 3, digits only (an id is not a secret), and `META_PAGE_ID=` the Page id from step 2. Save and close. (In `/onboard` you paste only the token: the harness appends the two id lines itself, without opening the file.)
-12. Back in Claude Code, ask "check the upload token". The harness runs `node creatives/tools/meta-upload.mjs --check`; you can also run it yourself in a terminal in the folder.
+10. Meta shows the token **once**, with a Copy button. Click **Copy** (in `/connect` the harness clicks it for you, reading nothing on that screen).
+11. In a terminal in the harness folder, run the line below (in `/connect` the harness runs it). It takes the token from the clipboard, writes it after `META_MARKETING_TOKEN=` in `.env`, restricts the file to your user, clears the clipboard, and prints only the name and the number of characters:
+    ```
+    node creatives/tools/env-set.mjs --from-clipboard META_MARKETING_TOKEN
+    ```
+    The two public ids go in the same way, `META_AD_ACCOUNT_ID` (the ad account id from step 3, digits only) and `META_PAGE_ID` (the Page id from step 2); in `/connect` the harness does both. **Fallback without a clipboard tool:** open `.env` with Notepad (Windows) or TextEdit (macOS), paste the token right after `META_MARKETING_TOKEN=`, no space, no quotes, fill the two id lines, save, close.
+12. Close the token dialog in Meta. Back in Claude Code, ask "check the upload token". The harness runs `node creatives/tools/meta-upload.mjs --check`; you can also run it yourself in a terminal in the folder.
 
-**Never paste the token into the chat, an email, a message, a document or a screenshot.** It goes only into `.env`, which stays on this computer and is never uploaded. A token that reaches the chat, or anywhere else, is treated as leaked: revoke it and generate a new one (rotation, below). The harness will ask you to, and it never asks you for the value.
+**Never paste the token into the chat, an email, a message, a document or a screenshot.** It goes only into `.env`, which stays on this computer and is never uploaded. A token that reaches the chat, or anywhere else, is treated as leaked: revoke it, blank the old line (`node creatives/tools/env-set.mjs --unset META_MARKETING_TOKEN`) and generate a new one (rotation, below). The harness will ask you to, and it never asks you for the value.
 
 **What you should see:** the check prints four lines plus a write-access note: where it found the token (`.env`), the token holder (the System User's name), the ad account (its name, status and currency; status `1` means active), and `adimages ok, advideos ok`. It never prints the token.
 
@@ -280,7 +284,7 @@ The harness uploads image and video files from this computer into the ad account
 - The check reports code 190: the token is wrong, expired or revoked; rotate it (revoke first, then generate; see Rotation below). Code 200: the System User is missing the ad account or a permission; fix click 8, then revoke and generate again (but code 200 with "API access blocked", even on the most basic call, is a blocked developer account: see "If you get stuck"). Code 10 on the lead-form or lead commands: the Page is not among the System User's assets (click 8). The harness reports these codes and never retries blindly.
 - The check says `META_AD_ACCOUNT_ID` is not set: fill in that line (click 11).
 - If Meta insists on a business verification or an app review before it lets you generate the token, write down its exact message and tell the Operator. Meanwhile the harness can still read and build; only the direct uploads wait.
-- **Rotation** (every few months, when someone with access leaves, and at once after any leak): on the System User, Revoke tokens (choose the app) → Generate new token with the same choices → paste it over the old value in `.env` → run the check. Revoke first, then generate: Meta's revoke can stop every token the System User holds for that app, including one generated a minute earlier.
+- **Rotation** (every few months, when someone with access leaves, and at once after any leak): on the System User, Revoke tokens (choose the app) → Generate new token with the same choices → Copy → `node creatives/tools/env-set.mjs --from-clipboard META_MARKETING_TOKEN` (it replaces the old line) → run the check. Revoke first, then generate: Meta's revoke can stop every token the System User holds for that app, including one generated a minute earlier.
 
 **Screenshots:** [screenshot: step 7]
 

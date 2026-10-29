@@ -35,3 +35,4 @@
 
 <!-- One dated line per /sync: YYYY-MM-DD HH:MM: what changed (items moved, ids touched). -->
 - 2026-10-29 20:12 Asia/Jerusalem: /setup + /onboard done; rows 1–19 written (keys green; account 1010578430110331 shared, own campaigns only); nothing live, ₪0 of the ₪40 daily cap; open for the Owner: #6 narrow login, #13 Instagram, #15 2FA, #16 fee claim, #17 brand, #18 past ads, #19 control room; next: /morning, then the first flight's copy and creative.
+- 2026-10-29 21:3x Asia/Jerusalem: onboarding split into /connect + /campaign, the chosen language rules every question, the token moves clipboard → .env by env-set.mjs, bootstrap nine improvements + parity test; nothing live, ₪0 of the ₪40 daily cap; committed and pushed
