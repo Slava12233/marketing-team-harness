@@ -63,7 +63,7 @@ function page(dir, lang) {   // the rendered wizard, the data file, the strings,
 test('bare template: everything to do except .mcp.json; offline; optional rows hidden', () => withCopy(false, dir => {
   const r = run(dir, '--print');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, SEALED ? /^setup page: 1\/52 done, next: Git installed/m : /^setup page: \d+\/52 done, next: Git installed/m);
+  assert.match(r.stdout, SEALED ? /^setup page: 1\/60 done, next: Git installed/m : /^setup page: \d+\/60 done, next: Git installed/m);
   const { data, st } = page(dir);
   const app = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'app.desktop'];   // machine-wide installs off Windows
   for (const [k, s] of Object.entries(st)) {
@@ -121,7 +121,7 @@ test('both string tables cover every chapter, item, status and hint; the embedde
   run(dir, '--mark', 'meta.webhook=todo', '--mark', 'meta.instagram=todo');   // marks show the optional rows (placeholders here)
   const { data, strings } = page(dir);
   const keys = data.chapters.flatMap(c => (c.items || []).map(i => i.key));
-  assert.equal(keys.length, 54);
+  assert.equal(keys.length, 62);
   for (const lang of ['en', 'he']) {
     const S = strings[lang];
     for (const p of ['A', 'B']) assert.ok(S.parts[p], `${lang} part ${p}`);
@@ -191,7 +191,7 @@ test('the memory vault chapter: app, Obsidian config, shipped hooks and business
   let { html, data, st, strings } = page(dir);
   const ch = data.chapters.find(c => c.id === 'vault');
   assert.deepEqual(ch.items.map(i => i.key), keys);
-  assert.equal(data.chapters.indexOf(ch), 14, 'in Part B, after the first flight: the video\'s chapter B4');
+  assert.equal(data.chapters.indexOf(ch), 15, 'in Part B, after the first flight: the video\'s chapter B4');
   assert.equal(ch.n, 'B4');
   assert.equal(st['obsidian.hooks'], 'todo', 'no settings file in this copy');
   assert.equal(st['memory.business_filled'], 'todo');
@@ -259,7 +259,7 @@ test('two parts in the video\'s order: labels A0–A10 and B1–B5, the desktop 
   let r = run(dir, '--lang', 'en', '--print');   // the fixture copies the real config/, whose chat language may be Hebrew
   assert.equal(r.status, 0, r.stderr);
   let { html, data, st } = page(dir);
-  assert.deepEqual(data.chapters.map(c => c.n), ['A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'B1', 'B2', 'B3', 'B4', 'B5']);
+  assert.deepEqual(data.chapters.map(c => c.n), ['A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'G', 'A10', 'B1', 'B2', 'B3', 'B4', 'B5']);
   assert.deepEqual(data.chapters.filter(c => c.part === 'B').map(c => c.id), ['c8', 'c9', 'c10', 'vault', 'c11']);
   assert.equal(data.chapters.find(c => c.id === 'app').items.map(i => i.key).join(' '), 'app.desktop install.approved');
   assert.equal(data.chapters.find(c => c.id === 'keys').items[0].key, 'keys.table');
@@ -285,4 +285,25 @@ test('two parts in the video\'s order: labels A0–A10 and B1–B5, the desktop 
   ({ st } = page(dir));
   if (process.platform !== 'linux') assert.equal(st['app.desktop'], 'done', 'the launcher file answers');
   assert.equal(st['chrome.extension'], 'todo', 'no mark left');
+}));
+
+const PLATFORMS = '{' + '{PLATFORMS}}';   // split so the scrub gate does not read it as a placeholder
+test('the platforms of config/operator.md: Meta only hides the Google chapter, Google only hides the Meta rows', () => withCopy(false, dir => {
+  const op = join(dir, 'config', 'operator.md');
+  const base = readFileSync(op, 'utf8');
+  writeFileSync(op, base.replace(PLATFORMS, 'Meta'));
+  let r = run(dir, '--print');
+  assert.equal(r.status, 0, r.stderr);
+  let { data, html } = page(dir);
+  assert.deepEqual(data.chapters.find(c => c.id === 'google').items, [], 'no Google rows for a Meta-only company');
+  assert.doesNotMatch(html, /google.account/);
+  assert.ok(data.chapters.find(c => c.id === 'c2').items.length > 0);
+  writeFileSync(op, base.replace(PLATFORMS, 'Google'));
+  r = run(dir, '--print');
+  assert.equal(r.status, 0, r.stderr);
+  ({ data } = page(dir));
+  const keys = data.chapters.flatMap(c => (c.items || []).map(i => i.key));
+  assert.ok(keys.includes('google.login') && keys.includes('google.access'));
+  assert.ok(!keys.some(k => k.startsWith('meta.') || k === 'login.tools' || k === 'token.check'), 'no Meta rows for a Google-only company');
+  assert.equal(data.chapters.find(c => c.id === 'google').n, 'G');
 }));

@@ -136,6 +136,7 @@
     h += '</nav>';
 
     v.chapters.forEach(function (c) {
+      if (!c.info && !c.items.length) return;   // a chapter with nothing to show (a platform this company does not use)
       if (c.part !== part) { part = c.part; h += '<h2 class="part">' + cmds(fmt(S.parts[part])) + '</h2>'; }
       var isOpen = open[c.id] != null ? open[c.id]
         : c.info ? (c.id === 'c0' ? v.done === 0 : v.now.kind === 'done')

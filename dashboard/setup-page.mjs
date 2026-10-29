@@ -31,7 +31,9 @@ const STATUSES = ['todo', 'doing', 'done', 'owner', 'na'];
 const GLYPHS = { done: '✓', todo: '○', doing: '◐', owner: '●', na: '–' };
 // Two parts, in the order of the onboarding video: Part A, accounts and keys (chapters A0–A10: one pass that ends
 // with the keys table all green), then Part B, the run (B1–B5). A chapter's label is its part letter and its number
-// within the part (A0 … A10, B1 … B5), the same labels as ONBOARDING.md §3d.
+// within the part (A0 … A10, B1 … B5), the same labels as ONBOARDING.md §3d. The Google Ads chapter has the fixed
+// label G (it is not in the video's numbering) and shows only when Google is one of the platforms of config/operator.md;
+// the Meta chapters show only when Meta is.
 const CHAPTERS = [
   { id: 'c0', part: 'A', info: true },
   { id: 'c1', part: 'A', items: ['install.git', 'install.node', 'install.claude', 'install.env', 'install.mcpjson'] },
@@ -43,6 +45,7 @@ const CHAPTERS = [
   { id: 'c5', part: 'A', items: ['meta.apptoken', 'token.check'] },
   { id: 'c6', part: 'A', items: ['meta.whatsapp', 'meta.leadads', 'meta.leadscenter', 'meta.domain', 'meta.webhook', 'meta.instagram'] },
   { id: 'c7', part: 'A', items: ['fal.login'] },
+  { id: 'google', part: 'A', label: 'G', items: ['google.account', 'google.billing', 'google.verification', 'google.cloud', 'google.oauth', 'google.access', 'google.login', 'google.conversion'] },
   { id: 'keys', part: 'A', items: ['keys.table'] },
   { id: 'c8', part: 'B', items: [...'abcdefghi'].map(r => 'interview.' + r).concat(['setup.pages', 'setup.files', 'setup.plan']) },
   { id: 'c9', part: 'B', items: ['health.run'] },
@@ -63,7 +66,14 @@ const CONSOLE = {
   'meta.login': 'MCP login', 'meta.pixel': 'Pixel / dataset', 'meta.apptoken': 'Developer app',
   'meta.whatsapp': 'WhatsApp Business number', 'meta.leadads': 'Lead Ads terms', 'meta.leadscenter': 'Leads Center access',
   'meta.domain': 'Domain verified', 'meta.webhook': 'Lead webhook subscription', 'meta.instagram': 'Instagram linked',
+  'google.account': 'Google Ads account', 'google.billing': 'Billing on the Google Ads account',
+  'google.verification': 'Advertiser verification on Google Ads', 'google.cloud': 'Cloud project with the Google Ads API',
+  'google.oauth': 'OAuth consent screen and Desktop client', 'google.access': 'Google Ads API access level',
+  'google.login': 'Google login', 'google.conversion': 'Google conversion action',
 };
+// The items of one platform: hidden when config/operator.md names the platforms and leaves this one out.
+const PLATFORM = key => (/^google\./.test(key) ? 'google' : /^(meta\.|login\.tools$|token\.check$)/.test(key) ? 'meta' : null);
+const GOOGLE_KEYS = ['google.account', 'google.billing', 'google.verification', 'google.cloud', 'google.oauth', 'google.access', 'google.login', 'google.conversion'];
 const OPTIONAL = ['meta.webhook', 'meta.instagram'];
 
 // Interview round → the config files it writes; the round is done once they hold no {{ placeholder.
@@ -92,7 +102,7 @@ const EN = {
   parts: { A: 'Part A, /connect: accounts and keys (one pass; it ends with every row green)', B: 'Part B, /campaign: the first campaign' },
   chapters: { c0: 'Before you start', c1: 'Install', app: 'The Claude desktop app', chrome: 'Claude in Chrome', c2: 'Meta business basics',
     c3: 'The Meta login', c4: 'Pixel and tracking', c5: 'Developer app, System User, upload token', c6: 'WhatsApp, lead forms, domain',
-    c7: 'fal (optional)', keys: 'The keys table', c8: 'The `/campaign` interview', c9: '`/health`', c10: 'First campaign built PAUSED: research, copy, a still and a video',
+    c7: 'fal (optional)', google: 'Google Ads (only when you advertise on Google)', keys: 'The keys table', c8: 'The `/campaign` interview', c9: '`/health`', c10: 'First campaign built PAUSED: research, copy, a still and a video',
     vault: 'The control room, the memory vault (Obsidian) and HOME', c11: "What's next" },
   info: {
     c0: ['A Claude plan (Max recommended; Pro runs into its limits on creative rounds and builds)',
@@ -127,6 +137,13 @@ const EN = {
     'meta.leadscenter': 'Leads Center access for whoever answers leads', 'meta.domain': 'Domain verified',
     'meta.webhook': 'Lead webhook subscription (advanced)', 'meta.instagram': 'Instagram linked for ads (optional)',
     'fal.login': 'fal logged in (`/mcp` → `fal`), for paid pictures and clips',
+    'google.account': "The company's own Google Ads account (Expert mode, no first campaign)", 'google.billing': 'Billing on the Google Ads account',
+    'google.verification': 'Advertiser verification on Google Ads (when Google asks)',
+    'google.cloud': 'A Google Cloud project with the Google Ads API turned on',
+    'google.oauth': 'The OAuth consent screen published and a Desktop client; its id and secret moved into `.env` unseen',
+    'google.access': 'Google Ads API access level Explorer (Test reaches test accounts only)',
+    'google.login': 'Google login: the Owner clicked Allow; `google-ads.mjs check` green',
+    'google.conversion': 'A Google conversion action, and the Google tag requested for the site',
     'interview.a': 'Round (a): who runs this', 'interview.b': 'Round (b): the company',
     'interview.c': 'Round (c): product and funnels', 'interview.d': 'Round (d): audiences', 'interview.e': 'Round (e): brand',
     'interview.f': 'Round (f): claims and law', 'interview.g': 'Round (g): accounts and tracking',
@@ -159,6 +176,13 @@ const EN = {
     'meta.leadscenter': 'Business Suite → Leads Center → notifications', 'meta.domain': 'Business Settings → Brand safety → Domains',
     'meta.webhook': 'Only with a product team: Webhooks on the developer app',
     'meta.instagram': 'Business Settings → Accounts → Instagram accounts',
+    'google.account': '`ads.google.com` → New Google Ads account → switch to Expert mode → create the account without a campaign',
+    'google.billing': 'Google Ads → Admin → Billing → Settings', 'google.verification': 'Google Ads → Admin → Advertiser verification',
+    'google.cloud': '`console.cloud.google.com` → New project → APIs & Services → Library → Google Ads API → Enable',
+    'google.oauth': 'Google Auth Platform → Branding, Audience (External, Publish app), Data access (the adwords scope) → Clients → Create client (Desktop app)',
+    'google.access': 'Cloud Console → Google Ads API → Overview → Upgrade access level → Apply',
+    'google.login': 'In the harness: `node creatives/tools/google-ads.mjs login`, then sign in and click Allow',
+    'google.conversion': 'Google Ads → Goals → Conversions, or `google-ads.mjs conversions create`; the tag on the site is a request to whoever ships it',
   },
 };
 const HE = {
@@ -183,7 +207,7 @@ const HE = {
   parts: { A: 'חלק א, /connect: החשבונות והמפתחות (מעבר אחד; מסתיים כשכל השורות ירוקות)', B: 'חלק ב, /campaign: הקמפיין הראשון' },
   chapters: { c0: 'לפני שמתחילים', c1: 'התקנה', app: 'אפליקציית Claude למחשב', chrome: 'Claude in Chrome', c2: 'יסודות העסק ב-Meta',
     c3: 'ההתחברות ל-Meta', c4: 'פיקסל ומעקב', c5: 'אפליקציית מפתחים, System User וטוקן העלאה', c6: 'WhatsApp, טופסי לידים, דומיין',
-    c7: 'fal (אופציונלי)', keys: 'טבלת המפתחות', c8: 'הראיון של `/campaign`', c9: '`/health`', c10: 'קמפיין ראשון בנוי במצב PAUSED: מחקר, נוסחים, תמונה וסרטון',
+    c7: 'fal (אופציונלי)', google: 'Google Ads (רק כשמפרסמים בגוגל)', keys: 'טבלת המפתחות', c8: 'הראיון של `/campaign`', c9: '`/health`', c10: 'קמפיין ראשון בנוי במצב PAUSED: מחקר, נוסחים, תמונה וסרטון',
     vault: 'חדר הבקרה, כספת הזיכרון (Obsidian) ו-HOME', c11: 'מה הלאה' },
   info: {
     c0: ['מנוי Claude (מומלץ Max; ב-Pro נתקלים במגבלות השימוש בסבבי קריאייטיב ובבנייה)',
@@ -218,6 +242,13 @@ const HE = {
     'meta.leadscenter': 'גישה למרכז הלידים למי שעונה ללידים', 'meta.domain': 'הדומיין אומת',
     'meta.webhook': 'מינוי Webhook ללידים (מתקדם)', 'meta.instagram': 'Instagram מקושר למודעות (אופציונלי)',
     'fal.login': 'התחברות ל-fal דרך `/mcp`, לתמונות ולקליפים בתשלום',
+    'google.account': 'חשבון Google Ads של העסק (מצב מומחה, בלי קמפיין ראשון)', 'google.billing': 'חיוב בחשבון Google Ads',
+    'google.verification': 'אימות מפרסם ב-Google Ads (כשגוגל מבקשת)',
+    'google.cloud': 'פרויקט Google Cloud שבו ה-Google Ads API מופעל',
+    'google.oauth': 'מסך ההסכמה של OAuth פורסם ונוצר לקוח Desktop; המזהה והסוד שלו הועברו לקובץ `.env` בלי שאיש ראה אותם',
+    'google.access': 'רמת גישה Explorer ל-Google Ads API (רמת Test מגיעה רק לחשבונות בדיקה)',
+    'google.login': 'התחברות לגוגל: הבעלים לחצו Allow; `google-ads.mjs check` ירוק',
+    'google.conversion': 'פעולת המרה בגוגל, ובקשה להתקין את תג Google באתר',
     'interview.a': 'סבב (a): מי מפעיל את זה', 'interview.b': 'סבב (b): החברה', 'interview.c': 'סבב (c): המוצר והמשפכים',
     'interview.d': 'סבב (d): הקהלים', 'interview.e': 'סבב (e): המותג', 'interview.f': 'סבב (f): טענות פרסומיות והחוק',
     'interview.g': 'סבב (g): חשבונות ומעקב', 'interview.h': 'סבב (h): שגרות ואישור ההפעלה', 'interview.i': 'סבב (i): יעדים וכסף',
@@ -249,6 +280,13 @@ const HE = {
     'meta.leadscenter': 'Business Suite ← מרכז הלידים ← התראות', 'meta.domain': 'הגדרות העסק ← בטיחות המותג ← דומיינים',
     'meta.webhook': 'רק עם צוות מוצר: Webhooks באפליקציית המפתחים',
     'meta.instagram': 'הגדרות העסק ← חשבונות ← חשבונות Instagram',
+    'google.account': '`ads.google.com` ← חשבון Google Ads חדש ← מעבר למצב מומחה ← יצירת החשבון בלי קמפיין',
+    'google.billing': 'Google Ads ← Admin ← Billing ← Settings', 'google.verification': 'Google Ads ← Admin ← Advertiser verification',
+    'google.cloud': '`console.cloud.google.com` ← פרויקט חדש ← APIs & Services ← Library ← Google Ads API ← Enable',
+    'google.oauth': 'Google Auth Platform ← Branding, Audience (External, Publish app), Data access (ה-scope של adwords) ← Clients ← Create client (Desktop app)',
+    'google.access': 'Cloud Console ← Google Ads API ← Overview ← Upgrade access level ← Apply',
+    'google.login': 'בכלי: `node creatives/tools/google-ads.mjs login`, ואז התחברות ולחיצה על Allow',
+    'google.conversion': 'Google Ads ← Goals ← Conversions, או `google-ads.mjs conversions create`; התג באתר הוא בקשה למי שמפרסם את האתר',
   },
 };
 const STRINGS = { en: EN, he: HE };
@@ -350,6 +388,7 @@ function facts(root, env = process.env) {   // what the files say; .env is check
     built: Array.isArray(campaigns) && campaigns.some(c => c && /^(PAUSED|ACTIVE)$/i.test(String(c.status))),
     company: line('config/company.md', 'Short name').split(/;| \(/)[0].trim().slice(0, 60) || null,
     chat: line('config/operator.md', 'Chat language'),
+    platforms: (p => (!p ? { meta: true, google: true } : { meta: /meta|facebook|instagram|מטא|פייסבוק/i.test(p), google: /google|גוגל/i.test(p) }))(line('config/operator.md', 'Platforms')),
     obsidian: obsidianApp(env), desktop: desktopApp(env), ...(cfg => ({ vault: vaultListed(root, cfg), cli: !!cfg && cfg.cli === true }))(obsidianConfig(env)),
     hooks: (read('.claude/settings.json') || '').includes('session-start.mjs'),
     business: (b => b !== null && !b.includes('<fill at /setup>'))(read('memory/business/company.md')),
@@ -390,10 +429,11 @@ function buildModel(root, progress) {   // the files win, then the mark, then th
   let done = 0, tracked = 0, next = null, a = 0, b = 1;
   const fallback = key => (key === 'fal.login' && !f.servers.includes('fal') ? 'na' : 'todo');
   const chapters = CHAPTERS.map(c => {
-    const n = c.part === 'B' ? 'B' + (b++) : 'A' + (a++);   // A0 … A10, B1 … B5: the video's chapter labels
+    const n = c.label || (c.part === 'B' ? 'B' + (b++) : 'A' + (a++));   // A0 … A10, B1 … B5: the video's chapter labels; G for Google
     if (c.info) return { id: c.id, n, part: c.part, info: true };
     const items = [];
     for (const key of c.items) {
+      if (PLATFORM(key) && !f.platforms[PLATFORM(key)]) continue;   // a platform this company does not use
       const status = fileAnswer(key, f) || marks[key] || fallback(key);
       const answered = OPTIONAL.includes(key) && (real(f.step(CONSOLE[key])?.status) || real(f.item(CONSOLE[key])?.status));
       if (OPTIONAL.includes(key) && (status === 'na' || (!answered && !marks[key]))) continue;
@@ -419,10 +459,10 @@ function dataJs(model) {   // dashboard/setup-data.js: this folder's statuses (g
 }
 function defaultJs() {   // dashboard/setup-default.js: the chapters, items and strings, shipped (the page's first paint)
   let a = 0, b = 1;
-  const chapters = CHAPTERS.map(c => ({ id: c.id, n: c.part === 'B' ? 'B' + (b++) : 'A' + (a++), part: c.part, ...(c.info ? { info: true } : { items: c.items }) }));
+  const chapters = CHAPTERS.map(c => ({ id: c.id, n: c.label || (c.part === 'B' ? 'B' + (b++) : 'A' + (a++)), part: c.part, ...(c.info ? { info: true } : { items: c.items }) }));
   return '// dashboard/setup-default.js: written by `node dashboard/setup-page.mjs --default` from its tables; shipped with the\n' +
     '// harness so the setup wizard (dashboard/setup.html) renders before Node.js is installed. Never hand-edit.\n' +
-    'window.SETUP_DEFAULT = ' + jsJson({ chapters, optional: OPTIONAL, hinted: HINTED_TODO.source, glyphs: GLYPHS, strings: STRINGS }) + ';\n';
+    'window.SETUP_DEFAULT = ' + jsJson({ chapters, optional: OPTIONAL.concat(GOOGLE_KEYS), hinted: HINTED_TODO.source, glyphs: GLYPHS, strings: STRINGS }) + ';\n';
 }
 
 function writeAtomic(file, text) {   // temp file + rename, so a reload never meets a half-written page

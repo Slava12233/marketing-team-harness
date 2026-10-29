@@ -86,6 +86,10 @@ Everything else is `setup-console` as written: how every step runs (navigate, sa
 - fal is paid per run on the company's own account and optional: without it the still comes from the renderer and the video from HyperFrames (`creative-production`). The Owner may skip it: `--mark fal.login=na`.
 - Otherwise: `navigate` to `https://fal.ai/` and stop at sign-up: the e-mail (not the company's main inbox), the password or the single sign-on and the card are hard stops; a small credit is the Owner's choice and nothing is charged by the harness. Then `/mcp` → `fal` → log in (the consent screen in the browser; the terminal fallback is `claude mcp login fal`), a new session (append the session-note line and the mark first), and in it `mcp__fal__check_account_status`: the balance is read (a number, fine in chat); `--mark fal.login=done`.
 
+### G. Google Ads (marks `google.*`; only when Google is a platform in `config/operator.md`)
+
+`/connect` step 3b runs it: the company's own Google Ads account, billing, the Cloud project with the Google Ads API, the consent screen published and a Desktop client (id and secret moved into `.env` by `env-set.mjs`, unseen), the Explorer application, `google-ads.mjs login` (the Owner clicks Allow), the account picked, the conversion action. The step bodies and pitfalls are `docs/google-setup-guide.md`; this page's hard-stop list applies as written. `n/a` for every item when Google is not a platform.
+
 ### A10. The keys table  (mark `keys.table`)
 
 - Run `/health --keys` (the `health` skill, keys view): the desktop app (26), Chrome and the extension (27), the Meta MCP (1), the login and the account (2), the pixel (5), the upload token (13), the Graph token (20), the credential map (25), fal (8), the hooks (18), Obsidian (19). Every row green, or `n/a` by the Owner's word (fal skipped; no website): `node dashboard/setup-page.mjs --mark keys.table=done`. A yellow or red row names the click; the pass is not over until the table is green.

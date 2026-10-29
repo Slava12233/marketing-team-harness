@@ -91,3 +91,6 @@ Columns follow `config/reporting.md` "Compare to": previous period, plan targets
 - Edit a report the Owner has read; write a new dated one instead.
 - Explain the harness, the vault or the tools to the client; the report talks about the ads, the money and the results.
 - Mix attribution windows, sum results across funnels that count different things, or turn a one-day spike into a verdict (the decision rules in `meta-performance-report` apply).
+
+## Google Ads (when Google is a platform in `config/operator.md`)
+The baseline table gets a Google row (or one per Google campaign) from `google-ads.mjs report`, in the same columns, and a "both platforms" total against the caps; the three-sentence answer names which platform drove the results. Search terms are summarised as themes, never as a raw list.

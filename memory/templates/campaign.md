@@ -6,6 +6,7 @@ status: paused
 maintained_by: harness
 categories: [campaigns]
 summary: 
+platform: meta
 ids: []
 funnel: 
 plan: 
@@ -16,6 +17,7 @@ end:
 as_of: 
 source: ads_get_ad_entities
 ---
+<!-- platform: meta or google. For Google, ids are resource names (customers/<id>/campaigns/<id>) and source is google-ads.mjs report or search. -->
 
 # {{title}}
 

@@ -60,3 +60,6 @@ Then: one paragraph diagnosis, one paragraph recommendation, the list of actions
 - Sum conversions across attribution windows, or add Meta pixel events to app counts (they measure different things).
 - Treat a single-day cost spike as a verdict.
 - Put PII in the report: counts by `ref` and `source` only.
+
+## Google Ads (when Google is a platform in `config/operator.md`)
+Google gets its own table with the same baseline columns, from `timeout 120 node creatives/tools/google-ads.mjs report --level campaign --range LAST_7_DAYS --out reports/data/<date>-google-campaign.csv` and the previous equal period (`--since` / `--until`): cost, conversions, cost per conversion, CTR, average CPC, impressions, clicks, in `google_currency`. Then one line for both platforms together against the caps, and each against its share. Diagnosis order for Search: impressions (budget, bids, keyword match, approvals) → CTR (the headlines against the searches; the search terms report) → conversion rate (the page, the tag firing) → cost per conversion. Conversions arrive late and on the click date: say so when last week's numbers are young.

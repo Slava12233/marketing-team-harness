@@ -42,3 +42,6 @@ Read first: `config/claims.md` (allowed claims, forbidden words, lines needing c
 
 ## Output
 For each asset or string: PASS / FIX / HOLD with the exact words or element to change, the replacement (for FIX), the owner (for HOLD: the Owner or counsel) and the rule it touches (Meta policy area, the `config/claims.md` note, the company rule). One summary line: **"Safe to build: yes/no"**.
+
+## Google Ads (when the copy or the page is for Google)
+Also check Google Ads policies for every string and destination: editorial (no ALL CAPS words, no repeated punctuation or "!!!", no gimmicky symbols, at most one exclamation mark in a description and none in a headline, no phone numbers in the text), destination (the final URL works, matches the ad's language and promise, no sign-in screen, the same domain as the display URL), trademarks (competitor names in copy only with a reason in the plan), restricted and sensitive categories for the market (financial services verification, health, gambling, alcohol, political), and the EU political advertising declaration. Counted lengths are Google's (the learning note on responsive search ads); a string over a limit is FIX.

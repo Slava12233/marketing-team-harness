@@ -24,6 +24,23 @@ Ids are public identifiers, not secrets. Secrets (tokens, API keys) never go her
 | `min_daily_budget` | {{MIN_DAILY_BUDGET}} |
 <!-- setup: meta_ad_account_id = digits only, no act_ prefix (the same value goes in .env as META_AD_ACCOUNT_ID); page duplicates = other Pages the login sees that must never be used; instagram = "not linked for ads" is a valid value; pixel_id = "none (no website)" is a valid value when every funnel is click-to-WhatsApp or an instant form; lead_form_ids = id and name per form, from Business Suite's forms library; lead_delivery = how instant-form leads reach the person who answers them: Leads Center (default) / email notifications / CSV download / CRM: <name> / webhook (advanced; URL below), or "n/a (no instant forms)"; catalog_id, product_feed_ids, product_set_ids = "none" unless the company runs catalog ads; whatsapp_number_names = a label per number (never the number itself in a shared file if the Owner prefers); currency = the account currency (ISO code); min_daily_budget = as the account reports it, in the minor unit and the major unit -->
 
+## Google Ads
+
+Only when Google is one of the platforms in `config/operator.md`; otherwise every value below is "n/a (Meta only)". Secrets (the OAuth client secret, the refresh token) never go here: they are names in `.env`, written by `env-set.mjs` and `google-ads.mjs login`.
+
+| Field | Value |
+|---|---|
+| `google_ads_customer_id` | {{GOOGLE_ADS_CUSTOMER_ID}} |
+| `google_ads_manager_id` | {{GOOGLE_ADS_MANAGER_ID}} |
+| `google_cloud_project_id` | {{GOOGLE_CLOUD_PROJECT_ID}} |
+| `google_api_access_level` | {{GOOGLE_API_ACCESS_LEVEL}} |
+| `google_currency` | {{GOOGLE_CURRENCY}} |
+| `google_time_zone` | {{GOOGLE_TIME_ZONE}} |
+| `google_conversion_actions` | {{GOOGLE_CONVERSION_ACTIONS}} |
+| `google_merchant_center_id` | {{GOOGLE_MERCHANT_CENTER_ID}} |
+| `google_login_holder` | {{GOOGLE_LOGIN_HOLDER}} |
+<!-- setup: google_ads_customer_id = 10 digits as Google Ads shows it (123-456-7890; the same value goes in .env as GOOGLE_ADS_CUSTOMER_ID), the company's own account, never a manager; google_ads_manager_id = the manager account (MCC) the login reaches it through, or "none"; google_cloud_project_id = the company's own Cloud project that owns the OAuth client; google_api_access_level = Test / Explorer / Basic / Standard, as the Cloud Console's Google Ads API overview shows it (Test reaches test accounts only); google_currency and google_time_zone = from google-ads.mjs check; google_conversion_actions = id and name per conversion action, or "none yet"; google_merchant_center_id = "none" unless the company runs Performance Max for a shop; google_login_holder = the Google user who clicked Allow in google-ads.mjs login -->
+
 ## Analytics and attribution
 
 | Field | Value |
@@ -52,6 +69,7 @@ The MCP servers are declared in the repository's `.mcp.json` (project scope): op
 |---|---|---|
 | Meta Ads MCP | `meta-ads` | {{META_LOGIN_HOLDER}} |
 | fal MCP (optional) | `fal` | {{FAL_LOGIN_HOLDER}} |
+| Google Ads tool (only with Google) | n/a (`creatives/tools/google-ads.mjs`, the login in `.env`) | {{GOOGLE_LOGIN_HOLDER}} |
 | Vercel CLI (optional) | n/a | {{VERCEL_LOGIN_HOLDER}} |
 | HyperFrames plugin (optional, video) | `hyperframes` | {{HYPERFRAMES_PLUGIN}} |
 | System User for uploads | {{SYSTEM_USER_NAME}} | {{SYSTEM_USER_OWNER}} |
@@ -75,4 +93,12 @@ The MCP servers are declared in the repository's `.mcp.json` (project scope): op
 | Domain verified | {{STATUS}} | {{DATE}} | the website's domain in Business Settings; n/a with no website |
 | Instagram linked for ads (optional) | {{STATUS}} | {{DATE}} | |
 | Lead webhook subscription (advanced, only with a product team) | {{STATUS}} | {{DATE}} | developer app with Webhooks (`leadgen`) + a Page token, every running form id registered; n/a while `lead_webhook_url` is none |
+| Google Ads account (only with Google) | {{STATUS}} | {{DATE}} | the company's own account, made in Expert mode without a first campaign; n/a when the platforms in `config/operator.md` leave Google out |
+| Billing on the Google Ads account | {{STATUS}} | {{DATE}} | required before any Google ad can run |
+| Advertiser verification on Google Ads | {{STATUS}} | {{DATE}} | Google asks for it within days of the first ad; the identity documents are the Owner's |
+| Cloud project with the Google Ads API enabled | {{STATUS}} | {{DATE}} | the company's own project; `google_cloud_project_id` above |
+| OAuth consent screen and Desktop client | {{STATUS}} | {{DATE}} | External, published (in production), the adwords scope; the client id and secret moved into `.env` by `env-set.mjs` |
+| Google Ads API access level Explorer | {{STATUS}} | {{DATE}} | applied for in the Cloud Console; Test reaches test accounts only |
+| Google login (refresh token in `.env`) | {{STATUS}} | {{DATE}} | `google-ads.mjs login`, the Owner clicks Allow; checked with `google-ads.mjs check` |
+| Google conversion action and Google tag | {{STATUS}} | {{DATE}} | `google-ads.mjs conversions create`; the tag on the site is a request to the product team (or the Owner) |
 <!-- setup: status is done / open / n/a / unknown; every row also goes into checklist.md (status open, done or n/a) with owner "Owner" unless named -->

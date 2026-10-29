@@ -33,3 +33,6 @@ Project rules (`CLAUDE.md`) and the vault contract (`memory/README.md`, "who wri
 - One writer: the main session writes the canonical notes; a delegated `harness-librarian` writes only `memory/inbox/proposals.md` and the `memory/archive/` moves the main session ordered.
 - Relative dates become absolute; times carry the timezone from `config/operator.md` when they matter.
 - Never write a number into a note, the checklist or the board that a live read did not give; the one exception is the board's `money.caps`, the Owner's numbers from `config/goals.md`.
+
+## Google Ads (when Google is a platform in `config/operator.md`)
+The one live read of changed objects includes Google: `timeout 120 node creatives/tools/google-ads.mjs report --level campaign --range TODAY --json` for every campaign the session touched; the ledger `creatives/uploads/<date>-google-ads.json` is checked against the plan and the notes (every resource name recorded); every `enable` and budget raise of the session has its row in `memory/money/go-log.md` (the tool writes it; a missing row is written by hand from the ledger and flagged).

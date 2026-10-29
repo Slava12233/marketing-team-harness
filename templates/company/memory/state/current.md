@@ -22,8 +22,8 @@ Template: `/setup` fills this note from its live Meta check and `config/accounts
 
 ## Campaigns
 
-| Campaign | Id | Status | Daily budget | Cap | Start | End | Ad sets | Ads | Last verified |
-|---|---|---|---|---|---|---|---|---|---|
+| Campaign | Platform | Id | Status | Daily budget | Cap | Start | End | Ad sets | Ads | Last verified |
+|---|---|---|---|---|---|---|---|---|---|---|
 
 `<fill at /setup>`: one row per campaign once built (a wikilink to its campaign note, the id in backticks).
 

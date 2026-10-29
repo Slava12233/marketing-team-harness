@@ -99,3 +99,6 @@ Opportunity score: N/100; top recommendation: <name>, +N points, <url>   (or "Op
 
 ## What this command is not
 - Not the weekly creative round (`next-round`), not the session closer (`sync`), not a build. If the morning read calls for a build or a change, it ends as a labelled recommendation.
+
+## Google Ads (when Google is a platform in `config/operator.md`)
+After the Meta read, the same for Google: `timeout 120 node creatives/tools/google-ads.mjs report --level campaign --range YESTERDAY --json` and `--level ad --range TODAY` (statuses and approvals against the campaign notes with `platform: google`; a change by another hand is a finding), `--level search_term --range LAST_7_DAYS` once a week for new negatives. Spend from both platforms is added against the caps of `config/goals.md`, each platform against its share; 80 % of either is flagged. A breakage (a disapproval, an ENABLED campaign memory says is PAUSED) is reported with the click list or the `google-ads.mjs pause` line, and the Owner decides. Google has no anomaly, peer or benchmark tools here: those lines read "no data" for Google.

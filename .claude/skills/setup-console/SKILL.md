@@ -33,6 +33,8 @@ The same steps run in **Owner mode** when the Owner is alone at their own comput
 
 Start the progress page beside the browser: `node dashboard/setup-page.mjs --open`.
 
+**Google Ads, when it is a platform** (`config/operator.md`): the same driven mode and this hard-stop list cover the Google consoles (Google Ads, the Cloud Console, the Google Auth Platform) in the order of `docs/google-setup-guide.md`, recorded in the Google rows of the console-steps table and the `google.*` marks; `/connect` step 3b has the step bodies.
+
 ## The hard-stop list (never done by the harness; always the human)
 
 | Hard stop | What the harness does instead |

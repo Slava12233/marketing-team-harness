@@ -2,7 +2,7 @@
 
 # Goals and money
 
-The money limits the harness works within. Amounts are in the account currency (`currency` in `config/accounts.md`). `/morning` and `/sync` copy the caps below into `dashboard/state.json` (`money.caps`) and flag spend above 80 % of a cap; the first flight plan proposes budgets inside the band and below the caps, each labelled "Needs the Owner's go".
+The money limits the harness works within, for all ads together on every platform (Meta and Google). Amounts are in the account currency (`currency` in `config/accounts.md`; a Google Ads account in another currency is converted at the day's rate and the rate is named). `/morning` and `/sync` copy the caps below into `dashboard/state.json` (`money.caps`) and flag spend above 80 % of a cap; the first flight plan proposes budgets inside the band and below the caps, each labelled "Needs the Owner's go".
 
 **Monthly budget band:** {{MONTHLY_BUDGET_BAND}}
 <!-- setup: a from–to band per calendar month in the account currency, e.g. "600–1,500 a month"; the wizard offers three bands built from Meta's minimum daily budget (300–600, 600–1,500 and 1,500–3,000 times it) and recommends the middle one -->
@@ -21,11 +21,19 @@ The money limits the harness works within. Amounts are in the account currency (
 
 | Cap | Amount | Set by |
 |---|---|---|
-| Daily (all campaigns together) | {{DAILY_CAP}} | {{CAP_SET_BY}} |
-| Weekly (all campaigns together) | {{WEEKLY_CAP}} | {{CAP_SET_BY}} |
-| Monthly (all campaigns together, calendar month) | {{MONTHLY_CAP}} | {{CAP_SET_BY}} |
+| Daily (all ads together, every platform) | {{DAILY_CAP}} | {{CAP_SET_BY}} |
+| Weekly (all ads together, every platform) | {{WEEKLY_CAP}} | {{CAP_SET_BY}} |
+| Monthly (all ads together, every platform, calendar month) | {{MONTHLY_CAP}} | {{CAP_SET_BY}} |
 | Per campaign (its lifetime spending limit) | {{CAMPAIGN_CAP}} | {{CAP_SET_BY}} |
 <!-- setup: amounts in the account currency; recommended monthly = the top of the band, daily = 1/25 of it, weekly = 7× daily, per campaign = the monthly cap divided by the number of funnels, rounded down; Set by = the Owner's name and the date, or "proposed by <Operator>; Owner to confirm"; Meta may spend more than a daily budget on one day while keeping the week within 7× it, so the weekly cap is the firm one -->
+
+## Platform share
+
+| Platform | Share of each cap |
+|---|---|
+| Meta | {{META_SHARE}} |
+| Google | {{GOOGLE_SHARE}} |
+<!-- setup: the part of every cap above each platform may use, in percent, adding up to 100; one platform only = "100 %" for it and "0 % (not used)" for the other; recommended for a first month on both = 60 % / 40 % toward the platform the first funnel runs on. Meta and Google spend are added together against the caps above; /morning flags 80 % of a cap, of a platform's share, or both. Google may spend up to twice a campaign's daily budget on one day (the month stays within 30.4 times it), so google-ads.mjs refuses a Google daily budget above half the Google share of the daily cap -->
 
 **Budget week:** {{BUDGET_WEEK}}
 <!-- setup: optional; /setup writes "Sunday–Saturday (Meta's budget week)" without asking; the weekly cap and the /health spend check use this week -->

@@ -68,3 +68,6 @@ Name every claim's source (page copy, plan, `config/claims.md`, the Owner). Flag
 
 ## Iterating on data
 Read the ad-level report first (`meta-performance-report`). Keep the structure and angle of winners; change one variable (hook, headline or CTA wording) per variation. Retire angles with CTR under half the account average after 1,000+ impressions. A changed string means a new ad (creatives are immutable on Meta), so the copy file records which ad each new string replaces. Log each round in the plan file.
+
+## Google Search copy (when the plan's platform is Google)
+Responsive search ads: 8 to 15 distinct headlines of at most 30 characters and 2 to 4 descriptions of at most 90 (full-width characters count twice), written so any three headlines read well together; at least three headlines carry the searched words, one the brand, one the call to action of the destination page, one a proof from `config/claims.md`; display paths of 15; sitelinks of 25 (descriptions 35) and callouts of 25. No exclamation mark in headlines, no ALL CAPS. Pin only a line `config/claims.md` requires. The copy table in the plan gives each string its length.

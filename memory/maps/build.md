@@ -1,11 +1,11 @@
 ---
 type: map
 created: 2026-10-26
-updated: 2026-10-27
+updated: 2026-10-30
 status: active
 maintained_by: harness
 categories: [maps, build]
-summary: "The Build lane map - media-buyer and the main session read every meta-platform learning listed here before any create, update or activate."
+summary: "The Build lane map - media-buyer and the main session read every meta-platform (and, for Google, google-platform) learning listed here before any create, update, activate or enable."
 ---
 
 # Build lane (media-buyer, the main session on a build)
@@ -72,6 +72,19 @@ Every note under `learnings/meta-platform/`. The template ships these; add each 
 - [[2026-10-27-code-200-api-access-blocked-is-the-developer-account]]
 - [[2026-10-27-page-must-be-assigned-to-the-system-user]]
 
+## Every Google platform behaviour (read all before a Google build; the notes win over any summary)
+Every note under `learnings/google-platform/`, read by `google-ads-build` before any Google create, update or enable. Add each new Google note here the day it is written.
+- [[2026-10-30-developer-tokens-sunset-access-follows-the-cloud-project]]
+- [[2026-10-30-new-project-gets-test-access-explorer-is-applied-for]]
+- [[2026-10-30-every-campaign-declares-eu-political-advertising]]
+- [[2026-10-30-daily-budget-can-spend-twice-on-one-day]]
+- [[2026-10-30-responsive-search-ad-limits]]
+- [[2026-10-30-validate-only-is-the-dry-run]]
+- [[2026-10-30-campaign-start-and-end-are-date-times]]
+- [[2026-10-30-a-paused-campaign-serves-nothing]]
+- [[2026-10-30-oauth-client-in-testing-expires-logins-after-7-days]]
+- [[2026-10-30-official-google-ads-mcp-is-read-only]]
+
 ## Learnings that affect a build
 - every note under `learnings/tooling/` and `learnings/money/` (grep `memory/INDEX.md` for `learnings/tooling` and `learnings/money`)
 
@@ -79,6 +92,6 @@ Every note under `learnings/meta-platform/`. The template ships these; add each 
 - the decisions in `memory/decisions/` (the decisions base: [[decisions.base]]); a go to spend is valid only in the chat message that contains it
 
 ## Procedure
-- skill `meta-campaign-build` · `docs/meta-setup-guide.md` (the Owner's console steps) · `docs/meta-platform-notes.md` (the same platform knowledge as one page)
+- skill `meta-campaign-build` (Meta) and `google-ads-build` (Google) · `docs/meta-setup-guide.md` and `docs/google-setup-guide.md` (the Owner's console steps) · `docs/meta-platform-notes.md` (the same platform knowledge as one page)
 - **Custom audiences and lookalikes:** `meta-campaign-build` "Custom audiences" (the `rule` JSON string, the templates, lookalikes, readiness, customer lists only on the Owner's ruling, deletes the Owner's), built only from the ladder plan `plans/<date>-audience-ladder.md` that `audience-research` "The retargeting ladder, built" writes (rungs, naming, minimum source size, exclusions, the special-ad-category table, consent per rung, the weekly check)
 - **Catalog and Advantage+ shopping:** skill `catalog-ads` (intake, order of work, compliance, the weekly health routine) → `meta-campaign-build` "Catalog and Advantage+ shopping campaigns" (catalog → feed → diagnostics clean → event source → product sets → `OUTCOME_SALES` PAUSED; `template_data` field names from `ads_get_field_context`; the weekly catalog health check)

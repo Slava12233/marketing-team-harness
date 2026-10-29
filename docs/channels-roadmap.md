@@ -1,5 +1,7 @@
 # Channels roadmap: Meta only, for now
 
+> **Superseded for Google Ads (2026-10-30, the maintainer's ruling).** Google Ads is added now, ahead of the conditions below, because a client installation needs it: the harness's own Node tool `creatives/tools/google-ads.mjs` (the shape this page planned), Search campaigns built PAUSED first, Performance Max and Demand Gen next; the client owns the Google Cloud project and the login; the caps are shared with a per-platform share; `/connect` asks which platforms a company uses and `/campaign` which campaign to build. The guard is the tool's own (the `.env` account must equal `config/accounts.md`; enable and budget only on resources this folder created). GA4 and the other channels below stay as decided.
+
 **Decision (2026-10-27).** The harness runs **Meta Ads only** (Facebook, Instagram, WhatsApp, Messenger through Meta's official Ads MCP). No other ad or analytics channel is added to the template until the conditions below hold. This page records why, the order in which channels would come, and what each one would cost the template. It is a decision record for the maintainer, not a buyer feature list.
 
 ## Why one channel

@@ -11,6 +11,9 @@
 **Chat language:** {{CHAT_LANGUAGE}}
 <!-- setup: the language every chat answer, widget and summary is written in (and whether it is RTL); files stay English; questions through the question tool are asked in English -->
 
+**Platforms:** {{PLATFORMS}}
+<!-- connect: asked right after the language: "Meta", "Google" or "Meta and Google"; only those platforms' chapters run in /connect and only their campaign types are offered in /campaign -->
+
 **Timezone:** {{TIMEZONE}}
 <!-- setup: an IANA name, e.g. Europe/Paris; all routine times and schedules use it -->
 
