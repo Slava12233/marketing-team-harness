@@ -1,0 +1,21 @@
+{
+  "kind": "mutate",
+  "description": "Set the target cost per conversion of a campaign that maximizes conversions (in micros: 50 → 50000000)",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "TARGET_CPA_MICROS": "the target × 1,000,000"
+  },
+  "operations": [
+    {
+      "campaignOperation": {
+        "update": {
+          "resourceName": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "maximizeConversions": {
+            "targetCpaMicros": "${TARGET_CPA_MICROS}"
+          }
+        },
+        "updateMask": "maximize_conversions.target_cpa_micros"
+      }
+    }
+  ]
+}

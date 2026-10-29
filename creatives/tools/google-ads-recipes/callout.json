@@ -1,0 +1,29 @@
+{
+  "kind": "mutate",
+  "description": "Add a callout to an existing campaign",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "TEXT": "at most 25 characters"
+  },
+  "operations": [
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-1",
+          "calloutAsset": {
+            "calloutText": "${TEXT}"
+          }
+        }
+      }
+    },
+    {
+      "campaignAssetOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "asset": "customers/${CUSTOMER}/assets/-1",
+          "fieldType": "CALLOUT"
+        }
+      }
+    }
+  ]
+}

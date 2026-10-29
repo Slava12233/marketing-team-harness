@@ -1,0 +1,33 @@
+{
+  "kind": "mutate",
+  "description": "A new responsive search ad in an existing ad group (PAUSED unless STATUS says ENABLED and the Owner gave the go)",
+  "vars": {
+    "AD_GROUP_ID": "the ad group id",
+    "HEADLINES": "a JSON list of {\"text\": \"...\"} (3 to 15, at most 30 characters each)",
+    "DESCRIPTIONS": "a JSON list of {\"text\": \"...\"} (2 to 4, at most 90 each)",
+    "FINAL_URL": "a destination page of config/product.md",
+    "STATUS": "PAUSED or ENABLED"
+  },
+  "defaults": {
+    "STATUS": "PAUSED"
+  },
+  "operations": [
+    {
+      "adGroupAdOperation": {
+        "create": {
+          "adGroup": "customers/${CUSTOMER}/adGroups/${AD_GROUP_ID}",
+          "status": "${STATUS}",
+          "ad": {
+            "finalUrls": [
+              "${FINAL_URL}"
+            ],
+            "responsiveSearchAd": {
+              "headlines": "${HEADLINES}",
+              "descriptions": "${DESCRIPTIONS}"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

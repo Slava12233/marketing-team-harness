@@ -1,0 +1,20 @@
+{
+  "kind": "mutate",
+  "description": "Bid more or less on one device type (1.2 = +20 %, 0.5 = -50 %, 0 = never on that device)",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "DEVICE": "30000 computers, 30001 mobile phones, 30002 tablets",
+    "MODIFIER": "the bid modifier, for example 1.2"
+  },
+  "operations": [
+    {
+      "campaignCriterionOperation": {
+        "update": {
+          "resourceName": "customers/${CUSTOMER}/campaignCriteria/${CAMPAIGN_ID}~${DEVICE}",
+          "bidModifier": "${MODIFIER}"
+        },
+        "updateMask": "bid_modifier"
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 ---
 name: google-ads-build
-description: "Build or change the company's Google Ads campaigns through creatives/tools/google-ads.mjs on the Google Ads API: Search campaigns built PAUSED from a spec file (budget, bidding, places, languages, ad groups, keywords and negatives, responsive search ads, sitelinks and callouts), checked locally and by Google (validateOnly) before the atomic create, read back, and recorded; pausing; the go-gated enable and budget steps with their go-log row; conversion actions and the Google tag request; the reads for reports. Performance Max and Demand Gen are the next release (planned here, built in the Google Ads interface by the Owner meanwhile). Use when a plan's platform is Google, when asked to create, edit, pause or turn on a Google campaign, or for Google numbers."
+description: "Build or change the company's Google Ads campaigns through creatives/tools/google-ads.mjs on the Google Ads API, the whole API reachable (recipes for the common jobs, a Performance Max recipe, any mutate operation, any service method, new recipes as JSON files) under the same money guards: Search campaigns built PAUSED from a spec file (budget, bidding, places, languages, ad groups, keywords and negatives, responsive search ads, sitelinks and callouts), checked locally and by Google (validateOnly) before the atomic create, read back, and recorded; pausing; the go-gated enable and budget steps with their go-log row; conversion actions and the Google tag request; the reads for reports. Performance Max through its recipe and Demand Gen through mutate (validated first; not yet run on a live account). Use when a plan's platform is Google, when asked to create, edit, pause or turn on a Google campaign, or for Google numbers."
 ---
 
 # Google Ads build
@@ -90,5 +90,26 @@ The spend statement (rule 1) → the Owner's go in the same message → `timeout
 - The search terms report hides low-volume terms (privacy thresholds): a short list is not the whole traffic.
 - Money in reports is converted from micros by the tool; the account currency is `google_currency`.
 
+## Everything else: the full API (mutate, service, recipes)
+Anything the Google Ads API can do is reachable, with the same money rules:
+- **`recipe list` / `recipe show <name>` / `recipe run <name> --set NAME=value …`**: the ready-made specs in `creatives/tools/google-ads-recipes/`. They cover:
+  - keywords: add, pause, a negative, a shared negative list;
+  - a new ad group or responsive search ad in an existing campaign;
+  - places: add, exclude, a radius;
+  - an ad schedule and a device bid adjustment;
+  - the target CPA;
+  - call, structured snippet, sitelink and callout assets;
+  - a **Performance Max** campaign (PAUSED, the minimum asset set, images with `--set NAME=@file`);
+  - keyword ideas (needs Basic access) and an offline conversion upload.
+- **`mutate --spec <file.json>`**: any list of `googleAds:mutate` operations, so every resource of the API. That covers Demand Gen, Display, Video, Shopping, audiences and customer lists, labels, experiments, conversion value rules, bid strategies, shared budgets and any field of any campaign. Write the operations from Google's reference (developers.google.com/google-ads/api/reference/rpc, the resource's page: camelCase JSON, temporary negative ids to link a batch), then `--dry-run`, then `--validate`, then the run.
+- **`service --path customers/{customer}:<method> [--body <file.json>]`**: any other method (recommendations, reach and keyword forecasts, conversion uploads, experiments). Reads and forecasts (`:search`, `:generate…`, `:suggest`, `:list…`, `:get…`) run freely; anything else needs `--go`.
+- **A new recipe** is a JSON file in that folder (format in its `README.md`), no code. When a job repeats, save it as a recipe; mark it "not yet run on a live account" in its `notes` until it has.
+- **The guards hold for all three**, in the tool:
+  - the .env account only;
+  - an existing resource must be known to this folder (created here, or named in a note or the plan; read it and record it first);
+  - every campaign is created PAUSED and declared for EU political advertising;
+  - these need the Owner's words in `--go` and get a go-log row: an `ENABLED` status, a removal, an end-date change, a budget raise (at most +20 % and half the Google share), a new ad group, ad or asset group ENABLED in a live campaign, and a service write;
+  - Google's `validateOnly` runs before every mutate.
+
 ## Performance Max and Demand Gen (the next release)
-Planned in the same plan file today (asset groups: 3–15 headlines of 30, long headlines of 90, descriptions, images in 1.91:1, 1:1 and 4:5, logos, a YouTube video or none; audience signals; a Merchant Center feed for a shop), compliance-checked and costed. Until `google-ads.mjs build` takes `type: PERFORMANCE_MAX` and `DEMAND_GEN`, the Owner builds them PAUSED in the Google Ads interface from the plan, and the harness reads, reports and pauses them like any other campaign (record the resource names from `report --level campaign`).
+Planned in the same plan file (asset groups: 3–15 headlines of 30, long headlines of 90, descriptions, images in 1.91:1, 1:1 and 4:5, logos, a YouTube video or none; audience signals; a Merchant Center feed for a shop), compliance-checked and costed. **Performance Max** is built today with the recipe `performance-max-campaign` (then more assets and audience signals with `mutate`), `--validate` first: it has not run on a live account yet. **Demand Gen** goes through `mutate` from Google's reference. The named `build --spec` subcommand stays Search only. If a batch keeps failing validation, the Owner builds it PAUSED in the Google Ads interface from the plan, and the harness reads, reports and pauses it like any other campaign (record the resource names from `report --level campaign`).

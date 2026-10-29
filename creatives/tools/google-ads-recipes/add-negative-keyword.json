@@ -1,0 +1,26 @@
+{
+  "kind": "mutate",
+  "description": "Add one negative keyword to an existing campaign",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id (digits)",
+    "TEXT": "the word or phrase to exclude",
+    "MATCH": "EXACT, PHRASE or BROAD"
+  },
+  "defaults": {
+    "MATCH": "BROAD"
+  },
+  "operations": [
+    {
+      "campaignCriterionOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "negative": true,
+          "keyword": {
+            "text": "${TEXT}",
+            "matchType": "${MATCH}"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,276 @@
+{
+  "kind": "mutate",
+  "description": "A Performance Max campaign, PAUSED, with its budget, place, language and one asset group holding the minimum assets (3 headlines, a long headline, 2 descriptions, the business name, a logo, a landscape and a square image); add more assets later with mutate",
+  "notes": "Images with --set NAME=@file (base64): logo 1:1 at least 128 px, landscape 1.91:1 at least 600×314, square 1:1 at least 300×300. Needs a conversion action. Not yet run on a live account: run with --validate first and read Google's answer.",
+  "vars": {
+    "CAMPAIGN_NAME": "the campaign name",
+    "DAILY_BUDGET_MICROS": "the daily budget × 1,000,000",
+    "GEO_ID": "the place id from geo-search",
+    "LANGUAGE_ID": "the language id from language-ids",
+    "FINAL_URL": "a destination page of config/product.md",
+    "FINAL_URL_SUFFIX": "utm_source=google&utm_medium=pmax&…&ref=…",
+    "HEADLINE_1": "at most 30",
+    "HEADLINE_2": "at most 30",
+    "HEADLINE_3": "at most 30",
+    "LONG_HEADLINE": "at most 90",
+    "DESCRIPTION_1": "at most 60 for the short one",
+    "DESCRIPTION_2": "at most 90",
+    "BUSINESS_NAME": "at most 25",
+    "LOGO": "@path to the square logo",
+    "IMAGE": "@path to the 1.91:1 image",
+    "SQUARE_IMAGE": "@path to the 1:1 image"
+  },
+  "operations": [
+    {
+      "campaignBudgetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/campaignBudgets/-1",
+          "name": "${CAMPAIGN_NAME} budget",
+          "amountMicros": "${DAILY_BUDGET_MICROS}",
+          "deliveryMethod": "STANDARD",
+          "explicitlyShared": false
+        }
+      }
+    },
+    {
+      "campaignOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/campaigns/-2",
+          "name": "${CAMPAIGN_NAME}",
+          "status": "PAUSED",
+          "advertisingChannelType": "PERFORMANCE_MAX",
+          "campaignBudget": "customers/${CUSTOMER}/campaignBudgets/-1",
+          "maximizeConversions": {},
+          "finalUrlSuffix": "${FINAL_URL_SUFFIX}",
+          "containsEuPoliticalAdvertising": "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING"
+        }
+      }
+    },
+    {
+      "campaignCriterionOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/-2",
+          "location": {
+            "geoTargetConstant": "geoTargetConstants/${GEO_ID}"
+          }
+        }
+      }
+    },
+    {
+      "campaignCriterionOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/-2",
+          "language": {
+            "languageConstant": "languageConstants/${LANGUAGE_ID}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-3",
+          "textAsset": {
+            "text": "${HEADLINE_1}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-4",
+          "textAsset": {
+            "text": "${HEADLINE_2}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-5",
+          "textAsset": {
+            "text": "${HEADLINE_3}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-6",
+          "textAsset": {
+            "text": "${LONG_HEADLINE}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-7",
+          "textAsset": {
+            "text": "${DESCRIPTION_1}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-8",
+          "textAsset": {
+            "text": "${DESCRIPTION_2}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-9",
+          "textAsset": {
+            "text": "${BUSINESS_NAME}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-10",
+          "name": "${CAMPAIGN_NAME} logo",
+          "imageAsset": {
+            "data": "${LOGO}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-11",
+          "name": "${CAMPAIGN_NAME} landscape",
+          "imageAsset": {
+            "data": "${IMAGE}"
+          }
+        }
+      }
+    },
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-12",
+          "name": "${CAMPAIGN_NAME} square",
+          "imageAsset": {
+            "data": "${SQUARE_IMAGE}"
+          }
+        }
+      }
+    },
+    {
+      "assetGroupOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assetGroups/-20",
+          "campaign": "customers/${CUSTOMER}/campaigns/-2",
+          "name": "${CAMPAIGN_NAME} assets",
+          "finalUrls": [
+            "${FINAL_URL}"
+          ],
+          "status": "ENABLED"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-3",
+          "fieldType": "HEADLINE"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-4",
+          "fieldType": "HEADLINE"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-5",
+          "fieldType": "HEADLINE"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-6",
+          "fieldType": "LONG_HEADLINE"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-7",
+          "fieldType": "DESCRIPTION"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-8",
+          "fieldType": "DESCRIPTION"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-9",
+          "fieldType": "BUSINESS_NAME"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-10",
+          "fieldType": "LOGO"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-11",
+          "fieldType": "MARKETING_IMAGE"
+        }
+      }
+    },
+    {
+      "assetGroupAssetOperation": {
+        "create": {
+          "assetGroup": "customers/${CUSTOMER}/assetGroups/-20",
+          "asset": "customers/${CUSTOMER}/assets/-12",
+          "fieldType": "SQUARE_MARKETING_IMAGE"
+        }
+      }
+    }
+  ]
+}

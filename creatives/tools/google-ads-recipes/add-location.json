@@ -1,0 +1,20 @@
+{
+  "kind": "mutate",
+  "description": "Add a place to a campaign (its id from geo-search)",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "GEO_ID": "the place id from geo-search"
+  },
+  "operations": [
+    {
+      "campaignCriterionOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "location": {
+            "geoTargetConstant": "geoTargetConstants/${GEO_ID}"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "kind": "mutate",
+  "description": "A call button with the business phone number on a campaign's ads",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "COUNTRY": "two-letter country code, for example IL",
+    "PHONE": "the business number as dialled in that country"
+  },
+  "operations": [
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-1",
+          "callAsset": {
+            "countryCode": "${COUNTRY}",
+            "phoneNumber": "${PHONE}"
+          }
+        }
+      }
+    },
+    {
+      "campaignAssetOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "asset": "customers/${CUSTOMER}/assets/-1",
+          "fieldType": "CALL"
+        }
+      }
+    }
+  ]
+}

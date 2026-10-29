@@ -26,6 +26,24 @@ You rarely type these commands. Ask in the chat ("build the Search campaign from
 | `enable --resource <campaign> --go "<the Owner's words>"` | Turn a campaign on. Refused without the Owner's words; the go log gets a row | Yes: **starts spending** |
 | `budget --resource <budget> --amount <n> [--go "…"]` | Change the daily budget. A raise needs the Owner's words, is at most +20 % a step, and stays under the Google share of the caps; a cut needs no go | Yes |
 
+### The full API
+
+| Subcommand | In plain words | Changes anything? |
+|---|---|---|
+| `recipe list` / `recipe show <name>` | The ready-made jobs in `creatives/tools/google-ads-recipes/` and what each needs | No |
+| `recipe run <name> --set NAME=value … [--vars <file.json>] [--validate]` | Run one: add keywords or negatives, a negative list, a new ad group or ad in an existing campaign, places, a radius, an ad schedule, a device bid adjustment, a target CPA, call / snippet / sitelink / callout assets, a Performance Max campaign (PAUSED), keyword ideas, an offline conversion upload. `--set NAME=@file` reads an image | Depends on the recipe; the same guards as `mutate` and `service` |
+| `mutate --spec <file.json> [--validate] [--go "…"]` | Any change the API supports, as a list of operations: every campaign type (Performance Max, Demand Gen, Display, Video, Shopping), assets, audiences, schedules, bid adjustments, shared lists, labels, experiments | Yes, with the guards below |
+| `service --path customers/{customer}:<method> [--body <file.json>] [--go "…"]` | Any other API method: keyword and reach forecasts, recommendations, conversion uploads | Reads and forecasts: no. Anything else: yes, with `--go` |
+
+**The guards are the same for all of these:**
+- only the `.env` account;
+- an existing resource must be known to this folder;
+- a campaign is always created PAUSED;
+- Google's `validateOnly` runs first;
+- these need the Owner's words in `--go` and are written to the go log: turning anything on, a removal, an end date moved, a budget raise (at most +20 %, at most half the Google share of the daily cap), a new ad group, ad or asset group switched on inside a live campaign, and a service method that writes.
+
+**Adding a function, without code:** copy the closest recipe in `creatives/tools/google-ads-recipes/`, change its operations (the field names are the camelCase JSON on the resource's page of Google's API reference), declare its variables, and run it with `--validate` first. Its `README.md` has the format. A one-off job needs no recipe: write the operations into a file and run `mutate`.
+
 `--json` prints the raw answer (human lines go to the error stream). Exit codes: 0 ok, 1 Google or the network refused, 2 a missing setting, a bad argument or a refusal by the tool.
 
 ## Before the first use

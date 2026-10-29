@@ -1,0 +1,60 @@
+{
+  "kind": "mutate",
+  "description": "A new Search ad group in an existing campaign with one keyword and one responsive search ad (PAUSED unless STATUS says ENABLED and the Owner gave the go); more keywords with add-keyword",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "NAME": "the ad group name",
+    "TEXT": "the first keyword",
+    "MATCH": "EXACT, PHRASE or BROAD",
+    "HEADLINES": "a JSON list of {\"text\": \"...\"}",
+    "DESCRIPTIONS": "a JSON list of {\"text\": \"...\"}",
+    "FINAL_URL": "a destination page of config/product.md",
+    "STATUS": "PAUSED or ENABLED"
+  },
+  "defaults": {
+    "MATCH": "PHRASE",
+    "STATUS": "PAUSED"
+  },
+  "operations": [
+    {
+      "adGroupOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/adGroups/-1",
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "name": "${NAME}",
+          "status": "${STATUS}",
+          "type": "SEARCH_STANDARD"
+        }
+      }
+    },
+    {
+      "adGroupCriterionOperation": {
+        "create": {
+          "adGroup": "customers/${CUSTOMER}/adGroups/-1",
+          "status": "ENABLED",
+          "keyword": {
+            "text": "${TEXT}",
+            "matchType": "${MATCH}"
+          }
+        }
+      }
+    },
+    {
+      "adGroupAdOperation": {
+        "create": {
+          "adGroup": "customers/${CUSTOMER}/adGroups/-1",
+          "status": "ENABLED",
+          "ad": {
+            "finalUrls": [
+              "${FINAL_URL}"
+            ],
+            "responsiveSearchAd": {
+              "headlines": "${HEADLINES}",
+              "descriptions": "${DESCRIPTIONS}"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "kind": "mutate",
+  "description": "Add a sitelink to an existing campaign",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "TEXT": "at most 25 characters",
+    "URL": "a page of the site",
+    "DESCRIPTION1": "at most 35",
+    "DESCRIPTION2": "at most 35"
+  },
+  "operations": [
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-1",
+          "finalUrls": [
+            "${URL}"
+          ],
+          "sitelinkAsset": {
+            "linkText": "${TEXT}",
+            "description1": "${DESCRIPTION1}",
+            "description2": "${DESCRIPTION2}"
+          }
+        }
+      }
+    },
+    {
+      "campaignAssetOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "asset": "customers/${CUSTOMER}/assets/-1",
+          "fieldType": "SITELINK"
+        }
+      }
+    }
+  ]
+}

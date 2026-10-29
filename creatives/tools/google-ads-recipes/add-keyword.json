@@ -1,0 +1,26 @@
+{
+  "kind": "mutate",
+  "description": "Add one keyword to an existing ad group",
+  "vars": {
+    "AD_GROUP_ID": "the ad group id (digits)",
+    "TEXT": "the keyword",
+    "MATCH": "EXACT, PHRASE or BROAD"
+  },
+  "defaults": {
+    "MATCH": "PHRASE"
+  },
+  "operations": [
+    {
+      "adGroupCriterionOperation": {
+        "create": {
+          "adGroup": "customers/${CUSTOMER}/adGroups/${AD_GROUP_ID}",
+          "status": "ENABLED",
+          "keyword": {
+            "text": "${TEXT}",
+            "matchType": "${MATCH}"
+          }
+        }
+      }
+    }
+  ]
+}

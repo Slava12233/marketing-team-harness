@@ -1,0 +1,26 @@
+{
+  "kind": "mutate",
+  "description": "Show a campaign's ads only on one day between two hours (add one per day; account time zone)",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "DAY": "MONDAY … SUNDAY",
+    "START_HOUR": "0 to 23",
+    "END_HOUR": "1 to 24"
+  },
+  "operations": [
+    {
+      "campaignCriterionOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "adSchedule": {
+            "dayOfWeek": "${DAY}",
+            "startHour": "${START_HOUR}",
+            "startMinute": "ZERO",
+            "endHour": "${END_HOUR}",
+            "endMinute": "ZERO"
+          }
+        }
+      }
+    }
+  ]
+}

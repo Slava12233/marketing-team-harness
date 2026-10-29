@@ -1,0 +1,22 @@
+{
+  "kind": "service",
+  "method": "POST",
+  "path": "customers/${CUSTOMER}:generateKeywordIdeas",
+  "description": "Keyword ideas with monthly searches and competition for seed words in a place and language (Keyword Planner)",
+  "notes": "Needs the project's Basic access or higher (Explorer has no planning services); on Explorer, read the same in Google Ads > Tools > Keyword Planner.",
+  "vars": {
+    "SEEDS": "a JSON list of seed words",
+    "GEO_ID": "the place id from geo-search",
+    "LANGUAGE_ID": "the language id from language-ids"
+  },
+  "body": {
+    "language": "languageConstants/${LANGUAGE_ID}",
+    "geoTargetConstants": [
+      "geoTargetConstants/${GEO_ID}"
+    ],
+    "keywordPlanNetwork": "GOOGLE_SEARCH",
+    "keywordSeed": {
+      "keywords": "${SEEDS}"
+    }
+  }
+}

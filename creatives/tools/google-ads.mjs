@@ -20,6 +20,14 @@
 //   node creatives/tools/google-ads.mjs pause --resource customers/<id>/campaigns|adGroups|adGroupAds/<id>
 //   node creatives/tools/google-ads.mjs enable --resource customers/<id>/campaigns/<id> --go "<the Owner's words>" [--channel chat]
 //   node creatives/tools/google-ads.mjs budget --resource customers/<id>/campaignBudgets/<id> --amount <n> [--go "<the Owner's words>"]
+// The full API (anything the subcommands above do not name):
+//   node creatives/tools/google-ads.mjs mutate --spec <file.json> [--validate] [--go "<the Owner's words>"]
+//                                       any googleAds:mutate operations: every campaign type, asset, criterion,
+//                                       audience, schedule, bid adjustment, shared set, label, experiment
+//   node creatives/tools/google-ads.mjs service --path customers/{customer}:<method> [--body <file.json>] [--method GET|POST] [--go "…"]
+//                                       any other API method (keyword ideas, conversion uploads, recommendations...)
+//   node creatives/tools/google-ads.mjs recipe list | recipe show <name> | recipe run <name> [--set NAME=value ...] [--vars <file.json>] [--validate] [--go "…"]
+//                                       the ready-made specs in creatives/tools/google-ads-recipes/ (add your own: no code)
 //
 // Configuration, from the repository-root .env only (template: .env.example); no other .env key is read:
 //   GOOGLE_ADS_CLIENT_ID          required; the OAuth client (Desktop type) of the company's own Google Cloud project.
@@ -32,6 +40,12 @@
 //   GOOGLE_ADS_API_VERSION        optional; default v26.
 // Secrets are never printed and never put in a URL; every printed line is scrubbed.
 //
+// Safety: mutate, service and recipe hold the same rules as the named subcommands: a campaign is created PAUSED
+// whatever the spec says; an ENABLED status, a removal, an end-date change, a budget raise, a new ad group, ad or
+// asset group in a live campaign, and any service method that is not a read or a forecast need the Owner's words in
+// --go (a go-log row); a budget raise is at most +20 % a step and a daily budget at most half the Google share of the
+// daily cap; every resource must be of the .env account, and an existing one must be known to this folder; Google
+// validates every mutate (validateOnly) before the real one.
 // Safety: build always creates the campaign PAUSED (a status in the spec is refused), declares EU political
 // advertising on every campaign, checks the copy lengths, the destination against config/product.md and the
 // budget against the Google share of the caps in config/goals.md, then asks Google to validate the whole batch
@@ -421,6 +435,118 @@ export function validateConversionSpec(spec) {
   return p;
 }
 
+// ---------- the full API: any mutate, any service method, recipes ----------
+// mutate takes any list of googleAds:mutate operations (every resource type of the API: Performance Max, Demand Gen,
+// Display, Video, Shopping, assets, ad schedules, audiences, bid adjustments, shared sets, labels, experiments...).
+// guardOperations normalises them and lists what is refused and what needs the Owner's go; the money rules hold for
+// every operation, whatever it is.
+const RES = /^customers\/(\d{10})\/(\w+)\/(-?[\d~]+)$/;
+const isTemp = (r) => { const m = RES.exec(r); return Boolean(m) && m[3].startsWith("-"); };
+const opKind = (op) => (isObj(op) ? Object.keys(op).filter((k) => /Operation$/.test(k)) : []);
+const PUBLISHING = new Set(["adGroupOperation", "adGroupAdOperation", "assetGroupOperation"]);
+/**
+ * ops: the mutateOperations list. Returns { problems, needsGo, existing, budgetUpdates, campaignsCreated, ops }:
+ * problems refuse the request; needsGo lists what needs the Owner's words; existing lists the existing resources
+ * the operations touch or hang under (each must be known to this folder); budgetUpdates are checked against the
+ * live amount and publishUnder against the parent's live status before anything is sent.
+ */
+export function guardOperations(input, customer) {
+  const problems = [];
+  const needsGo = [];
+  const existing = new Set();
+  const budgetUpdates = [];
+  const campaignsCreated = [];
+  const publishUnder = [];
+  if (!Array.isArray(input) || !input.length) return { problems: ["the spec needs a non-empty \"operations\" list (googleAds:mutate operations)"], needsGo, existing: [], budgetUpdates, campaignsCreated, publishUnder, ops: [] };
+  const ops = JSON.parse(JSON.stringify(input));
+  for (const m of JSON.stringify(ops).matchAll(/customers\/(\d+)/g)) {
+    if (m[1] !== customer) { problems.push(`refused: an operation names Google Ads account ${m[1]}, not this folder's account ${customer}`); break; }
+  }
+  const refsIn = (obj, own) => {
+    const out = [];
+    const walk = (v) => {
+      if (Array.isArray(v)) return v.forEach(walk);
+      if (isObj(v)) return Object.values(v).forEach(walk);
+      if (typeof v === "string" && RES.test(v) && v !== own && !isTemp(v)) out.push(v);
+    };
+    walk(obj);
+    return out;
+  };
+  ops.forEach((op, i) => {
+    const kinds = opKind(op);
+    if (kinds.length !== 1) { problems.push(`operations[${i}] must hold exactly one <resource>Operation (for example campaignOperation)`); return; }
+    const kind = kinds[0];
+    const inner = op[kind];
+    const L = `operations[${i}] ${kind}`;
+    if (!isObj(inner)) { problems.push(`${L} is not an object`); return; }
+    const verbs = ["create", "update", "remove"].filter((v) => inner[v] !== undefined);
+    if (verbs.length !== 1) { problems.push(`${L} needs exactly one of create, update, remove`); return; }
+    if (inner.remove !== undefined) {
+      const r = String(inner.remove);
+      if (!RES.test(r)) problems.push(`${L}: remove needs a resource name`);
+      else { existing.add(r); needsGo.push(`remove ${r} (a delete is the Owner's)`); }
+      return;
+    }
+    if (inner.create !== undefined) {
+      const c = inner.create;
+      if (!isObj(c)) { problems.push(`${L}: create is not an object`); return; }
+      for (const r of refsIn(c, c.resourceName)) existing.add(r);
+      if (kind === "campaignOperation") {
+        if (c.status !== undefined && c.status !== "PAUSED") problems.push(`${L}: a campaign is always created PAUSED (status "${c.status}" refused); turning it on is enable --go after the Owner's go`);
+        c.status = "PAUSED";
+        if (c.containsEuPoliticalAdvertising === undefined) c.containsEuPoliticalAdvertising = "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING";
+        campaignsCreated.push(c.resourceName || `operations[${i}]`);
+      }
+      // a new ad group, ad or asset group under a campaign or ad group that already exists publishes at once when
+      // that campaign is live: the run reads the parent first (publishUnder) and asks for the go only then
+      const parent = c.campaign || c.adGroup;
+      if (PUBLISHING.has(kind) && parent && !isTemp(parent) && c.status !== "PAUSED") publishUnder.push({ index: i, kind, parent });
+      if (kind === "campaignBudgetOperation" && c.amountMicros !== undefined) budgetUpdates.push({ create: true, micros: Number(c.amountMicros), index: i });
+      return;
+    }
+    const u = inner.update;
+    if (!isObj(u) || !RES.test(String(u.resourceName || ""))) { problems.push(`${L}: update needs a resourceName`); return; }
+    if (!inner.updateMask) problems.push(`${L}: update needs an updateMask (the fields it changes, snake_case, comma-separated)`);
+    existing.add(u.resourceName);
+    for (const r of refsIn(u, u.resourceName)) existing.add(r);
+    if (u.status === "ENABLED") needsGo.push(`${u.resourceName} turned ENABLED`);
+    if (kind === "campaignOperation" && (u.endDateTime !== undefined || /end_date/.test(String(inner.updateMask)))) needsGo.push(`${u.resourceName}: the end date changed (an extension is the Owner's)`);
+    if (kind === "campaignBudgetOperation" && u.amountMicros !== undefined) budgetUpdates.push({ resource: u.resourceName, micros: Number(u.amountMicros), index: i });
+  });
+  return { problems, needsGo, existing: [...existing], budgetUpdates, campaignsCreated, publishUnder, ops };
+}
+
+// service runs any other Google Ads API method by its REST path (keyword ideas, conversion uploads,
+// recommendations, reach forecasts, experiments...). Methods that only read or forecast run freely; any other
+// method needs the Owner's words in --go. Mutates go through mutate, where the guards are.
+export const READ_METHOD = /:(search|searchStream|suggest|listAccessibleCustomers|generate[A-Za-z]*|list[A-Za-z]*|get[A-Za-z]*)$/;
+export function checkServicePath(p, customer) {
+  const s = String(p || "").trim().replace(/^\/+/, "").replace(/^v\d+\//, "").replaceAll("{customer}", customer).replaceAll("${CUSTOMER}", customer);
+  if (!/^[A-Za-z0-9_\-./~:]+$/.test(s) || s.includes("..")) return { problem: `--path "${p}" is not a Google Ads API path (for example customers/{customer}:generateKeywordIdeas)` };
+  if (/:mutate$/i.test(s)) return { problem: "mutates go through the mutate subcommand (its guards hold the money rules)" };
+  for (const m of s.matchAll(/customers\/(\d+)/g)) if (m[1] !== customer) return { problem: `refused: --path names Google Ads account ${m[1]}, not this folder's account ${customer}` };
+  return { path: s, read: READ_METHOD.test(s) };
+}
+
+// Recipes: JSON files in creatives/tools/google-ads-recipes/ (no code). ${NAME} is replaced by --set NAME=value
+// (JSON when it parses, else text; @path reads a file as base64, for images) or by --vars <file.json>; ${CUSTOMER}
+// is the .env account. A string that is exactly "${NAME}" takes the value as it is (a list, a number).
+export const RECIPES_DIR = path.join(path.dirname(SELF), "google-ads-recipes");
+export function fillRecipe(recipe, vars) {
+  const missing = new Set();
+  const fill = (v) => {
+    if (Array.isArray(v)) return v.map(fill);
+    if (isObj(v)) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fill(x)]));
+    if (typeof v !== "string") return v;
+    const whole = /^\$\{([A-Z0-9_]+)\}$/.exec(v);
+    if (whole) { if (!(whole[1] in vars)) missing.add(whole[1]); return vars[whole[1]]; }
+    return v.replace(/\$\{([A-Z0-9_]+)\}/g, (_, k) => { if (!(k in vars)) { missing.add(k); return ""; } return String(vars[k]); });
+  };
+  const out = { ...recipe };
+  for (const k of ["operations", "body", "path"]) if (recipe[k] !== undefined) out[k] = fill(recipe[k]);
+  return { recipe: out, missing: [...missing] };
+}
+
 // ---------- GAQL ----------
 export function isReadOnlyQuery(q) {
   const s = String(q || "").trim();
@@ -474,7 +600,8 @@ export function toCsv(headers, rows) {
 
 // ---------- arguments ----------
 const BOOL = new Set(["dry-run", "json", "help", "validate", "tags"]);
-const VALUED = new Set(["port", "gaql", "out", "level", "range", "since", "until", "q", "country", "locale", "spec", "resource", "go", "channel", "amount"]);
+const VALUED = new Set(["port", "gaql", "out", "level", "range", "since", "until", "q", "country", "locale", "spec", "resource", "go", "channel", "amount",
+  "path", "body", "method", "set", "vars"]);
 export function parseArgs(argv) {
   const pos = [];
   const o = {};
@@ -494,7 +621,8 @@ export function parseArgs(argv) {
         v = argv[++i];
         if (v === undefined || (v.startsWith("--") && k !== "go")) throw new UsageError(`--${k} needs a value`);
       }
-      o[k] = v;
+      if (k === "set") (o.set = o.set || []).push(v);
+      else o[k] = v;
     } else if (["customer", "customer-id", "account"].includes(k)) {
       throw new UsageError(`--${k} is refused: the account is GOOGLE_ADS_CUSTOMER_ID in .env only (one Google Ads account per harness folder)`);
     } else throw new UsageError(`unknown option: --${k} (see --help)`);
@@ -516,6 +644,11 @@ const ALLOWED = {
   pause: ["resource"],
   enable: ["resource", "go", "channel"],
   budget: ["resource", "amount", "go", "channel"],
+  mutate: ["spec", "validate", "go", "channel"],
+  service: ["path", "body", "method", "go", "channel", "out"],
+  "recipe list": [],
+  "recipe show": [],
+  "recipe run": ["set", "vars", "validate", "go", "channel", "out"],
 };
 export function helpText() {
   const all = fs.readFileSync(SELF, "utf8").split(/\r?\n/).slice(1);
@@ -607,10 +740,13 @@ export async function run(argv, opts = {}) {
   try { parsed = parseArgs(argv); } catch (e) { err(e.message); return 2; }
   const { pos, o } = parsed;
   if (o.help || pos.length === 0) { say(helpText()); return o.help ? 0 : 2; }
-  const grouped = pos[0] === "conversions";
+  const grouped = pos[0] === "conversions" || pos[0] === "recipe";
   const key = grouped ? `${pos[0]} ${pos[1] || ""}`.trim() : pos[0];
   if (!ALLOWED[key]) { err(`unknown subcommand: ${pos.join(" ")} (see --help)`); return 2; }
-  if (pos.length > (grouped ? 2 : 1)) { err(`unexpected argument: ${pos.slice(grouped ? 2 : 1).join(" ")} (see --help)`); return 2; }
+  const named = key === "recipe show" || key === "recipe run";
+  const maxPos = (grouped ? 2 : 1) + (named ? 1 : 0);
+  if (named && !pos[2]) { err(`${key} needs a recipe name (see: recipe list)`); return 2; }
+  if (pos.length > maxPos) { err(`unexpected argument: ${pos.slice(maxPos).join(" ")} (see --help)`); return 2; }
   for (const k of Object.keys(o)) {
     if (!COMMON.includes(k) && !ALLOWED[key].includes(k)) { err(`--${k} does not apply to "${key}" (see --help)`); return 2; }
   }
@@ -630,13 +766,13 @@ export async function run(argv, opts = {}) {
   const version = String(fileEnv.GOOGLE_ADS_API_VERSION || DEFAULT_VERSION).trim();
   const problems = [];
   const noEnv = "No .env at the repository root. Copy .env.example to .env (the bootstrap does it), then follow docs/google-setup-guide.md.";
-  if (!clientId || !clientSecret) {
+  if ((!clientId || !clientSecret) && !["recipe list", "recipe show"].includes(key)) {
     problems.push(envExists
       ? "GOOGLE_ADS_CLIENT_ID and GOOGLE_ADS_CLIENT_SECRET must both be set in .env: copy each from the Cloud Console (Google Auth Platform > Clients) and run node creatives/tools/env-set.mjs --from-clipboard <NAME> (never paste a value in chat)."
       : noEnv);
   }
-  const needsAccount = !["login", "accounts", "geo-search"].includes(key);
-  if (key !== "login" && !refresh) problems.push("GOOGLE_ADS_REFRESH_TOKEN is not set: run node creatives/tools/google-ads.mjs login first (the Owner clicks Allow in the browser).");
+  const needsAccount = !["login", "accounts", "geo-search", "recipe list", "recipe show"].includes(key);
+  if (!["login", "recipe list", "recipe show"].includes(key) && !refresh) problems.push("GOOGLE_ADS_REFRESH_TOKEN is not set: run node creatives/tools/google-ads.mjs login first (the Owner clicks Allow in the browser).");
   if (needsAccount && !customer) problems.push("GOOGLE_ADS_CUSTOMER_ID is not set in .env: run accounts, then write the chosen id (10 digits) with env-set.mjs or by hand; see .env.example.");
   else if (customer && !isCustomerId(customer)) problems.push("GOOGLE_ADS_CUSTOMER_ID in .env is not a 10-digit Google Ads customer id (dashes optional).");
   if (loginCustomer && !isCustomerId(loginCustomer)) problems.push("GOOGLE_ADS_LOGIN_CUSTOMER_ID in .env is not a 10-digit manager account id.");
@@ -659,7 +795,28 @@ export async function run(argv, opts = {}) {
   function isKnown(r) {
     const k = loadKnown(io.repo);
     if (k.customer === customer && k.resources.has(r)) return true;
-    return namedInVault(io.repo, [r, r.split("/").pop()]);
+    const last = r.split("/").pop();
+    return namedInVault(io.repo, [...new Set([r, last, last.split("~")[0]])]);
+  }
+
+  function mutatePlan(operations, label) {
+    const g = guardOperations(operations, CUST);
+    if (g.problems.length) throw new UsageError(`${label} was refused for these reasons:${g.problems.map((x) => "\n  - " + x).join("")}`);
+    if (g.needsGo.length && !str(o.go)) {
+      throw new UsageError(`refused: ${label} needs the Owner's go, quoted exactly in --go "<words>" from the same message as the spend statement:${g.needsGo.map((x) => "\n  - " + x).join("")}\nNothing was sent.`);
+    }
+    if (!o["dry-run"]) {
+      const unknown = g.existing.filter((r) => !isKnown(r));
+      if (unknown.length) throw new UsageError(`refused: ${unknown.join(", ")} ${unknown.length > 1 ? "were" : "was"} not created or recorded by this folder. Read ${unknown.length > 1 ? "them" : "it"} with report or search and record the resource name in the plan first.`);
+    }
+    const validate = req("POST", `customers/${CUST}/googleAds:mutate`, { mutateOperations: g.ops, validateOnly: true }, "Google checks the whole batch; nothing is changed");
+    const write = req("POST", `customers/${CUST}/googleAds:mutate`, { mutateOperations: g.ops }, "one atomic batch: everything or nothing");
+    return { steps: o.validate ? [validate] : [validate, write], exec: () => execMutate(g, validate, write, label) };
+  }
+  function servicePlan(sp, method, body, label) {
+    if (!sp.read && !str(o.go)) throw new UsageError(`refused: ${sp.path} is not a read or a forecast, so it needs the Owner's go quoted in --go "<words>". Nothing was sent.`);
+    const step = req(method, sp.path, body, sp.read ? "a read or a forecast" : "a write: ledgered, with a go-log row");
+    return { steps: [step], exec: () => execService(step, sp, label) };
   }
 
   // ---------- each subcommand: validate, then a plan of requests and the code that runs it ----------
@@ -764,6 +921,51 @@ export async function run(argv, opts = {}) {
         if (lim && amount > lim.limit) throw new UsageError(`refused: ${amount} is above ${lim.limit}, half the Google share (${lim.share} %) of the daily cap ${lim.dailyCap} in config/goals.md. A cap change is the Owner's, in writing.`);
         const step = req("POST", `customers/${CUST}/campaignBudgets:mutate`, { operations: [{ update: { resourceName: o.resource, amountMicros: String(toMicros(amount)) }, updateMask: "amount_micros" }] });
         return { steps: [q(`SELECT campaign_budget.amount_micros, campaign_budget.name FROM campaign_budget WHERE campaign_budget.resource_name = '${o.resource}'`), step], exec: () => execBudget(step, amount) };
+      }
+      case "mutate": {
+        if (!o.spec) throw new UsageError("mutate needs --spec <file.json> ({\"operations\": [ googleAds:mutate operations ]}; see docs/google-ads.md)");
+        const spec = readJsonFile(resolve(o.spec), "mutate spec");
+        return mutatePlan(Array.isArray(spec) ? spec : spec.operations, `mutate ${path.basename(o.spec)}`);
+      }
+      case "service": {
+        const sp = checkServicePath(o.path, CUST);
+        if (sp.problem) throw new UsageError(sp.problem);
+        const method = String(o.method || (o.body ? "POST" : /:listAccessibleCustomers$/.test(sp.path) ? "GET" : "POST")).toUpperCase();
+        if (!["GET", "POST"].includes(method)) throw new UsageError("--method must be GET or POST");
+        const body = o.body ? readJsonFile(resolve(o.body), "service body") : method === "POST" ? {} : undefined;
+        return servicePlan(sp, method, body, `service ${sp.path}`);
+      }
+      case "recipe list":
+        return { steps: [], exec: execRecipeList };
+      case "recipe show":
+      case "recipe run": {
+        const name = pos[2];
+        if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) throw new UsageError("a recipe name is lower case with dashes (see: recipe list)");
+        const recipe = readJsonFile(path.join(RECIPES_DIR, `${name}.json`), `recipe ${name}`);
+        if (key === "recipe show") return { steps: [], exec: () => execRecipeShow(name, recipe) };
+        const vars = { ...(isObj(recipe.defaults) ? recipe.defaults : {}), ...(o.vars ? readJsonFile(resolve(o.vars), "vars file") : {}) };
+        for (const pair of o.set || []) {
+          const eq = pair.indexOf("=");
+          if (eq < 1) throw new UsageError(`--set takes NAME=value (got "${pair}")`);
+          const k = pair.slice(0, eq).trim();
+          let v = pair.slice(eq + 1);
+          if (v.startsWith("@")) {
+            const file = resolve(v.slice(1));
+            if (!fs.existsSync(file)) throw new UsageError(`--set ${k}: file not found: ${file}`);
+            v = fs.readFileSync(file).toString("base64");
+          } else { try { v = JSON.parse(v); } catch { /* text */ } }
+          vars[k] = v;
+        }
+        vars.CUSTOMER = CUST;
+        const { recipe: filled, missing } = fillRecipe(recipe, vars);
+        if (missing.length) throw new UsageError(`recipe ${name} needs: ${missing.map((m) => `${m} (${(recipe.vars || {})[m] || "see recipe show"})`).join("; ")}`);
+        if (recipe.kind === "service") {
+          const sp = checkServicePath(filled.path, CUST);
+          if (sp.problem) throw new UsageError(sp.problem);
+          return servicePlan(sp, String(recipe.method || "POST").toUpperCase(), filled.body, `recipe ${name}`);
+        }
+        if (recipe.kind !== "mutate") throw new UsageError(`recipe ${name}: "kind" must be "mutate" or "service"`);
+        return mutatePlan(filled.operations, `recipe ${name}`);
       }
       default:
         throw new UsageError(`unknown subcommand: ${key}`);
@@ -1092,6 +1294,105 @@ export async function run(argv, opts = {}) {
     if (o.json) say(JSON.stringify({ resource: o.resource, from: current, to: amount, go_log: goLog }, null, 2));
     human(`${o.resource}: daily budget ${current} -> ${amount}`);
     human(`ledger: ${ledger}${goLog ? `; go log: ${goLog}` : ""}`);
+    return 0;
+  }
+
+  async function execMutate(g, validate, write, label) {
+    // the live checks first: budget amounts against their current value and the caps, parents' live status
+    const lim = googleDailyLimit(io.repo);
+    const goNeeded = [...g.needsGo];
+    for (const b of g.budgetUpdates) {
+      const amount = b.micros / 1_000_000;
+      if (lim && amount > lim.limit) throw new UsageError(`refused: a daily budget of ${amount} is above ${lim.limit}, half the Google share (${lim.share} %) of the daily cap ${lim.dailyCap} in config/goals.md`);
+      if (b.create) continue;
+      const [row] = await searchCustomer(`SELECT campaign_budget.amount_micros FROM campaign_budget WHERE campaign_budget.resource_name = '${b.resource}'`);
+      const current = row && row.campaignBudget ? fromMicros(row.campaignBudget.amountMicros) : null;
+      if (current === null) throw new AdsError(`${b.resource} was not found in Google Ads account ${customer}`);
+      if (amount > current) {
+        if (amount > current * (1 + MAX_RAISE) + 1e-9) throw new UsageError(`refused: ${b.resource} from ${current} to ${amount} is a raise of more than ${MAX_RAISE * 100} % in one step`);
+        goNeeded.push(`${b.resource}: daily budget ${current} -> ${amount}`);
+      }
+    }
+    for (const p of g.publishUnder) {
+      const isGroup = /\/adGroups\//.test(p.parent);
+      const q = isGroup
+        ? `SELECT campaign.status, ad_group.status FROM ad_group WHERE ad_group.resource_name = '${p.parent}'`
+        : `SELECT campaign.status FROM campaign WHERE campaign.resource_name = '${p.parent}'`;
+      const [row] = await searchCustomer(q);
+      const live = row && row.campaign && row.campaign.status === "ENABLED" && (!isGroup || (row.adGroup && row.adGroup.status === "ENABLED"));
+      if (live) goNeeded.push(`a new ${p.kind.replace(/Operation$/, "")} ENABLED in the live ${p.parent} (publishes at once; set "status": "PAUSED" to add it paused)`);
+    }
+    if (goNeeded.length && !str(o.go)) throw new UsageError(`refused: ${label} needs the Owner's go, quoted exactly in --go "<words>":${goNeeded.map((x) => "\n  - " + x).join("")}\nNothing was sent.`);
+    human(`${label}: ${g.ops.length} operation(s) on Google Ads account ${customer}${g.campaignsCreated.length ? `; ${g.campaignsCreated.length} campaign(s) created PAUSED` : ""}`);
+    await call("POST", validate.path, validate.body);
+    human("validateOnly: Google accepted the whole batch (nothing changed yet)");
+    if (o.validate) return 0;
+    const entry = entryFor(label, { operations: g.ops.length, kinds: [...new Set(g.ops.flatMap(opKind))], go: goNeeded.length ? o.go : null });
+    let r;
+    try { r = await call("POST", write.path, write.body); }
+    catch (e) { entry.error = scrub(e.message); appendLedger(entry); throw e; }
+    for (const x of r.mutateOperationResponses || []) for (const v of Object.values(x)) if (v && v.resourceName) entry.resources.push(v.resourceName);
+    entry.status = "ok";
+    const ledger = appendLedger(entry);
+    saveKnown(io.repo, customer, entry.resources);
+    const goLog = goNeeded.length ? goLogRow({ objects: entry.resources.length ? entry.resources : g.existing, daily: "see the ledger", end: "" }) : null;
+    const created = entry.resources.filter((x) => /\/campaigns\/\d+$/.test(x));
+    let notPaused = [];
+    if (created.length && g.campaignsCreated.length) {
+      const rows = await searchCustomer(`SELECT campaign.resource_name, campaign.status FROM campaign WHERE campaign.resource_name IN (${created.map((c) => `'${c}'`).join(", ")})`);
+      notPaused = rows.filter((x) => x.campaign && x.campaign.status !== "PAUSED").map((x) => x.campaign.resourceName);
+    }
+    if (o.json) say(JSON.stringify({ resources: entry.resources, ledger, go_log: goLog }, null, 2));
+    human(`done: ${entry.resources.length} resource(s)${entry.resources.length ? ":\n  " + entry.resources.join("\n  ") : ""}`);
+    human(`ledger: ${ledger}${goLog ? `; go log: ${goLog}` : ""}. Write the resource names into the plan and the campaign note now.`);
+    if (notPaused.length) { err(`WARNING: ${notPaused.join(", ")} read back not PAUSED: pause now with google-ads.mjs pause --resource <it>`); return 1; }
+    return 0;
+  }
+  async function execService(step, sp, label) {
+    const login = !/listAccessibleCustomers|^geoTargetConstants/.test(sp.path);
+    if (sp.read) {
+      const r = await call(step.method, step.path, step.method === "GET" ? undefined : step.body, { login });
+      if (o.out) {
+        const out = resolve(o.out);
+        fs.mkdirSync(path.dirname(out), { recursive: true });
+        fs.writeFileSync(out, JSON.stringify(r, null, 2) + "\n");
+        human(`the answer written to ${out}`);
+      } else say(JSON.stringify(r, null, 2));
+      return 0;
+    }
+    const entry = entryFor(label, { path: sp.path, method: step.method, go: o.go });
+    let r;
+    try { r = await call(step.method, step.path, step.method === "GET" ? undefined : step.body, { login }); }
+    catch (e) { entry.error = scrub(e.message); appendLedger(entry); throw e; }
+    entry.status = "ok";
+    const walk = (v) => { if (Array.isArray(v)) v.forEach(walk); else if (isObj(v)) { if (typeof v.resourceName === "string") entry.resources.push(v.resourceName); Object.values(v).forEach(walk); } };
+    walk(r);
+    const ledger = appendLedger(entry);
+    if (entry.resources.length) saveKnown(io.repo, customer, entry.resources);
+    const goLog = goLogRow({ objects: entry.resources.length ? entry.resources : [sp.path], daily: "n/a", end: "" });
+    say(JSON.stringify(r, null, 2));
+    human(`ledger: ${ledger}; go log: ${goLog || "memory/money/go-log.md not found"}`);
+    return 0;
+  }
+  function execRecipeList() {
+    const files = fs.existsSync(RECIPES_DIR) ? fs.readdirSync(RECIPES_DIR).filter((n) => n.endsWith(".json")).sort() : [];
+    const rows = files.map((n) => {
+      let r = {};
+      try { r = JSON.parse(fs.readFileSync(path.join(RECIPES_DIR, n), "utf8")); } catch { r = { description: "(not valid JSON)" }; }
+      return [n.replace(/\.json$/, ""), r.kind || "?", r.description || ""];
+    });
+    if (o.json) { say(JSON.stringify(rows.map(([name, kind, description]) => ({ name, kind, description })), null, 2)); return 0; }
+    say(table(["recipe", "kind", "what it does"], rows));
+    say(`\n${rows.length} recipe(s) in creatives/tools/google-ads-recipes/. A new one is a JSON file there (see docs/google-ads.md).`);
+    return 0;
+  }
+  function execRecipeShow(name, recipe) {
+    if (o.json) { say(JSON.stringify(recipe, null, 2)); return 0; }
+    say(`${name} (${recipe.kind}): ${recipe.description || ""}`);
+    if (recipe.notes) say(`notes: ${recipe.notes}`);
+    const vars = Object.entries(recipe.vars || {});
+    say(vars.length ? "variables (--set NAME=value; @file for an image):" : "no variables");
+    for (const [k, v] of vars) say(`  ${k.padEnd(22)} ${v}${recipe.defaults && k in recipe.defaults ? ` (default ${JSON.stringify(recipe.defaults[k])})` : ""}`);
     return 0;
   }
 

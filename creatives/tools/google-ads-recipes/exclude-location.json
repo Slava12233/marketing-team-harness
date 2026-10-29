@@ -1,0 +1,21 @@
+{
+  "kind": "mutate",
+  "description": "Exclude a place from a campaign (its id from geo-search)",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "GEO_ID": "the place id from geo-search"
+  },
+  "operations": [
+    {
+      "campaignCriterionOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "negative": true,
+          "location": {
+            "geoTargetConstant": "geoTargetConstants/${GEO_ID}"
+          }
+        }
+      }
+    }
+  ]
+}

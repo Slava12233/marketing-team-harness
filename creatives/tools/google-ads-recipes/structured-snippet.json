@@ -1,0 +1,31 @@
+{
+  "kind": "mutate",
+  "description": "A structured snippet (a header and its values, for example Services: A, B, C)",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "HEADER": "one of Google's headers in English, for example Services, Types, Brands, Amenities",
+    "VALUES": "a JSON list of 3 to 10 values, at most 25 characters each"
+  },
+  "operations": [
+    {
+      "assetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/assets/-1",
+          "structuredSnippetAsset": {
+            "header": "${HEADER}",
+            "values": "${VALUES}"
+          }
+        }
+      }
+    },
+    {
+      "campaignAssetOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "asset": "customers/${CUSTOMER}/assets/-1",
+          "fieldType": "STRUCTURED_SNIPPET"
+        }
+      }
+    }
+  ]
+}

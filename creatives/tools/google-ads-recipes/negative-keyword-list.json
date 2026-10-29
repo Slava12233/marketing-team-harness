@@ -1,0 +1,43 @@
+{
+  "kind": "mutate",
+  "description": "A shared negative keyword list with its first keyword, attached to a campaign (add more words with mutate: sharedCriterionOperation)",
+  "vars": {
+    "LIST_NAME": "the list name",
+    "TEXT": "the first word or phrase",
+    "MATCH": "EXACT, PHRASE or BROAD",
+    "CAMPAIGN_ID": "the campaign that uses the list"
+  },
+  "defaults": {
+    "MATCH": "BROAD"
+  },
+  "operations": [
+    {
+      "sharedSetOperation": {
+        "create": {
+          "resourceName": "customers/${CUSTOMER}/sharedSets/-1",
+          "name": "${LIST_NAME}",
+          "type": "NEGATIVE_KEYWORDS"
+        }
+      }
+    },
+    {
+      "sharedCriterionOperation": {
+        "create": {
+          "sharedSet": "customers/${CUSTOMER}/sharedSets/-1",
+          "keyword": {
+            "text": "${TEXT}",
+            "matchType": "${MATCH}"
+          }
+        }
+      }
+    },
+    {
+      "campaignSharedSetOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "sharedSet": "customers/${CUSTOMER}/sharedSets/-1"
+        }
+      }
+    }
+  ]
+}

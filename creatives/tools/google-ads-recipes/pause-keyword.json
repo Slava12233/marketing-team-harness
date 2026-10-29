@@ -1,0 +1,19 @@
+{
+  "kind": "mutate",
+  "description": "Pause one keyword (its criterion id from report --level keyword or search)",
+  "vars": {
+    "AD_GROUP_ID": "the ad group id",
+    "CRITERION_ID": "the keyword criterion id"
+  },
+  "operations": [
+    {
+      "adGroupCriterionOperation": {
+        "update": {
+          "resourceName": "customers/${CUSTOMER}/adGroupCriteria/${AD_GROUP_ID}~${CRITERION_ID}",
+          "status": "PAUSED"
+        },
+        "updateMask": "status"
+      }
+    }
+  ]
+}

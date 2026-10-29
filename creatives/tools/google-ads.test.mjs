@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   run, readEnvFile, setEnvLine, scrubText, adLength, validateBuildSpec, buildOperations, isReadOnlyQuery, reportQuery,
-  reportRows, configuredCustomer, googleDailyLimit, validateConversionSpec, fixList,
+  reportRows, configuredCustomer, googleDailyLimit, validateConversionSpec, fixList, guardOperations, checkServicePath, fillRecipe,
 } from "./google-ads.mjs";
 
 const CUSTOMER = "1234567890";
@@ -448,5 +448,166 @@ test("login refuses a callback with the wrong state", async () => {
     assert.equal(r.code, 1);
     assert.match(r.err, /without a valid code/);
     assert.equal(readEnvFile(join(repo, ".env")).GOOGLE_ADS_REFRESH_TOKEN, undefined);
+  } finally { clean(repo); }
+});
+
+// ---------- the full API: mutate, service, recipes ----------
+const CAMP = `customers/${CUSTOMER}/campaigns/555`;
+const known = (repo, ...resources) => {
+  mkdirSync(join(repo, "memory", "state"), { recursive: true });
+  writeFileSync(join(repo, "memory", "state", "known-objects-google.json"), JSON.stringify({ customer: CUSTOMER, resources }));
+};
+const writeOps = (repo, operations) => { const f = join(repo, "ops.json"); writeFileSync(f, JSON.stringify({ operations })); return f; };
+const mutateRoutes = (extra = []) => mockFetch([
+  TOKEN_ROUTE, ...extra,
+  { method: "POST", path: `customers/${CUSTOMER}/googleAds:mutate`, when: (c) => c.body.validateOnly === true, reply: {} },
+  { method: "POST", path: `customers/${CUSTOMER}/googleAds:mutate`, when: (c) => !c.body.validateOnly, reply: (c) => ({ mutateOperationResponses: c.body.mutateOperations.map((op, i) => ({ result: { resourceName: `customers/${CUSTOMER}/x/${900 + i}` } })) }) },
+]);
+
+test("guardOperations: a campaign is created PAUSED and declared; another account, ENABLED and removals are caught", () => {
+  let g = guardOperations([{ campaignOperation: { create: { resourceName: `customers/${CUSTOMER}/campaigns/-1`, name: "PMax", advertisingChannelType: "PERFORMANCE_MAX" } } }], CUSTOMER);
+  assert.deepEqual(g.problems, []);
+  assert.equal(g.ops[0].campaignOperation.create.status, "PAUSED");
+  assert.equal(g.ops[0].campaignOperation.create.containsEuPoliticalAdvertising, "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING");
+  g = guardOperations([{ campaignOperation: { create: { name: "x", status: "ENABLED" } } }], CUSTOMER);
+  assert.ok(g.problems.some((p) => p.includes("always created PAUSED")));
+  g = guardOperations([{ campaignCriterionOperation: { create: { campaign: "customers/1111111111/campaigns/9" } } }], CUSTOMER);
+  assert.ok(g.problems.some((p) => p.includes("1111111111")));
+  g = guardOperations([{ adGroupOperation: { update: { resourceName: `customers/${CUSTOMER}/adGroups/7`, status: "ENABLED" }, updateMask: "status" } }], CUSTOMER);
+  assert.equal(g.needsGo.length, 1);
+  g = guardOperations([{ adGroupCriterionOperation: { remove: `customers/${CUSTOMER}/adGroupCriteria/7~8` } }], CUSTOMER);
+  assert.ok(g.needsGo[0].startsWith("remove"));
+  g = guardOperations([{ adGroupOperation: { create: { campaign: CAMP, name: "new" } } }], CUSTOMER);
+  assert.equal(g.publishUnder.length, 1, "a new ad group in an existing campaign is checked against its live status");
+  assert.deepEqual(g.existing, [CAMP]);
+  g = guardOperations([{ campaignOperation: { update: { resourceName: CAMP, name: "x" } } }], CUSTOMER);
+  assert.ok(g.problems.some((p) => p.includes("updateMask")));
+});
+
+test("checkServicePath and fillRecipe", () => {
+  assert.deepEqual(checkServicePath("customers/{customer}:generateKeywordIdeas", CUSTOMER), { path: `customers/${CUSTOMER}:generateKeywordIdeas`, read: true });
+  assert.equal(checkServicePath(`customers/${CUSTOMER}:uploadClickConversions`, CUSTOMER).read, false);
+  assert.match(checkServicePath(`customers/${CUSTOMER}/campaigns:mutate`, CUSTOMER).problem, /mutate subcommand/);
+  assert.match(checkServicePath("customers/1111111111:generateKeywordIdeas", CUSTOMER).problem, /1111111111/);
+  assert.match(checkServicePath("../etc", CUSTOMER).problem, /not a Google Ads API path/);
+  const D = "$";
+  const { recipe, missing } = fillRecipe({ operations: [{ a: `customers/${D}{CUSTOMER}/x/${D}{ID}`, list: `${D}{LIST}`, n: `${D}{N}` }] }, { CUSTOMER, ID: 5, LIST: [{ text: "a" }], N: 3 });
+  assert.deepEqual(recipe.operations[0], { a: `customers/${CUSTOMER}/x/5`, list: [{ text: "a" }], n: 3 });
+  assert.deepEqual(missing, []);
+  assert.deepEqual(fillRecipe({ operations: [`${D}{A}`, `x${D}{B}`] }, {}).missing, ["A", "B"]);
+});
+
+test("mutate: validateOnly first, the ledger, and a known existing campaign is required", async () => {
+  const repo = makeRepo();
+  try {
+    const ops = [{ campaignCriterionOperation: { create: { campaign: CAMP, negative: true, keyword: { text: "free", matchType: "BROAD" } } } }];
+    let r = await go(["mutate", "--spec", writeOps(repo, ops)], { repo, fetch: mutateRoutes() });
+    assert.equal(r.code, 2);
+    assert.match(r.err, /not created or recorded by this folder/);
+    known(repo, CAMP);
+    const fetch = mutateRoutes();
+    r = await go(["mutate", "--spec", writeOps(repo, ops)], { repo, fetch });
+    assert.equal(r.code, 0, r.err);
+    const m = fetch.calls.filter((c) => c.path.endsWith("googleAds:mutate"));
+    assert.equal(m.length, 2);
+    assert.equal(m[0].body.validateOnly, true);
+    assert.equal(ledger(repo)[0].status, "ok");
+    assertHygiene(r);
+  } finally { clean(repo); }
+});
+
+test("mutate: ENABLED, a removal or a raise needs --go; with it the go log gets a row", async () => {
+  const repo = makeRepo();
+  try {
+    known(repo, CAMP, `customers/${CUSTOMER}/campaignBudgets/444`);
+    const enable = [{ campaignOperation: { update: { resourceName: CAMP, status: "ENABLED" }, updateMask: "status" } }];
+    let r = await go(["mutate", "--spec", writeOps(repo, enable)], { repo, fetch: mutateRoutes() });
+    assert.equal(r.code, 2);
+    assert.match(r.err, /needs the Owner's go/);
+    assert.equal(r.fetch.calls.length, 0);
+    r = await go(["mutate", "--spec", writeOps(repo, enable), "--go", "go on the search campaign"], { repo, fetch: mutateRoutes() });
+    assert.equal(r.code, 0, r.err);
+    assert.match(readFileSync(join(repo, "memory", "money", "go-log.md"), "utf8"), /"go on the search campaign"/);
+    const budgetRead = { method: "POST", path: `customers/${CUSTOMER}/googleAds:search`, reply: { results: [{ campaignBudget: { amountMicros: "50000000" } }] } };
+    const raise = (n) => [{ campaignBudgetOperation: { update: { resourceName: `customers/${CUSTOMER}/campaignBudgets/444`, amountMicros: String(n * 1e6) }, updateMask: "amount_micros" } }];
+    r = await go(["mutate", "--spec", writeOps(repo, raise(80)), "--go", "raise"], { repo, fetch: mutateRoutes([budgetRead]) });
+    assert.equal(r.code, 2);
+    assert.match(r.err, /more than 20 %/);
+    r = await go(["mutate", "--spec", writeOps(repo, raise(55))], { repo, fetch: mutateRoutes([budgetRead]) });
+    assert.equal(r.code, 2);
+    assert.match(r.err, /daily budget 50 -> 55/);
+    r = await go(["mutate", "--spec", writeOps(repo, raise(40))], { repo, fetch: mutateRoutes([budgetRead]) });
+    assert.equal(r.code, 0, r.err);
+  } finally { clean(repo); }
+});
+
+test("mutate: a new ad group in a live campaign needs the go; in a paused one it does not", async () => {
+  const repo = makeRepo();
+  try {
+    known(repo, CAMP);
+    const ops = [{ adGroupOperation: { create: { campaign: CAMP, name: "new", status: "ENABLED" } } }];
+    const status = (s) => ({ method: "POST", path: `customers/${CUSTOMER}/googleAds:search`, reply: { results: [{ campaign: { status: s } }] } });
+    let r = await go(["mutate", "--spec", writeOps(repo, ops)], { repo, fetch: mutateRoutes([status("ENABLED")]) });
+    assert.equal(r.code, 2);
+    assert.match(r.err, /publishes at once/);
+    r = await go(["mutate", "--spec", writeOps(repo, ops)], { repo, fetch: mutateRoutes([status("PAUSED")]) });
+    assert.equal(r.code, 0, r.err);
+  } finally { clean(repo); }
+});
+
+test("service: a read runs freely; a write needs --go; a mutate path is refused", async () => {
+  const repo = makeRepo();
+  try {
+    const fetch = mockFetch([TOKEN_ROUTE, { method: "POST", path: `customers/${CUSTOMER}:generateKeywordIdeas`, reply: { results: [{ text: "idea" }] } }]);
+    let r = await go(["service", "--path", "customers/{customer}:generateKeywordIdeas"], { repo, fetch });
+    assert.equal(r.code, 0, r.err);
+    assert.match(r.out, /idea/);
+    r = await go(["service", "--path", "customers/{customer}:uploadClickConversions"], { repo });
+    assert.equal(r.code, 2);
+    assert.match(r.err, /needs the Owner's go/);
+    r = await go(["service", "--path", "customers/{customer}/campaigns:mutate"], { repo });
+    assert.equal(r.code, 2);
+  } finally { clean(repo); }
+});
+
+test("recipes: every shipped recipe is valid JSON with a kind; run fills the variables and holds the guards", async () => {
+  const dir = join(import.meta.dirname, "google-ads-recipes");
+  const names = readdirSync(dir).filter((n) => n.endsWith(".json"));
+  assert.ok(names.length >= 15);
+  for (const n of names) {
+    const r = JSON.parse(readFileSync(join(dir, n), "utf8"));
+    assert.ok(["mutate", "service"].includes(r.kind), n);
+    assert.ok(r.description, n);
+    const vars = Object.fromEntries(Object.keys(r.vars || {}).map((k) => [k, 1]));
+    const { missing } = fillRecipe(r, { ...vars, CUSTOMER });
+    assert.deepEqual(missing, [], `${n} uses a variable it does not declare`);
+    if (r.kind === "mutate") assert.deepEqual(guardOperations(fillRecipe(r, { ...vars, CUSTOMER }).recipe.operations, CUSTOMER).problems, [], n);
+  }
+  const repo = makeRepo();
+  try {
+    known(repo, CAMP);
+    const fetch = mutateRoutes();
+    let r = await go(["recipe", "run", "add-negative-keyword", "--set", "CAMPAIGN_ID=555", "--set", "TEXT=jobs"], { repo, fetch });
+    assert.equal(r.code, 0, r.err);
+    const sent = fetch.calls.find((c) => c.path.endsWith("googleAds:mutate")).body.mutateOperations[0].campaignCriterionOperation.create;
+    assert.deepEqual(sent, { campaign: CAMP, negative: true, keyword: { text: "jobs", matchType: "BROAD" } });
+    r = await go(["recipe", "run", "add-negative-keyword", "--set", "TEXT=jobs"], { repo });
+    assert.equal(r.code, 2);
+    assert.match(r.err, /needs: CAMPAIGN_ID/);
+    const png = join(repo, "logo.png");
+    writeFileSync(png, Buffer.from([1, 2, 3]));
+    const vars = { CAMPAIGN_NAME: "PMax", DAILY_BUDGET_MICROS: "40000000", GEO_ID: 2376, LANGUAGE_ID: 1027, FINAL_URL: URL_OK, FINAL_URL_SUFFIX: "utm_source=google",
+      HEADLINE_1: "a", HEADLINE_2: "b", HEADLINE_3: "c", LONG_HEADLINE: "d", DESCRIPTION_1: "e", DESCRIPTION_2: "f", BUSINESS_NAME: "g" };
+    const vf = join(repo, "vars.json");
+    writeFileSync(vf, JSON.stringify(vars));
+    const f2 = mutateRoutes();
+    r = await go(["recipe", "run", "performance-max-campaign", "--vars", vf, "--set", `LOGO=@${png}`, "--set", `IMAGE=@${png}`, "--set", `SQUARE_IMAGE=@${png}`, "--validate"], { repo, fetch: f2 });
+    assert.equal(r.code, 0, r.err);
+    const batch = f2.calls.find((c) => c.path.endsWith("googleAds:mutate")).body.mutateOperations;
+    const pmax = batch.find((o) => o.campaignOperation).campaignOperation.create;
+    assert.equal(pmax.status, "PAUSED");
+    assert.equal(pmax.advertisingChannelType, "PERFORMANCE_MAX");
+    assert.equal(batch.find((o) => o.assetOperation && o.assetOperation.create.imageAsset).assetOperation.create.imageAsset.data, "AQID");
+    assert.equal(f2.calls.filter((c) => c.path.endsWith("googleAds:mutate")).length, 1, "--validate stops after Google's check");
   } finally { clean(repo); }
 });

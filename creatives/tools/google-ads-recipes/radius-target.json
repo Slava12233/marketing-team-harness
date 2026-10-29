@@ -1,0 +1,31 @@
+{
+  "kind": "mutate",
+  "description": "Target a radius around a point (a shop, an office)",
+  "vars": {
+    "CAMPAIGN_ID": "the campaign id",
+    "LAT_MICRO": "latitude × 1,000,000 (32.0853 → 32085300)",
+    "LNG_MICRO": "longitude × 1,000,000",
+    "RADIUS": "the radius",
+    "UNITS": "KILOMETERS or MILES"
+  },
+  "defaults": {
+    "UNITS": "KILOMETERS"
+  },
+  "operations": [
+    {
+      "campaignCriterionOperation": {
+        "create": {
+          "campaign": "customers/${CUSTOMER}/campaigns/${CAMPAIGN_ID}",
+          "proximity": {
+            "geoPoint": {
+              "latitudeInMicroDegrees": "${LAT_MICRO}",
+              "longitudeInMicroDegrees": "${LNG_MICRO}"
+            },
+            "radius": "${RADIUS}",
+            "radiusUnits": "${UNITS}"
+          }
+        }
+      }
+    }
+  ]
+}

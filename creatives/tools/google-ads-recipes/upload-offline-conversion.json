@@ -1,0 +1,26 @@
+{
+  "kind": "service",
+  "method": "POST",
+  "path": "customers/${CUSTOMER}:uploadClickConversions",
+  "description": "Send one conversion that happened offline (a qualified lead, a sale) back to Google by its click id (gclid), so bidding learns from real results",
+  "notes": "A write (needs --go). The gclid comes from the CRM or the lead row the Owner or Operator hands over; never a name, e-mail or phone here.",
+  "vars": {
+    "GCLID": "the Google click id",
+    "CONVERSION_ACTION_ID": "the conversion action id (an import action)",
+    "DATE_TIME": "yyyy-mm-dd hh:mm:ss+hh:mm",
+    "VALUE": "the value",
+    "CURRENCY": "ISO code"
+  },
+  "body": {
+    "conversions": [
+      {
+        "gclid": "${GCLID}",
+        "conversionAction": "customers/${CUSTOMER}/conversionActions/${CONVERSION_ACTION_ID}",
+        "conversionDateTime": "${DATE_TIME}",
+        "conversionValue": "${VALUE}",
+        "currencyCode": "${CURRENCY}"
+      }
+    ],
+    "partialFailure": true
+  }
+}
