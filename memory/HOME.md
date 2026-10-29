@@ -11,28 +11,7 @@ summary: The Owner's page in Hebrew - today, money vs caps, open items by owner 
 # המשרד של צוות השיווק
 
 %% generated:start %%
-%% content_hash: c6eb18a2452ef8ae · generated_at: 2026-10-29T21:14+02:00 · Never hand-edit; run node memory/tools/build-hot.mjs %%
-### היום
-2026-10-29 · מצב נכון ל-2026-10-29 19:45 Asia/Jerusalem ([[current]])
-1. `/health` (the full check; the onboarding now runs as `/connect` then `/campaign`, decision [[2026-10-29-onboarding-in-two-parts]])
-2. The Owner's open clicks in `checklist.md` (two-factor first)
-3. The first flight through `/campaign` steps 2–9: the market research → the plan's recap and the Owner's picks → copy → compliance → still + silent video → upload → build PAUSED → previews (per…
-
-### כסף מול תקרות
-- Daily (all campaigns together) · Amount ₪40 · Set by slava lebovkin, 2026-10-29
-- Weekly (all campaigns together) · Amount ₪280 · Set by slava lebovkin, 2026-10-29
-- Monthly (all campaigns together, calendar month) · Amount ₪1,000 · Set by slava lebovkin, 2026-10-29
-- Per campaign (its lifetime spending limit) · Amount ₪1,000 · Set by slava lebovkin, 2026-10-29
-
-### פריטים פתוחים לפי בעלים
-- אין
-
-### למידות אחרונות
-- 2026-10-27 · [[2026-10-27-code-200-api-access-blocked-is-the-developer-account]] · HTTP 400 code 200 'API access blocked' on GET /me with a System User token means Meta blocked the developer account of the app's admin ('Account conf…
-- 2026-10-27 · [[2026-10-27-page-must-be-assigned-to-the-system-user]] · A System User token with pages_* permissions still gets code 10 on every Page endpoint until the Page itself is assigned to the System User (Business…
-- 2026-10-26 · [[2026-10-26-page-welcome-message-exact-spec]] · The exact page_welcome_message object a click-to-WhatsApp ad takes at the object_story_spec level (VISUAL_EDITOR v2, autofill_message); inside link_d…
-- 2026-10-26 · [[2026-10-26-whatsapp-inbox-reads]] · In WhatsApp Business Web each click-to-WhatsApp chat carries the ad card above the first message, the only per-lead attribution; many chats open with…
-- 2026-10-25 · [[2026-10-25-activation-sequence-that-worked]] · Scalar start_time edit on the ad set, then ads_activate_entity on the ads, the ad set and the campaign; ads still IN_PROCESS went active within three…
+(הבלוק הזה נבנה אוטומטית ב-/setup וב-/sync על ידי memory/tools/build-hot.mjs)
 %% generated:end %%
 
 ## על הדף הזה

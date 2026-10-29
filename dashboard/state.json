@@ -1,122 +1,21 @@
 {
-  "company": "Habait",
-  "generatedAt": "2026-10-29T21:18+02:00",
+  "company": null,
+  "generatedAt": null,
   "launch": null,
   "routines": {
-    "timezone": "Asia/Jerusalem",
-    "items": [
-      {
-        "id": "morning",
-        "label": "Morning",
-        "command": "morning",
-        "time": "08:30",
-        "days": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "id": "sync",
-        "label": "Session close",
-        "command": "sync",
-        "time": "18:00",
-        "days": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "id": "next-round",
-        "label": "Weekly round",
-        "command": "next-round",
-        "time": "10:00",
-        "days": [
-          0
-        ]
-      }
-    ]
+    "timezone": null,
+    "items": []
   },
   "working": [],
-  "tasks": [
-    {
-      "title": "`/health` (the full check; the onboarding now runs as `/connect` then `/campaign`, decision [[2026-10-29-onboarding-in-two-parts]])",
-      "owner": "Claude"
-    },
-    {
-      "title": "The Owner's open clicks in `checklist.md` (two-factor first)",
-      "owner": "Claude"
-    },
-    {
-      "title": "The first flight through `/campaign` steps 2–9: the market research → the plan's recap and the Owner's picks → copy → compliance → still + silent video → upload → build PAUSED → previews (per `plans/2026-10-29-first-flight-plan.md`)",
-      "owner": "Claude"
-    }
-  ],
+  "tasks": [],
   "money": {
-    "currency": "ILS",
-    "dailySpend": "not read yet for Habait's own campaigns (none exist); the whole account's spend is read at the first `/morning`",
-    "caps": [
-      {
-        "label": "Daily (all campaigns together)",
-        "amount": 40,
-        "period": "day"
-      },
-      {
-        "label": "Weekly (all campaigns together)",
-        "amount": 280,
-        "period": "week"
-      },
-      {
-        "label": "Monthly (all campaigns together, calendar month)",
-        "amount": 1000,
-        "period": "month"
-      },
-      {
-        "label": "Per campaign (its lifetime spending limit)",
-        "amount": 1000,
-        "period": "campaign"
-      }
-    ],
-    "liveToday": "nothing of this harness (the test campaign is PAUSED, ₪0)",
-    "nextGo": "none pending; the first flight's go comes after the build, the render check and the numbered recap"
+    "currency": null,
+    "dailySpend": null,
+    "caps": [],
+    "liveToday": null,
+    "nextGo": null
   },
-  "campaigns": [
-    {
-      "id": "120249096272270532",
-      "name": "test-harness-pipeline",
-      "label": "Pipeline test campaign 'TEST — harness pipeline — do not activate': fal creatives → compliance → upload → PAUSED click-to-WhatsApp build; never activated, left paused by the Owner's choice.",
-      "status": "PAUSED",
-      "spent": null,
-      "result": null
-    }
-  ],
-  "team": {
-    "Measure": [
-      "performance-analyst",
-      "signals-auditor",
-      "cro-auditor"
-    ],
-    "Create": [
-      "creative-director",
-      "copywriter",
-      "competitor-researcher"
-    ],
-    "Gate": [
-      "compliance-reviewer",
-      "test-designer"
-    ],
-    "Build": [
-      "media-buyer"
-    ],
-    "Close": [
-      "harness-librarian"
-    ]
-  },
-  "skillsUsed": [],
-  "updatedBy": "/sync"
+  "campaigns": [],
+  "team": {},
+  "skillsUsed": []
 }

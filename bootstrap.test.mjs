@@ -17,7 +17,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const IS_WIN = process.platform === 'win32';
 const TAG_RE = /^\[(ok|installed|missing|skipped|todo)\] (.*)$/;
 const STATUSES = ['ok', 'installed', 'missing', 'skipped', 'todo'];
-const KEYS = ['git', 'node', 'claude', 'env', 'app', 'chrome', 'playwright', 'obsidian', 'ffmpeg', 'hyperframes', 'obsidian_setup', 'routines', 'manifest'];
+const KEYS = ['git', 'node', 'claude', 'env', 'app', 'chrome', 'playwright', 'obsidian', 'ffmpeg', 'hyperframes', 'obsidian_setup', 'routines', 'manifest', 'instance'];
 const HEADINGS = ['Required', 'Recommended', 'Optional', 'What remains'];
 const ESSENTIALS = ['CLAUDE.md', '.mcp.json', '.env.example', 'bootstrap.ps1', 'bootstrap.sh', 'README.md', 'dashboard/setup-page.mjs', 'docs/release-manifest.txt', 'vendor/hyperframes/.claude-plugin/marketplace.json'];
 const SENTINEL = 'SENTINEL_VALUE_NEVER_PRINTED_4711';
@@ -150,7 +150,7 @@ function assertShape(r, label) {
 function assertResult(r, kind, label) {
   assert.ok(r.result, `${label}: dashboard/bootstrap-result.json was not written`);
   const j = JSON.parse(r.result);
-  assert.match(j.ran, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:\d\d$/, `${label}: ran`);
+  assert.match(j.ran, /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}(:[0-9]{2}){2}[+-][0-9]{2}:[0-9]{2}$/, `${label}: ran`);
   assert.equal(j.mode, 'check');
   assert.equal(j.script, kind === 'ps' ? 'bootstrap.ps1' : 'bootstrap.sh');
   assert.equal(j.exit, r.code, `${label}: the exit in the file`);

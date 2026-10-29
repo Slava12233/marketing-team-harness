@@ -11,6 +11,7 @@ The step bodies are shared: the interview rounds (a)–(i), the file write, the 
 
 ## Step 0. Preconditions
 
+0. **This folder's own business.** `node memory/tools/instance.mjs --check` exits 0. Exit 3 means a new copy: every copy is a new business, so a filled `config/` here belongs to someone else. Say so in one line and run `/connect` from its start (it resets the copy); never plan a campaign on another company's files.
 1. **Language.** `config/operator.md` holds the chat language (`/connect` asked it). Every question, option, summary and Owner-facing note below is in it; files stay English. If the field is empty, ask the language question of `/connect` step 0 first.
 2. **Connected.** Every console-steps row of `config/accounts.md` is `done` or `n/a`, the Meta tools are loaded, and the last `/health` had no red row. Otherwise say so in one line and run `/connect` from its first open chapter.
 3. Read `memory/HOT.md`, `memory/state/current.md`, `checklist.md`, `config/*.md` (what is filled, what still holds `{{`), `memory/maps/create.md` and `memory/maps/build.md`, and the plan `current.md` names if one exists. Note today's date.

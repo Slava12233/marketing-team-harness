@@ -17,6 +17,10 @@
 # past it the install is stopped (its process tree is killed), reported, and the run goes on.
 # The harness files listed in docs/release-manifest.txt are checked for presence (no hashing) at the end of
 # Required; company-written areas (config/, plans/, the memory notes) are not counted.
+# Every copy is a new business: memory/tools/instance.mjs compares the instance marker (.harness-instance.json)
+# with this folder and computer; a new copy (no marker, or one from another folder or computer) is reset with no
+# question (-Check only reports it): another company's files are moved to .previous-company/<stamp>/ (nothing
+# is deleted), the blank templates of templates/company/ come back, .env is recreated from .env.example.
 # Every run writes bootstrap.log in this folder (overwritten per run: the mode, the date and every line this
 # script prints, never the contents of .env) and dashboard/bootstrap-result.json (the mode, the exit code and
 # each item's tag and version), -Check included.
@@ -35,7 +39,7 @@ $LogPath = ''; $Cur = ''; $BoundMs = 1200000
 $WingetFlags = '-e --source winget --accept-package-agreements --accept-source-agreements'
 $ClaudeDir = Join-Path $env:USERPROFILE '.local\bin'
 # The items of dashboard/bootstrap-result.json, each with the tag of the last line printed for it.
-$ItemKeys = @('git', 'node', 'claude', 'env', 'manifest', 'app', 'chrome', 'playwright', 'obsidian', 'node_upgrade', 'ffmpeg', 'hyperframes', 'obsidian_setup', 'routines')
+$ItemKeys = @('git', 'node', 'claude', 'env', 'manifest', 'app', 'chrome', 'playwright', 'obsidian', 'node_upgrade', 'ffmpeg', 'hyperframes', 'obsidian_setup', 'routines', 'instance')
 $Items = @{}
 foreach ($k in $ItemKeys) { $Items[$k] = @{ status = 'skipped'; version = '' } }
 
@@ -733,6 +737,32 @@ if ($Recheck.Count -gt 0) {
 }
 # A tool installed by this run (Node.js above all) is found by the steps below in this same window.
 if ($Mode -ne 'check') { Update-SessionPath }
+
+# Every copy is a new business: memory/tools/instance.mjs compares the instance marker (.harness-instance.json,
+# never committed) with this folder and this computer. A run without -Check resets a new copy at once, with no
+# question: another company's files go to .previous-company/<stamp>/, the blank templates come back and the
+# marker is written. -Check only reports. It never fails the run. Item: ok (this folder's own harness, or reset
+# now), todo (a new copy, under -Check), skipped (no Node.js or no tool yet).
+$Cur = 'instance'
+if ((Test-Path -LiteralPath 'memory/tools/instance.mjs' -PathType Leaf) -and (Get-Version 'node')) {
+  $global:LASTEXITCODE = 0
+  if ($Mode -eq 'check') {
+    try { & node memory/tools/instance.mjs --check --quiet *> $null } catch { $global:LASTEXITCODE = 1 }
+    $rc = $LASTEXITCODE
+    if ($rc -eq 0) { Say '[ok] This folder is its own harness: the business set up here stays.'; Set-Result 'instance' 'ok' }
+    elseif ($rc -eq 3) { Say "[todo] This folder is a new copy: run this script without -Check to start it as a new business (another company's files, if any, are archived in .previous-company/)."; Set-Result 'instance' 'todo' }
+    else { Say '[skipped] The new-copy check could not run here (node memory/tools/instance.mjs --check says why).' }
+  } else {
+    $out = $null
+    try { $out = & node memory/tools/instance.mjs --reset --quiet 2> $null } catch { $global:LASTEXITCODE = 1 }
+    $rc = $LASTEXITCODE
+    $res = [string](@($out) | Where-Object { $_ } | Select-Object -First 1)
+    if (($rc -eq 0) -and ($res -eq 'same')) { Say '[ok] This folder is its own harness: the business set up here stays.'; Set-Result 'instance' 'ok' }
+    elseif (($rc -eq 0) -and ($res -eq 'marked')) { Say '[ok] This folder starts as a new business: nothing of another company was here.'; Set-Result 'instance' 'ok' }
+    elseif (($rc -eq 0) -and $res.StartsWith('archived ')) { Say "[ok] This folder starts as a new business: the previous company's files were moved to $($res.Substring(9))/ and the blank templates put back."; Set-Result 'instance' 'ok' }
+    else { Say '[skipped] The new-copy check could not run here (node memory/tools/instance.mjs --reset says why).' }
+  }
+}
 
 # Obsidian set up with no click: memory/tools/obsidian-setup.mjs registers this folder as a vault in Obsidian's
 # own config (obsidian.json), turns on its command line interface there and starts the app on the vault.

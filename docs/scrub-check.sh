@@ -2,7 +2,8 @@
 # Scrub gate: fails when any term of docs/TEMPLATE-SPEC.md §8 appears anywhere in the repository.
 # Usage: bash docs/scrub-check.sh [repo-root]   (exit 0 = clean, 1 = hits, 2 = usage)
 # The term list is read from the fenced block under "## 8. Scrub gate" so it lives in one place.
-# Excluded: .git, node_modules, media folders, this script, the spec, the verbatim third-party
+# Excluded: .git, node_modules, media folders, this script, the spec, the per-machine files that are never
+# committed (.harness-instance.json, bootstrap.log, the .previous-company/ archives), the verbatim third-party
 # skills (their attribution lines are theirs; they were checked for company terms when copied), and
 # vendor/ (the HyperFrames plugin, vendored verbatim; see THIRD-PARTY.md).
 set -u
@@ -14,7 +15,7 @@ TERMS=$(awk '/^## 8\. Scrub gate/{f=1;next} f&&/^```/{c++; if(c==2){exit}; next}
   | tr ',' '\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//' | sed '/^$/d')
 
 THIRD_PARTY="ad-creative image banner-design frontend-design find-skills grill-me grilling viral-reverse-engineering"
-EXCL=(--exclude-dir=.git --exclude-dir=node_modules --exclude-dir=media --exclude-dir=vendor --exclude=TEMPLATE-SPEC.md --exclude=scrub-check.sh --binary-files=without-match)
+EXCL=(--exclude-dir=.git --exclude-dir=.previous-company --exclude-dir=node_modules --exclude-dir=media --exclude-dir=vendor --exclude=TEMPLATE-SPEC.md --exclude=scrub-check.sh --exclude=.harness-instance.json --exclude=bootstrap.log --binary-files=without-match)
 for d in $THIRD_PARTY; do EXCL+=("--exclude-dir=$d"); done
 
 STATUS=0
@@ -35,6 +36,13 @@ done <<< "$TERMS"
 PH=$(grep -r -n -E "${EXCL[@]}" --exclude-dir=config --exclude-dir=examples --exclude-dir=docs --exclude-dir=landing-template -e '\{\{[A-Z][A-Z_]+\}\}' "$ROOT" 2>/dev/null \
   | grep -v -E '(CLAUDE|README|ONBOARDING)\.md:|SKILL\.md:')
 if [ -n "$PH" ]; then echo "== warning: {{FIELD}} placeholders outside config/, examples/, docs/:"; echo "$PH" | head -20; fi
+
+# The blank gate: the template ships no company. Every tracked company file (config/, checklist.md, the vault's
+# company notes, plans/, reports/, the flights) must be its blank copy in templates/company/ (memory/tools/instance.mjs
+# --gate holds the list, the same one a new copy is reset by).
+if [ -f "$ROOT/memory/tools/instance.mjs" ] && command -v node >/dev/null 2>&1; then
+  node "$ROOT/memory/tools/instance.mjs" --gate --root "$ROOT" || STATUS=1
+else echo "== warning: the blank gate needs Node.js and memory/tools/instance.mjs; it was skipped"; fi
 
 [ "$STATUS" -eq 0 ] && echo "scrub gate: clean ($(echo "$TERMS" | wc -l) terms checked)"
 exit $STATUS

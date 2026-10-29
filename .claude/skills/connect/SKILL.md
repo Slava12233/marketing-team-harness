@@ -1,6 +1,6 @@
 ---
 name: connect
-description: "Part 1 of the onboarding, the connections pass: asks the Owner's language first (and from then on speaks, asks and writes Owner-facing notes in it), checks the prerequisites, asks four inventory questions about what already exists in Meta (portfolio, Page, ad account, developer app) and verifies them in the Owner's own Chrome, then runs every connection chapter of /onboard on the Owner's go (the Meta business basics, the Meta login, the pixel, the developer app and the System User with full access to the ad account, the app and the Page, the upload token moved from the clipboard into .env by env-set.mjs without anyone seeing it, WhatsApp, lead forms, the domain, fal through its MCP login), writes config/accounts.md and config/operator.md, and ends with /health green. Nothing is built, activated or spent. Use as the first command of a fresh copy after the bootstrap, when the Operator types /connect or /onboard, or to resume the pass at its first open chapter."
+description: "Part 1 of the onboarding, the connections pass: first the new-copy check (every copy of the harness is a new business: a copy is reset to the blank templates and the previous company's files archived, with no question; logins already on the computer are re-verified for this business), then asks the Owner's language first (and from then on speaks, asks and writes Owner-facing notes in it), checks the prerequisites, asks four inventory questions about what already exists in Meta (portfolio, Page, ad account, developer app) and verifies them in the Owner's own Chrome, then runs every connection chapter of /onboard on the Owner's go (the Meta business basics, the Meta login, the pixel, the developer app and the System User with full access to the ad account, the app and the Page, the upload token moved from the clipboard into .env by env-set.mjs without anyone seeing it, WhatsApp, lead forms, the domain, fal through its MCP login), writes config/accounts.md and config/operator.md, and ends with /health green. Nothing is built, activated or spent. Use as the first command of a fresh copy after the bootstrap, when the Operator types /connect or /onboard, or to resume the pass at its first open chapter."
 ---
 
 # /connect: connect everything, then `/health`
@@ -14,6 +14,17 @@ The step bodies are shared: the console chapters are `onboard` (A3–A10), which
 1. **Nothing is built, activated or spent.** This pass only connects accounts and writes files in this folder.
 2. **No secrets in chat.** No password, code or token is ever typed here. The one token the harness uses moves from Meta's Copy button into `.env` by a tool (`creatives/tools/env-set.mjs`) that clears the clipboard and prints only a character count: neither you nor the harness sees it.
 3. **One go per chapter.** Every click that changes something runs only on your go typed in the same message ("go: A7"); the harness stops at every password, code, identity document, card, legal terms screen and delete, and says "your turn".
+
+## Before step 0. Every copy is a new business
+
+Every copy of this harness (a clone of the template, an unzipped release, a folder copied from another company's harness) is a **new business**, whatever `config/`, the vault or the logins on this computer say. Before the first question, with nothing asked:
+
+```
+node memory/tools/instance.mjs --check
+```
+
+- **Exit 0** (this folder's own harness, by the instance marker `.harness-instance.json`): go on at step 0; the pass resumes at its first open chapter.
+- **Exit 3** (a new copy: no marker, or a marker written for another folder or another computer): reset it at once, with no question: `node memory/tools/instance.mjs --reset`. It moves every file of the previous company (config, checklist, the vault's company notes, plans, reports, the flights, the progress page's files, `.env`, `.vercel/`) into `.previous-company/<stamp>/` (nothing is deleted; gitignored), puts the blank templates of `templates/company/` back, recreates `.env` from `.env.example` and writes the marker. Then every chapter below is open, and nothing the previous company had (its ad account, Page, portfolio, app, System User, token, fal account, language) is assumed. After the language answer, say it in one line in that language: a new business, how many files of the previous company were archived and where (or "nothing of another company was here").
 
 ## Step 0. The language (the first question)
 
@@ -39,13 +50,15 @@ Many Owners already have a business on Meta. Ask one round of four (in the chat 
 
 A second round when it matters: a website (yes → the pixel and the domain chapters apply; no → both `n/a`), click-to-WhatsApp planned (yes → the WhatsApp number's label, never the number), instant forms planned (yes → Lead Ads terms and Leads Center), Instagram for ads (optional), and the two names chapter A4 needs (the business as Meta shows it; a short name for the app and the System User).
 
+**Logins already on this computer belong to no one yet.** The Meta and fal MCP logins are kept per computer, not per folder, and the Claude in Chrome extension drives the Owner's whole Chrome: a login made for another harness on this computer shows up here as "connected". It is never evidence about this business. Keep it (logging out would log the other harness out too), but re-verify it for this business: the ad account, the Page and the portfolio are chosen anew from a live read (`ads_get_ad_accounts`, `ads_get_user_pages`: list them and ask the Owner which are this business's, or that none is, and A4 creates them); the business switcher in Chrome must show this business before a click; fal's `check_account_status` names its account, and the Owner says whether that account pays for this business; the System User token is always a new one for this business (a reset leaves `.env` blank; another business's token is never reused); the account guard learns this business's ids from the reads (a reset archived the previous record). Never take an id from another harness folder, an earlier session or a previous company's archive.
+
 Then **verify in the Owner's Chrome before creating anything**: `https://business.facebook.com/settings` (the portfolio and the signed-in name's role), Accounts → Pages, Accounts → Ad accounts (currency, time zone, payment, the phone's state where shown), Accounts → Apps, Users → System users; read, screenshot (never a screen that lists another business), and record what exists with its public ids in the console-steps table of `config/accounts.md` (status `done` with "existing, verified <date>") and the marks. Create only what is missing, in the chapters below, each on the Owner's go.
 
 ## Step 3. The Meta chapters (A3–A8 of `onboard`, as written)
 
 Run `onboard` from its first chapter not `done` or `n/a`, with these points fixed:
 - **A4** creates only what step 2 found missing. An existing ad account is never recreated; its currency and time zone are read back and confirmed by the Owner in chat (they are permanent).
-- **A5**, the Meta login (`/mcp` → `meta-ads`): the Owner's own profile; only this company's business, ad account and Page shared; then a new session and `/connect` again (it resumes here).
+- **A5**, the Meta login (`/mcp` → `meta-ads`): the Owner's own profile; only this company's business, ad account and Page shared; then a new session and `/connect` again (it resumes here). When `meta-ads` is already logged in from another harness on this computer, it is kept only if `ads_get_ad_accounts` lists this business's ad account; otherwise the Owner re-authenticates (`/mcp` → `meta-ads` → re-authenticate) and shares this business's assets too.
 - **A7**, the developer app, the System User and the token: the harness creates the app (Business type, Marketing API, connected to the portfolio), the System User (Employee) and assigns its three assets at creation with full access (the ad account: Full control; the app: Develop app; the Page: Everything), on one go per chapter; developer terms and any code are the Owner's hard stops. **The token takes the clipboard route of `setup-console` 7g:** Generate and Copy on the go, no read of the dialog except `find` for the Copy control, `timeout 60 node creatives/tools/env-set.mjs --from-clipboard META_MARKETING_TOKEN`, the two public ids through the same tool, then the three live checks. An existing app or System User found in step 2 is reused: assign the missing assets, generate a token for it the same way.
 - **A6, A8**: pixel, WhatsApp, lead forms, domain, Instagram per the step-2 answers; what does not apply is `n/a` with the reason.
 
@@ -68,4 +81,4 @@ Run `/health --keys` first (A10: every row green or `n/a` by the Owner's word), 
 
 ## Resume
 
-`/connect` (and `/onboard`, which routes here) resumes at the first chapter whose console-steps row is not `done` or `n/a`, after the language question (one question, kept short when the language is already set). Nothing is asked twice when `config/` already holds the answer: read it, confirm it in one line.
+`/connect` (and `/onboard`, which routes here) resumes at the first chapter whose console-steps row is not `done` or `n/a`, after the new-copy check (a new copy never resumes: it is reset and starts at step 0) and the language question (one question, kept short when the language is already set). Nothing is asked twice when `config/` already holds the answer: read it, confirm it in one line.

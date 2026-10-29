@@ -1,27 +1,38 @@
-<!-- Written by /setup on 2026-10-29. Edit by hand or re-run /setup. -->
+<!-- Written by /setup on {{DATE}}. Edit by hand or re-run /setup. -->
 
 # Company
 
-**Name:** הבית של כל הבתים (Habait)
+**Name:** {{COMPANY_NAME}}
+<!-- setup: the company's full trading name as it appears to customers -->
 
-**Short name:** Habait (written "HABAIT" in the wordmark; "Habait" in Latin inside Hebrew copy)
+**Short name:** {{COMPANY_SHORT_NAME}}
+<!-- setup: the short form used in ad copy and campaign names (and how it is written inside other-language copy, if it differs) -->
 
-**Legal entity:** הבית של כל הבתים בע"מ
+**Legal entity:** {{LEGAL_ENTITY}}
+<!-- setup: optional; registered name and registration number, used in disclosures and lead-form privacy links -->
 
-**Website:** none (the Owner, 2026-10-29: no website receives paid traffic; Meta Business info still lists habait.biz and the Page links habait.ai, neither is a destination)
+**Website:** {{WEBSITE}}
+<!-- setup: the public site root (e.g. https://example.com); destination pages are listed in config/product.md -->
 
-**Headquarters:** Haifa, Israel
+**Headquarters:** {{HQ_CITY_COUNTRY}}
+<!-- setup: city, country -->
 
-**Primary market:** Israel
+**Primary market:** {{PRIMARY_MARKET}}
+<!-- setup: the one country (or region) most campaigns target; rules call it "the primary market" -->
 
-**Other markets:** none
+**Other markets:** {{OTHER_MARKETS}}
+<!-- setup: a comma-separated list in priority order, or "none" -->
 
 ## What the company sells
 
-Habait is a real-estate marketing company. Its Facebook Page describes it as a PropTech platform that connects real-estate developers in Israel with buyers from around the world, using AI (an AI agent named Ziv accompanies buyers through the purchase). This harness markets the service to developers (B2B): developers bring their projects to Habait to reach buyers. Habait does not promise sales, sell-out, prices, yields or returns, and does not give financial, legal or tax advice.
+{{WHAT_THE_COMPANY_SELLS}}
+<!-- setup: one paragraph in plain language: what is sold, to whom, and what the company does NOT do (e.g. "presents listings; does not sell or broker") -->
 
-**Stage:** live
+**Stage:** {{STAGE}}
+<!-- setup: pre-launch / live / scaling -->
 
-**Launch date:** none
+**Launch date:** {{LAUNCH_DATE}}
+<!-- setup: optional; ISO date and time zone of a dated product event (launch, opening, season start), e.g. 2027-03-01 00:00 Europe/London; it drives the launch-day switch, the "before a dated event" loop and the control-room countdown; "none" when there is no such date -->
 
-**Revenue model:** not stated
+**Revenue model:** {{REVENUE_MODEL}}
+<!-- setup: how the company earns money, as stated publicly; "not stated" is a valid answer; never invent one -->

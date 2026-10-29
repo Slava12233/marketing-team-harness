@@ -7,7 +7,7 @@
 #       hidden by an ignore rule (it would be missing from the zip), dist\ is ignored
 #   (b) docs/scrub-check.sh, run with Git for Windows' bash (Git Bash), prints "scrub gate: clean"
 #   (b2) the node test suites pass, one after the other, each given at most 300 s and stopped (with its process
-#        tree) past that: memory/tools/tools.test.mjs, dashboard/setup-page.test.mjs,
+#        tree) past that: memory/tools/tools.test.mjs, memory/tools/instance.test.mjs, dashboard/setup-page.test.mjs,
 #        .claude/hooks/account-guard.test.mjs, bootstrap.test.mjs and every creatives/tools/*.test.mjs; -SkipTests bypasses them
 #        with a printed warning (then run docs/regression-run.md before publishing)
 #   (b3) docs/release-manifest.txt ("<sha256>  <path>" for every tracked file but itself, LF) matches the tree;
@@ -109,7 +109,7 @@ if ($SkipTests) {
 } else {
   $node = Get-Command node -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
   if (-not $node) { Refuse 'node was not found: install Node.js 20 or newer (or pass -SkipTests, not recommended).' }
-  $suites = @('memory/tools/tools.test.mjs', 'dashboard/setup-page.test.mjs', '.claude/hooks/account-guard.test.mjs', 'bootstrap.test.mjs')
+  $suites = @('memory/tools/tools.test.mjs', 'memory/tools/instance.test.mjs', 'dashboard/setup-page.test.mjs', '.claude/hooks/account-guard.test.mjs', 'bootstrap.test.mjs')
   foreach ($s in $suites) { if (-not (Test-Path -LiteralPath (Join-Path $root $s))) { Refuse "the test suite $s is missing." } }
   $toolsDir = Join-Path $root 'creatives\tools'
   if (Test-Path -LiteralPath $toolsDir) {

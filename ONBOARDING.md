@@ -35,7 +35,7 @@ Claude Max is the working plan: the agents run on Opus and Sonnet, and creative 
 
 ### 3b. The path, step by step
 
-1. **Download and unzip.** Download the release zip (or clone the repository, or press "Use this template" on GitHub and clone your copy, kept private) and unzip it into a folder you own, for example a folder named `marketing-team-harness` inside your Documents folder. Every later step runs in that folder.
+1. **Download and unzip.** Download the release zip (or clone the repository, or press "Use this template" on GitHub and clone your copy, kept private) and unzip it into a folder you own, for example a folder named `marketing-team-harness` inside your Documents folder. Every later step runs in that folder. **One folder per business:** every copy is a new business, even a folder copied from another company's harness on the same computer; the bootstrap and `/connect` archive whatever another company left in it (in `.previous-company/`) and start from the blank templates, and the logins already on the computer are checked again for this business.
 2. **Open a terminal in the folder.** Windows: open the folder in File Explorer, right-click an empty spot and choose "Open in Terminal". macOS: open Terminal, type `cd ` (with a space after it), drag the folder onto the window and press Return.
 3. **Run the bootstrap.**
    - Windows: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1`

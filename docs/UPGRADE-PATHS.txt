@@ -58,7 +58,8 @@ creatives/landing-template/
 # The setup progress page generator and its smoke test
 dashboard/setup-page.mjs
 dashboard/setup-page.test.mjs
-dashboard/test-fixtures/
+# The blank company files a new copy is reset to (memory/tools/instance.mjs), also the progress-page test fixture
+templates/
 # The control-room mod and the vendored video plugin
 control-room/
 vendor/
@@ -127,6 +128,8 @@ creatives/briefs/
 creatives/uploads/
 # Every creatives/<flight>/ folder is the company's too: it is in no section, so it is left alone
 # Per-machine and local state
+.harness-instance.json
+.previous-company/
 .claude/settings.local.json
 .obsidian/workspace*
 .obsidian/cache/

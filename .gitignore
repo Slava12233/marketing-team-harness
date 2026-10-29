@@ -4,6 +4,11 @@
 !.env.example
 .env.local
 
+# Every copy is a new business (memory/tools/instance.mjs): the instance marker names this folder and computer,
+# and a previous company's files are archived beside it; neither is ever committed
+.harness-instance.json
+.previous-company/
+
 # Upload ledgers (ids and hashes of a real account)
 creatives/uploads/*.json
 

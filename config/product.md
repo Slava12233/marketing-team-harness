@@ -1,48 +1,54 @@
-<!-- Written by /setup on 2026-10-29. Edit by hand or re-run /setup. -->
+<!-- Written by /setup on {{DATE}}. Edit by hand or re-run /setup. -->
 
 # Product
 
-**Product name:** HABAIT (the AI agent inside it: "Ziv", זיו)
+**Product name:** {{PRODUCT_NAME}}
+<!-- setup: the product's name as used in copy (and the name of any assistant or persona inside it) -->
 
-**One-line promise:** "HABAIT היא פלטפורמת PropTech שמחברת בין יזמים בישראל לבין רוכשים מכל העולם." (Facebook Page bio, Hebrew, read 2026-10-29; the copywriter adapts it for developers, for the Owner's approval)
+**One-line promise:** {{ONE_LINE_PROMISE}}
+<!-- setup: the headline promise as it appears on the site, quoted verbatim -->
 
-**What it does:** For developers: Habait markets the developer's residential project to buyers, in Israel and abroad, through its platform and its AI agent, and handles the buyer conversations. (From the Page bio and the Owner's interview answers, 2026-10-29; no figures.)
+**What it does:** {{WHAT_IT_DOES}}
+<!-- setup: a short paragraph on what the visitor actually gets -->
 
-**What it does not do:** It does not guarantee sales, sell-out, prices, yields or returns; it gives no financial, legal or tax advice; it does not state buyer counts or results without a source.
+**What it does not do:** {{WHAT_IT_DOES_NOT_DO}}
+<!-- setup: limits that copy must never imply (no advice, no sales, no guarantees, can be wrong, etc.) -->
 
 ## Funnels
 
 | Name | Audience | Entry | Destination URL | Conversion event | What counts as a result |
 |---|---|---|---|---|---|
-| developers-whatsapp | Real-estate developers | click-to-WhatsApp ad (Hebrew) | none (no website): the WhatsApp chat "Habait main", with a pre-filled message carrying the ad's ref code | none (no pixel); Meta's messaging conversation started | a conversation started: the developer sends the pre-filled message; quality counted weekly by the Owner (qualified, meeting booked) |
+| {{FUNNEL_NAME}} | {{FUNNEL_AUDIENCE}} | {{FUNNEL_ENTRY}} | {{FUNNEL_DESTINATION_URL}} | {{FUNNEL_CONVERSION_EVENT}} | {{FUNNEL_RESULT}} |
+<!-- setup: one row per funnel; audience names match config/audiences.md; entry = ad type (link ad, instant form, click-to-WhatsApp, ...); conversion event as the pixel or the database records it ("none" is a valid answer) -->
 
 ## Destination pages
 
 | Language | URL | H1 as written | CTA as written | Pixel present | Notes |
 |---|---|---|---|---|---|
-| he | none (no website) | n/a | n/a | no | the funnel ends in WhatsApp; habait.biz and habait.ai are not for paid traffic (Owner, 2026-10-29) |
+| {{PAGE_LANGUAGE}} | {{PAGE_URL}} | {{PAGE_H1}} | {{PAGE_CTA}} | {{PAGE_PIXEL_YES_NO}} | {{PAGE_NOTES}} |
+<!-- setup: one row per page that receives paid traffic, fetched live by /setup; quote H1 and CTA verbatim; notes = consent gating, redirects, "not for paid traffic" (e.g. a sign-in screen), dated changes such as a CTA that disappears at launch -->
 
 ## Key copy in use
 
-- "HABAIT היא פלטפורמת PropTech שמחברת בין יזמים בישראל לבין רוכשים מכל העולם." (Facebook Page bio, Hebrew)
-- "ללא עמלת תיווך" (Facebook Page bio, Hebrew; needs clearance before use in ads, see config/claims.md)
-- "זיו, סוכנת ה-AI שלנו, מלווה אתכם לאורך תהליך הרכישה." (Facebook Page bio, Hebrew; buyer-facing, read from the screen)
+- {{KEY_COPY_LINE}} ({{KEY_COPY_PAGE}})
+<!-- setup: quote verbatim, one bullet per line of copy, each with the page and language it comes from; lines that need clearance before use in ads are also listed in config/claims.md -->
 
 ## Existing assets
 
 | Asset | What it is | Where it is | Cleared for ads |
 |---|---|---|---|
-| Past ads | Images, videos and copy of earlier Habait ads in ad account 1010578430110331 | the ad account (read with ads_get_creatives / ads_get_ad_images) | not checked: only Habait's own past ads, never the other team's, once the Owner confirms which are Habait's |
-| HABAIT logo | white wordmark "HABAIT / HOME IS HABAIT" on navy | the Facebook Page profile picture (files to come from the Owner) | yes (the company's own mark) |
+| {{ASSET_NAME}} | {{ASSET_DESCRIPTION}} | {{ASSET_LOCATION}} | {{ASSET_CLEARED_YES_NO}} |
+<!-- setup: films, images, screen recordings, brand files, print, demos; location is a path inside this repo or a URL; "cleared" = rights, music licence, real names and AI-voice questions answered -->
 
 ## Product feed (optional)
 
-**Feed platform:** none
+**Feed platform:** {{FEED_PLATFORM}}
 
-**Feed URL owner:** n/a
+**Feed URL owner:** {{FEED_URL_OWNER}}
 
-**Feed credential name:** n/a
+**Feed credential name:** {{FEED_CREDENTIAL_NAME}}
 
-**Feed currency:** n/a
+**Feed currency:** {{FEED_CURRENCY}}
 
-**Product count:** n/a
+**Product count:** {{PRODUCT_COUNT}}
+<!-- setup: "none" when the company sells no catalogued products; names only for credentials -->

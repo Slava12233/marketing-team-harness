@@ -10,21 +10,22 @@ import { spawnSync } from 'node:child_process';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXAMPLE = join(REPO, 'examples', 'acme-fitness');
-const FIXTURES = join(REPO, 'dashboard', 'test-fixtures');   // the placeholder template: config/, checklist.md, state.json
+const FIXTURES = join(REPO, 'templates', 'company');   // the blank company files a new copy is reset to (memory/tools/instance.mjs)
 
 function withCopy(example, fn) {   // a minimal harness folder: the template files, or the fictional example over them
   const dir = mkdtempSync(join(tmpdir(), 'setup-page-'));
   try {
     writeFileSync(join(dir, 'CLAUDE.md'), '');
-    // The bare template comes from dashboard/test-fixtures (config/ with its {{ placeholders, the empty checklist, the
-    // empty state file): the repository's own config/ may already be a company's filled copy.
+    // The bare template comes from templates/company/ (config/ with its {{ placeholders, the empty checklist, the
+    // empty state file: the files a new copy is reset to), so a company's filled config/ never changes a result.
     cpSync(join(REPO, '.mcp.json'), join(dir, '.mcp.json'));
     cpSync(join(FIXTURES, 'checklist.md'), join(dir, 'checklist.md'));
     cpSync(join(FIXTURES, 'config'), join(dir, 'config'), { recursive: true });
+    cpSync(join(REPO, 'config', 'README.md'), join(dir, 'config', 'README.md'));
     mkdirSync(join(dir, 'dashboard'));
     mkdirSync(join(dir, 'plans'));
     cpSync(join(REPO, 'dashboard', 'setup-page.mjs'), join(dir, 'dashboard', 'setup-page.mjs'));
-    cpSync(join(FIXTURES, 'state.json'), join(dir, 'dashboard', 'state.json'));
+    cpSync(join(FIXTURES, 'dashboard', 'state.json'), join(dir, 'dashboard', 'state.json'));
     if (example) {
       cpSync(join(EXAMPLE, 'config'), join(dir, 'config'), { recursive: true });
       cpSync(join(EXAMPLE, 'checklist.md'), join(dir, 'checklist.md'));

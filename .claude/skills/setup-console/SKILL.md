@@ -22,6 +22,8 @@ The same steps run in **Owner mode** when the Owner is alone at their own comput
 
 ## Prerequisites (check them in this order; stop at the first missing one)
 
+0. **A new copy is a new business.** `node memory/tools/instance.mjs --check` exits 0, or exit 3 was followed by `node memory/tools/instance.mjs --reset` (the previous company's files archived in `.previous-company/<stamp>/`, the blank templates back) and the `/setup` rounds below run for this client. A login already on this computer (Meta, fal, the extension's Chrome) is re-verified for this client's business before any click.
+
 1. **Access.** Either the client made the installer's own Facebook profile an **Admin** of the client's Business portfolio for the setup day (Business Settings → Users → People → Add → Admin access), or the installer is signed in, in the browser the extension drives, as the client's admin. Read Business Settings → Users → People and confirm the signed-in name shows full control.
 2. **The personal profile.** facebook.com is signed in as a **personal profile**, not "switched into" the Page. Read the profile menu (top right); if it shows the Page, the installer switches back (Meta's checkpoint and several business screens fail inside a Page profile; see the traps).
 3. **Two-factor authentication** is on for the signed-in profile (`https://accountscenter.facebook.com/password_and_security`). If it is off, the installer turns it on (codes are a hard stop).

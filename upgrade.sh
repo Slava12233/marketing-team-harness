@@ -17,7 +17,8 @@
 #   (d) one question: Apply the upgrade now? [y/N] (Enter means No; --yes skips it)
 #   (e) every file about to be overwritten is copied to .upgrade-backup/<YYYY-MM-DD-HHMM>/ (same relative
 #       path), then the release's files are copied in
-#   (f) node memory/tools/lint.mjs and node memory/tools/build-hot.mjs --by upgrade, when they exist
+#   (f) node memory/tools/lint.mjs, node memory/tools/build-hot.mjs --by upgrade and node memory/tools/instance.mjs
+#       --adopt (the instance marker for this folder when it has none: an upgrade keeps the business), when they exist
 #   (g) what to do next
 # It never pushes, never runs git, never opens .env and never prints a secret.
 # Exit codes: 0 upgraded (or --check done), 1 refused, declined or failed, 2 usage.
@@ -272,6 +273,9 @@ main() {
     else echo "memory/tools/lint.mjs is not there: skipped"; fi
     if [ -f memory/tools/build-hot.mjs ]; then node memory/tools/build-hot.mjs --by upgrade; rc=$?; echo "build-hot.mjs exit code: $rc"
     else echo "memory/tools/build-hot.mjs is not there: skipped"; fi
+    # An upgrade in place keeps the business: the instance marker is written when the folder has none, so the
+    # new-copy check does not take this company for a copy (a marker from another folder is left as it is).
+    if [ -f memory/tools/instance.mjs ]; then node memory/tools/instance.mjs --adopt; rc=$?; echo "instance.mjs exit code: $rc"; fi
   else
     echo "Node.js was not found: lint.mjs and build-hot.mjs were skipped (run bash bootstrap.sh --check)"
   fi

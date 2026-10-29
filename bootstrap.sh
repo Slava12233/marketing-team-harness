@@ -19,6 +19,10 @@
 # goes on. The Homebrew installer runs in the foreground without the bound: it asks for the Mac password.
 # The harness files listed in docs/release-manifest.txt are checked for presence (no hashing) at the end of
 # Required; company-written areas (config/, plans/, the memory notes) are not counted.
+# Every copy is a new business: memory/tools/instance.mjs compares the instance marker (.harness-instance.json)
+# with this folder and computer; a new copy (no marker, or one from another folder or computer) is reset with no
+# question (--check only reports it): another company's files are moved to .previous-company/<stamp>/ (nothing
+# is deleted), the blank templates of templates/company/ come back, .env is recreated from .env.example.
 # Every run writes bootstrap.log in this folder (overwritten per run: the mode, the date and every line this
 # script prints, never the contents of .env) and dashboard/bootstrap-result.json (the mode, the exit code and
 # each item's tag and version), --check included.
@@ -34,7 +38,7 @@ PLAN=""; ENV_TODO=0; PAGE_TODO=0; GO=0; DECLINED=0; NOANSWER=0; ANSWER=""
 LOG=""; CUR=""; BOUND=1200; BREW_TRIED=0
 WINGET_FLAGS="-e --source winget --accept-package-agreements --accept-source-agreements"
 # The items of dashboard/bootstrap-result.json, each with the tag of the last line printed for it.
-ITEM_KEYS="git node claude env manifest app chrome playwright obsidian node_upgrade ffmpeg hyperframes obsidian_setup routines"
+ITEM_KEYS="git node claude env manifest app chrome playwright obsidian node_upgrade ffmpeg hyperframes obsidian_setup routines instance"
 
 out() { printf '%s\n' "$*"; }   # a function's value (never logged)
 mark() {   # mark <status>: the status of the current item; a re-check's [ok] keeps an [installed]
@@ -820,6 +824,29 @@ if [ -n "$RECHECK" ]; then
 fi
 # A tool installed by this run (Node.js above all) is found by the steps below in this same window.
 [ "$MODE" = check ] || path_refresh
+
+# Every copy is a new business: memory/tools/instance.mjs compares the instance marker (.harness-instance.json,
+# never committed) with this folder and this computer. A run without --check resets a new copy at once, with no
+# question: another company's files go to .previous-company/<stamp>/, the blank templates come back and the
+# marker is written. --check only reports. It never fails the run. Item: ok (this folder's own harness, or reset
+# now), todo (a new copy, under --check), skipped (no Node.js or no tool yet).
+cur instance
+if [ -f memory/tools/instance.mjs ] && [ -n "$(node_v)" ]; then
+  if [ "$MODE" = check ]; then
+    node memory/tools/instance.mjs --check --quiet >/dev/null 2>&1; rc=$?
+    if [ "$rc" = 0 ]; then say "[ok] This folder is its own harness: the business set up here stays."; set_status instance ok
+    elif [ "$rc" = 3 ]; then say "[todo] This folder is a new copy: run this script without --check to start it as a new business (another company's files, if any, are archived in .previous-company/)."; set_status instance todo
+    else say "[skipped] The new-copy check could not run here (node memory/tools/instance.mjs --check says why)."; fi
+  else
+    res=$(node memory/tools/instance.mjs --reset --quiet 2>/dev/null); rc=$?
+    case "$rc:$res" in
+      0:same) say "[ok] This folder is its own harness: the business set up here stays."; set_status instance ok ;;
+      0:marked) say "[ok] This folder starts as a new business: nothing of another company was here."; set_status instance ok ;;
+      "0:archived "*) say "[ok] This folder starts as a new business: the previous company's files were moved to ${res#archived }/ and the blank templates put back."; set_status instance ok ;;
+      *) say "[skipped] The new-copy check could not run here (node memory/tools/instance.mjs --reset says why)." ;;
+    esac
+  fi
+fi
 
 # Obsidian set up with no click: memory/tools/obsidian-setup.mjs registers this folder as a vault in Obsidian's
 # own config (obsidian.json), turns on its command line interface there and starts the app on the vault.
