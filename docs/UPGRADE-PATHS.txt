@@ -58,6 +58,7 @@ creatives/landing-template/
 # The setup progress page generator and its smoke test
 dashboard/setup-page.mjs
 dashboard/setup-page.test.mjs
+dashboard/test-fixtures/
 # The control-room mod and the vendored video plugin
 control-room/
 vendor/

@@ -10,16 +10,21 @@ import { spawnSync } from 'node:child_process';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXAMPLE = join(REPO, 'examples', 'acme-fitness');
+const FIXTURES = join(REPO, 'dashboard', 'test-fixtures');   // the placeholder template: config/, checklist.md, state.json
 
 function withCopy(example, fn) {   // a minimal harness folder: the template files, or the fictional example over them
   const dir = mkdtempSync(join(tmpdir(), 'setup-page-'));
   try {
     writeFileSync(join(dir, 'CLAUDE.md'), '');
-    for (const f of ['.mcp.json', 'checklist.md']) cpSync(join(REPO, f), join(dir, f));
-    cpSync(join(REPO, 'config'), join(dir, 'config'), { recursive: true });
+    // The bare template comes from dashboard/test-fixtures (config/ with its {{ placeholders, the empty checklist, the
+    // empty state file): the repository's own config/ may already be a company's filled copy.
+    cpSync(join(REPO, '.mcp.json'), join(dir, '.mcp.json'));
+    cpSync(join(FIXTURES, 'checklist.md'), join(dir, 'checklist.md'));
+    cpSync(join(FIXTURES, 'config'), join(dir, 'config'), { recursive: true });
     mkdirSync(join(dir, 'dashboard'));
     mkdirSync(join(dir, 'plans'));
-    for (const f of ['setup-page.mjs', 'state.json']) cpSync(join(REPO, 'dashboard', f), join(dir, 'dashboard', f));
+    cpSync(join(REPO, 'dashboard', 'setup-page.mjs'), join(dir, 'dashboard', 'setup-page.mjs'));
+    cpSync(join(FIXTURES, 'state.json'), join(dir, 'dashboard', 'state.json'));
     if (example) {
       cpSync(join(EXAMPLE, 'config'), join(dir, 'config'), { recursive: true });
       cpSync(join(EXAMPLE, 'checklist.md'), join(dir, 'checklist.md'));
@@ -53,7 +58,7 @@ function page(dir) {   // the written page, its embedded data, and the status of
 test('bare template: everything to do except .mcp.json; offline; optional rows hidden', () => withCopy(false, dir => {
   const r = run(dir, '--print');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, SEALED ? /^setup page: 1\/51 done, next: Git installed/m : /^setup page: \d+\/51 done, next: Git installed/m);
+  assert.match(r.stdout, SEALED ? /^setup page: 1\/52 done, next: Git installed/m : /^setup page: \d+\/52 done, next: Git installed/m);
   const { html, st } = page(dir);
   const app = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'app.desktop'];   // machine-wide installs off Windows
   for (const [k, s] of Object.entries(st)) {
