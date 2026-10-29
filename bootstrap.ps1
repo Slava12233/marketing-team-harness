@@ -35,7 +35,7 @@ $ErrorActionPreference = 'Continue'
 
 $Missing = $false; $Recheck = @(); $Done = $false; $Agreed = $false; $RecoMissing = @(); $TimedOut = $false
 $Plan = @(); $EnvTodo = $false; $PageTodo = $false; $Go = $false; $Declined = $false; $NoAnswer = $false
-$LogPath = ''; $Cur = ''; $BoundMs = 1200000
+$LogPath = ''; $Cur = ''; $BoundMs = 1200000; $LiveOn = $false; $LiveStarted = ''; $LiveCur = ''; $PageOpened = $false; $Seen = @{}
 $WingetFlags = '-e --source winget --accept-package-agreements --accept-source-agreements'
 $ClaudeDir = Join-Path $env:USERPROFILE '.local\bin'
 # The items of dashboard/bootstrap-result.json, each with the tag of the last line printed for it.
@@ -51,6 +51,8 @@ function Set-Result([string]$item, [string]$status) {   # a re-check's [ok] keep
   if (-not $item) { return }
   if (($status -eq 'ok') -and ($script:Items[$item].status -eq 'installed')) { return }
   $script:Items[$item].status = $status
+  $script:Seen[$item] = $true
+  Write-Live
 }
 function Set-Version([string]$item, [string]$version) { if ($item -and $version) { $script:Items[$item].version = $version } }
 function Say([string]$text) {
@@ -79,7 +81,32 @@ function Write-Result([int]$code) {   # dashboard/bootstrap-result.json, written
     [System.IO.File]::WriteAllText((Join-Path $dir 'bootstrap-result.json'), (($lines -join "`n") + "`n"))
   } catch { Write-Host 'dashboard/bootstrap-result.json could not be written.' }
 }
-function Stop-Run([int]$code) { Write-Result $code; exit $code }
+# The setup wizard (dashboard/setup.html, a static page shipped with the harness) reads dashboard/setup-live.js every
+# 2 seconds: each item's status, the item being installed, and whether the run is still going. It is written by
+# hand after every step (Node.js may be what is missing), atomically (a temp file, then a move); -Check writes
+# none and opens nothing.
+function Write-Live([switch]$Finished) {
+  if (-not $script:LiveOn) { return }
+  $running = 'true'; if ($Finished) { $running = 'false' }
+  $pairs = @()
+  foreach ($k in $ItemKeys) { $s = 'pending'; if ($script:Seen.ContainsKey($k)) { $s = $script:Items[$k].status }; $pairs += ('"' + $k + '": "' + $s + '"') }
+  $text = 'window.SETUP_LIVE = {"started": "' + $script:LiveStarted + '", "updated": "' + (Get-Now) + '", "script": "bootstrap.ps1", "mode": "' + (Get-RunMode) +
+    '", "running": ' + $running + ', "current": "' + $script:LiveCur + '", "items": {' + ($pairs -join ', ') + '}};' + "`n"
+  try {
+    $dir = Join-Path (Get-Location).ProviderPath 'dashboard'
+    $tmp = Join-Path $dir 'setup-live.js.tmp'
+    [System.IO.File]::WriteAllText($tmp, $text)
+    Move-Item -LiteralPath $tmp -Destination (Join-Path $dir 'setup-live.js') -Force -ErrorAction Stop
+  } catch { }
+}
+function Set-Doing([string]$item) { $script:Cur = $item; $script:LiveCur = $item; Write-Live }   # the wizard shows it as being installed now
+function Open-Wizard {   # the wizard in the default browser; $true when the browser was started
+  $page = Join-Path (Get-Location).ProviderPath 'dashboard\setup.html'
+  if (-not (Test-Path -LiteralPath $page -PathType Leaf)) { return $false }
+  if ($env:HARNESS_NO_BROWSER) { return $false }   # tests: never start a browser
+  try { Start-Process -FilePath $page -ErrorAction Stop; return $true } catch { return $false }
+}
+function Stop-Run([int]$code) { Write-Result $code; $script:LiveCur = ''; Write-Live -Finished; exit $code }
 function Show-Usage {
   Say 'Usage: powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 [-Ask | -Yes | -Check] [-Help]'
   Say '  (no option)  check, list what is missing, then one question installs all of it (Enter means Yes)'
@@ -310,6 +337,12 @@ elseif ($Mode -eq 'ask') { Say 'Mode: one question before each install. Enter me
 elseif ($Yes) { Say 'Mode: check everything, then install all that is missing, with no question (-Yes).' }
 else { Say 'Mode: check everything, then one question installs all that is missing. Enter means Yes.' }
 Say 'No token or password is ever asked for here.'
+# The setup wizard opens now, before the first check, and ticks every step of this run as it lands.
+if (($Mode -ne 'check') -and (Test-Path -LiteralPath 'dashboard/setup.html' -PathType Leaf)) {
+  $LiveOn = $true; $LiveStarted = Get-Now; Write-Live
+  if (Open-Wizard) { $PageOpened = $true; Say 'The setup wizard opened in your browser (dashboard/setup.html): it ticks every step as it happens.' }
+  else { Say 'Open dashboard/setup.html in a browser to watch every step tick as it happens.' }
+}
 
 Say ''
 Say 'Required'
@@ -693,7 +726,7 @@ if ($Mode -eq 'all') {
     if ($EnvTodo -or $PageTodo) {
       Say 'and will:'
       if ($EnvTodo) { Say '  - copy .env.example to .env (its contents are never shown)' }
-      if ($PageTodo) { Say '  - open the setup progress page (dashboard/setup.html) in your browser' }
+      if ($PageTodo) { Say '  - fill the setup wizard (dashboard/setup.html) with the next steps, /connect and /campaign' }
     }
     $wingetItems = @('git', 'node', 'app', 'chrome', 'obsidian', 'node-upgrade', 'ffmpeg')
     $usesWinget = $false
@@ -710,17 +743,18 @@ if ($Mode -eq 'all') {
   }
   if ($Go) {
     if ($Plan.Count -gt 0) { Say ''; Say 'Installing' }
-    if ($Plan -contains 'git') { Put 'Git' 'git' }
-    if ($Plan -contains 'node') { Put 'Node.js' 'node' }
-    if ($Plan -contains 'claude') { Put 'Claude Code' 'claude' }
-    if ($Plan -contains 'app') { Invoke-ClaudeApp }
-    if ($Plan -contains 'chrome') { Invoke-Chrome }
-    if ($EnvTodo) { Copy-Env }
-    if ($Plan -contains 'playwright') { Install-PlaywrightNow }
-    if ($Plan -contains 'obsidian') { Invoke-Obsidian }
-    if ($Plan -contains 'node-upgrade') { Invoke-NodeUpgrade }
-    if ($Plan -contains 'ffmpeg') { Invoke-FFmpeg }
-    if ($Plan -contains 'hyperframes') { Install-HyperframesNow }
+    if ($Plan -contains 'git') { Set-Doing 'git'; Put 'Git' 'git' }
+    if ($Plan -contains 'node') { Set-Doing 'node'; Put 'Node.js' 'node' }
+    if ($Plan -contains 'claude') { Set-Doing 'claude'; Put 'Claude Code' 'claude' }
+    if ($Plan -contains 'app') { Set-Doing 'app'; Invoke-ClaudeApp }
+    if ($Plan -contains 'chrome') { Set-Doing 'chrome'; Invoke-Chrome }
+    if ($EnvTodo) { Set-Doing 'env'; Copy-Env }
+    if ($Plan -contains 'playwright') { Set-Doing 'playwright'; Install-PlaywrightNow }
+    if ($Plan -contains 'obsidian') { Set-Doing 'obsidian'; Invoke-Obsidian }
+    if ($Plan -contains 'node-upgrade') { Set-Doing 'node_upgrade'; Invoke-NodeUpgrade }
+    if ($Plan -contains 'ffmpeg') { Set-Doing 'ffmpeg'; Invoke-FFmpeg }
+    if ($Plan -contains 'hyperframes') { Set-Doing 'hyperframes'; Install-HyperframesNow }
+    $LiveCur = ''; Write-Live
   }
 }
 
@@ -868,15 +902,16 @@ if (($Mode -ne 'check') -and -not $Declined -and (Test-Path -LiteralPath 'dashbo
     $markApp = 'todo'; if (Get-ClaudeAppPath) { $markApp = 'done' }
     $pageArgs = @('dashboard/setup-page.mjs', '--mark', "install.git=$markGit", '--mark', "install.node=$markNode", '--mark', "install.claude=$markClaude", '--mark', "app.desktop=$markApp", '--mark', "obsidian.installed=$markObsidian")
     if ($ObsSetup -eq 'ok') { $pageArgs += @('--mark', 'obsidian.vault_opened=done', '--mark', 'obsidian.cli=done') }
-    $pageArgs += '--open'
+    if (-not $PageOpened) { $pageArgs += '--open' }
     Say ''
     $global:LASTEXITCODE = 0
     try { & node @pageArgs *> $null } catch { $global:LASTEXITCODE = 1 }
-    if ($LASTEXITCODE -eq 0) { Say 'A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html' }
-    else { Say 'The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later.' }
+    if (($LASTEXITCODE -eq 0) -and $PageOpened) { Say 'The setup wizard now shows the next steps too (/connect, then /campaign); keep it beside Claude Code: dashboard/setup.html' }
+    elseif ($LASTEXITCODE -eq 0) { Say 'The setup wizard opened in your browser; keep it beside Claude Code: dashboard/setup.html' }
+    else { Say 'The setup wizard could not be filled with the next steps (node dashboard/setup-page.mjs failed); /connect fills it later.' }
   } elseif ($PageTodo) {
     Say ''
-    Say 'The progress page needs Node.js, which this window does not find yet; /setup opens it later.'
+    Say 'The setup wizard shows the installation; its next steps appear once Node.js is found (a new terminal window, or /connect fills them).'
   }
 }
 Say ''

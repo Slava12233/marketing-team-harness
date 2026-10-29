@@ -2,7 +2,7 @@
 // folder and never touches this repository's own dashboard files. Run: node dashboard/setup-page.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,29 +47,35 @@ const sandbox = dir => {   // names compared without case (Git Bash spells PROGR
 // On Windows every Obsidian location is under those variables; elsewhere a machine-wide app may still be found.
 const SEALED = process.platform === 'win32';
 const run = (dir, ...args) => spawnSync(process.execPath, [join(dir, 'dashboard', 'setup-page.mjs'), ...args], { encoding: 'utf8', env: sandbox(dir) });
-function page(dir) {   // the written page, its embedded data, and the status of every item it shows
-  const html = readFileSync(join(dir, 'dashboard', 'setup.html'), 'utf8');
-  const m = html.match(/<script type="application\/json" id="setup-data">([^<]*)<\/script>/);
-  assert.ok(m, 'the page embeds its data');
-  const data = JSON.parse(m[1]), st = {};
-  for (const c of data.model.chapters) for (const i of c.items || []) st[i.key] = i.status;
-  return { html, data, st };
+// The wizard as the browser shows it: the shipped default and renderer, plus the data file this copy wrote.
+const DEFAULT_JS = join(REPO, 'dashboard', 'setup-default.js'), WIZARD_JS = join(REPO, 'dashboard', 'setup-wizard.js');
+function loadInto(w, file) { new Function('window', readFileSync(file, 'utf8'))(w); return w; }
+function page(dir, lang) {   // the rendered wizard, the data file, the strings, and the status of every item shown
+  const text = readFileSync(join(dir, 'dashboard', 'setup-data.js'), 'utf8');
+  const w = loadInto(loadInto(loadInto({}, DEFAULT_JS), WIZARD_JS), join(dir, 'dashboard', 'setup-data.js'));
+  const data = w.SETUP_DATA, D = w.SETUP_DEFAULT, W = w.SetupWizard, st = {};
+  const view = W.merge(D, data, null, Date.now());
+  const html = W.render(view, D.strings[lang || data.lang], { hinted: D.hinted });
+  for (const c of data.chapters) for (const i of c.items || []) st[i.key] = i.status;
+  return { html, text, data, strings: D.strings, st, view };
 }
 
 test('bare template: everything to do except .mcp.json; offline; optional rows hidden', () => withCopy(false, dir => {
   const r = run(dir, '--print');
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, SEALED ? /^setup page: 1\/52 done, next: Git installed/m : /^setup page: \d+\/52 done, next: Git installed/m);
-  const { html, st } = page(dir);
+  const { data, st } = page(dir);
   const app = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'app.desktop'];   // machine-wide installs off Windows
   for (const [k, s] of Object.entries(st)) {
     if (!SEALED && app.includes(k)) continue;
     assert.equal(s, k === 'install.mcpjson' ? 'done' : 'todo', k);
   }
   assert.ok(!('meta.webhook' in st) && !('meta.instagram' in st));
-  assert.match(html, /<html lang="en" dir="ltr">/);
-  assert.match(html, /<meta http-equiv="refresh" content="5">/);
-  assert.doesNotMatch(html, /(src|href)=["']?(https?:)?\/\//i, 'no external resource');
+  assert.equal(data.lang, 'en');
+  assert.ok(!existsSync(join(dir, 'dashboard', 'setup.html')), 'the page is static and shipped: the generator never writes it');
+  const shipped = readFileSync(join(REPO, 'dashboard', 'setup.html'), 'utf8');
+  assert.doesNotMatch(shipped, /(src|href)=["']?(https?:)?\/\//i, 'no external resource');
+  assert.match(shipped, /setup-default\.js/); assert.match(shipped, /setup-data\.js/); assert.match(shipped, /setup-live\.js/);
 }));
 
 test('marks: merged into setup-progress.json; a bad key, status or language exits 2; a file answer wins', () => withCopy(false, dir => {
@@ -93,7 +99,7 @@ test('marks: merged into setup-progress.json; a bad key, status or language exit
 test('the fictional example: statuses from the files; .env never read; Hebrew renders right to left', () => withCopy(true, dir => {
   writeFileSync(join(dir, '.env'), 'META_MARKETING_TOKEN=sentinel-never-shown\n');
   assert.equal(run(dir).status, 0);
-  let { html, st } = page(dir);
+  let { html, text, st } = page(dir);
   const want = { 'meta.portfolio': 'done', 'meta.page': 'done', 'meta.adaccount': 'done', 'meta.payment': 'done',
     'meta.phone': 'done', 'meta.login': 'done', 'meta.pixel': 'done', 'meta.apptoken': 'owner', 'meta.whatsapp': 'na',
     'meta.leadads': 'done', 'meta.leadscenter': 'owner', 'meta.domain': 'owner', 'meta.people': 'todo',
@@ -101,48 +107,91 @@ test('the fictional example: statuses from the files; .env never read; Hebrew re
   for (const r of 'abcdefghi') want['interview.' + r] = 'done';
   for (const [k, s] of Object.entries(want)) assert.equal(st[k], s, k);
   assert.ok(!('meta.webhook' in st) && !('meta.instagram' in st), 'n/a optional rows are hidden');
-  assert.ok(!html.includes('sentinel-never-shown'), '.env never reaches the page');
-  assert.match(html, /Setup progress · Acme Fitness/);
+  assert.ok(!text.includes('sentinel-never-shown') && !html.includes('sentinel-never-shown'), '.env never reaches the page');
+  assert.match(html, /<h1>Setup wizard<\/h1><p class="company">Acme Fitness · /);
   assert.equal(run(dir, '--lang', 'he').status, 0);
-  ({ html } = page(dir));
-  assert.match(html, /<html lang="he" dir="rtl">/);
+  let data;
+  ({ html, data } = page(dir));
+  assert.equal(data.lang, 'he');
+  assert.equal(page(dir).strings.he.dir, 'rtl');
   assert.match(html, /התור שלכם/);
 }));
 
 test('both string tables cover every chapter, item, status and hint; the embedded scripts compile', () => withCopy(false, dir => {
   run(dir, '--mark', 'meta.webhook=todo', '--mark', 'meta.instagram=todo');   // marks show the optional rows (placeholders here)
-  const { html, data } = page(dir);
-  const keys = data.model.chapters.flatMap(c => (c.items || []).map(i => i.key));
+  const { data, strings } = page(dir);
+  const keys = data.chapters.flatMap(c => (c.items || []).map(i => i.key));
   assert.equal(keys.length, 54);
   for (const lang of ['en', 'he']) {
-    const S = data.strings[lang];
+    const S = strings[lang];
     for (const p of ['A', 'B']) assert.ok(S.parts[p], `${lang} part ${p}`);
-    for (const c of data.model.chapters) {
+    for (const k of ['git', 'node', 'claude', 'env', 'manifest', 'app', 'chrome', 'playwright', 'obsidian', 'node_upgrade', 'ffmpeg', 'hyperframes', 'obsidian_setup', 'routines', 'instance', 'brew']) assert.ok(S.install[k], `${lang} install ${k}`);
+    for (const k of ['pending', 'ok', 'installed', 'missing', 'skipped', 'todo', 'doing']) assert.ok(S.liveStatus[k], `${lang} live status ${k}`);
+    for (const k of ['now', 'installing', 'checking', 'allSet', 'installNote', 'installStopped', 'waiting']) assert.ok(S[k], `${lang} ${k}`);
+    for (const c of data.chapters) {
       assert.ok(S.chapters[c.id], `${lang} chapter ${c.id}`);
       if (c.info) assert.ok(S.info[c.id] && S.info[c.id].length, `${lang} info lines ${c.id}`);
     }
     for (const k of keys) assert.ok(S.items[k], `${lang} item ${k}`);
     for (const s of ['todo', 'doing', 'done', 'owner', 'na']) assert.ok(S.status[s], `${lang} status ${s}`);
-    assert.deepEqual(Object.keys(S.hints).sort(), Object.keys(data.strings.en.hints).sort(), `${lang} hints`);
+    assert.deepEqual(Object.keys(S.hints).sort(), Object.keys(strings.en.hints).sort(), `${lang} hints`);
   }
-  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-  assert.equal(scripts.length, 2);
-  for (const s of scripts) assert.doesNotThrow(() => new Function(s), 'an inline script compiles');
-  const src = html.match(/var render = (function renderPage\([\s\S]*?\});\n {2}function show\(/)[1];
-  const render = new Function('return ' + src)();
-  const first = html.match(/<main id="app">([\s\S]*?)<\/main>/)[1];
-  assert.equal(render(data.model, data.strings[data.model.lang], data.glyphs), first, 'the toggle renders what Node rendered');
-  assert.match(render(data.model, data.strings.he, data.glyphs), /עדכון אחרון/);
+  const shipped = readFileSync(join(REPO, 'dashboard', 'setup.html'), 'utf8');
+  const scripts = [...shipped.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+  assert.equal(scripts.length, 1);
+  for (const s of scripts) assert.doesNotThrow(() => new Function(s), 'the inline script compiles');
+  assert.match(page(dir, 'he').html, /עדכון אחרון/);
+  // the shipped default is what --default writes from the tables (rewrite it with --default after a table change)
+  assert.equal(run(dir, '--default').status, 0);
+  assert.equal(readFileSync(join(dir, 'dashboard', 'setup-default.js'), 'utf8'), readFileSync(DEFAULT_JS, 'utf8'), 'dashboard/setup-default.js is stale: run node dashboard/setup-page.mjs --default');
+}));
+
+test('the live install: the bootstrap\'s items tick in chapter A1, the one being installed spins, a finished run shows what is missing', () => withCopy(false, dir => {
+  assert.equal(run(dir).status, 0);
+  const w = loadInto(loadInto(loadInto({}, DEFAULT_JS), WIZARD_JS), join(dir, 'dashboard', 'setup-data.js'));
+  const D = w.SETUP_DEFAULT, W = w.SetupWizard, now = Date.parse('2026-10-29T12:00:30Z');
+  const live = { started: '2026-10-29T12:00:00Z', updated: '2026-10-29T12:00:20Z', script: 'bootstrap.sh', mode: 'all', running: true, current: 'node',
+    items: { git: 'ok', node: 'missing', claude: 'installed', env: 'pending', manifest: 'ok', app: 'ok', chrome: 'skipped', playwright: 'pending',
+      obsidian: 'pending', node_upgrade: 'pending', ffmpeg: 'pending', hyperframes: 'pending', obsidian_setup: 'pending', routines: 'pending', instance: 'pending' } };
+  let v = W.merge(D, w.SETUP_DATA, live, now);
+  const a1 = v.chapters.find(c => c.id === 'c1');
+  const st = Object.fromEntries(a1.items.map(i => [i.key, i.status]));
+  assert.equal(st['live.git'], 'done'); assert.equal(st['live.claude'], 'done'); assert.equal(st['live.node'], 'doing');
+  assert.equal(st['live.chrome'], 'na'); assert.equal(st['live.env'], 'todo');
+  assert.ok(!('live.node_upgrade' in st) && !('live.routines' in st), 'quiet and later items are not listed');
+  assert.equal(v.now.kind, 'installing');
+  assert.equal(v.chapters.find(c => c.id === 'app').items.find(i => i.key === 'app.desktop').status, 'done', 'the app found by the bootstrap answers A2');
+  let html = W.render(v, D.strings.en, { hinted: D.hinted });
+  assert.match(html, /Installing Node\.js 20 or newer…/);
+  assert.match(html, /<li class="item st-doing" data-key="live\.node">/);
+  // the next view, after the install: Node.js turns done and pops
+  const prev = W.statuses(v);
+  live.items.node = 'installed'; live.current = 'env'; live.updated = '2026-10-29T12:00:25Z';
+  v = W.merge(D, w.SETUP_DATA, live, now);
+  const pop = W.popped(prev, v);
+  assert.deepEqual(Object.keys(pop), ['live.node']);
+  html = W.render(v, D.strings.he, { hinted: D.hinted, pop });
+  assert.match(html, /<li class="item st-done pop" data-key="live\.node">/);
+  assert.match(html, /מתקין את/);
+  // finished with an item missing: the run is over, the item waits for the Owner
+  live.running = false; live.current = ''; live.items.env = 'missing';
+  v = W.merge(D, w.SETUP_DATA, live, now);
+  assert.equal(v.chapters.find(c => c.id === 'c1').items.find(i => i.key === 'live.env').status, 'owner');
+  // a running file not updated for 30 minutes is a stopped run
+  live.running = true; live.current = 'ffmpeg';
+  v = W.merge(D, w.SETUP_DATA, live, Date.parse('2026-10-29T13:00:00Z'));
+  assert.equal(v.running, false);
+  assert.notEqual(v.now.kind, 'installing');
 }));
 
 test('the memory vault chapter: app, Obsidian config, shipped hooks and business note answered by files; never a click', () => withCopy(false, dir => {
   const keys = ['obsidian.installed', 'obsidian.vault_opened', 'obsidian.cli', 'obsidian.hooks', 'memory.business_filled', 'memory.routines'];
   let r = run(dir, '--print');
   assert.equal(r.status, 0, r.stderr);
-  let { html, data, st } = page(dir);
-  const ch = data.model.chapters.find(c => c.id === 'vault');
+  let { html, data, st, strings } = page(dir);
+  const ch = data.chapters.find(c => c.id === 'vault');
   assert.deepEqual(ch.items.map(i => i.key), keys);
-  assert.equal(data.model.chapters.indexOf(ch), 14, 'in Part B, after the first flight: the video\'s chapter B4');
+  assert.equal(data.chapters.indexOf(ch), 14, 'in Part B, after the first flight: the video\'s chapter B4');
   assert.equal(ch.n, 'B4');
   assert.equal(st['obsidian.hooks'], 'todo', 'no settings file in this copy');
   assert.equal(st['memory.business_filled'], 'todo');
@@ -151,8 +200,8 @@ test('the memory vault chapter: app, Obsidian config, shipped hooks and business
   assert.equal(st['obsidian.cli'], 'todo');
   if (SEALED) assert.equal(st['obsidian.installed'], 'todo');
   for (const lang of ['en', 'he']) {
-    for (const k of ['obsidian.vault_opened', 'obsidian.cli']) assert.match(data.strings[lang].hints[k], /obsidian-setup\.mjs/, `${lang} hint ${k}`);
-    assert.match(data.strings[lang].hints['obsidian.hooks'], /hooks-paste-block\.md/);
+    for (const k of ['obsidian.vault_opened', 'obsidian.cli']) assert.match(strings[lang].hints[k], /obsidian-setup\.mjs/, `${lang} hint ${k}`);
+    assert.match(strings[lang].hints['obsidian.hooks'], /hooks-paste-block\.md/);
   }
   assert.match(html, /<span class="hint">[^<]*<code dir="ltr">node memory\/tools\/obsidian-setup\.mjs<\/code>/, 'an open Obsidian item shows its command');
   assert.match(r.stdout, /\[obsidian\.cli\] \(Nothing to click/);
@@ -203,20 +252,20 @@ test('the memory vault chapter: app, Obsidian config, shipped hooks and business
   assert.equal(st['obsidian.cli'], 'done');
   assert.equal(st['memory.business_filled'], 'done');
   assert.equal(st['memory.routines'], 'done');
-  assert.equal(data.model.chapters.find(c => c.id === 'vault').status, 'done');
+  assert.equal(data.chapters.find(c => c.id === 'vault').status, 'done');
 }));
 
 test('two parts in the video\'s order: labels A0–A10 and B1–B5, the desktop app answered by a file, the new items marked', () => withCopy(false, dir => {
   let r = run(dir, '--lang', 'en', '--print');   // the fixture copies the real config/, whose chat language may be Hebrew
   assert.equal(r.status, 0, r.stderr);
   let { html, data, st } = page(dir);
-  assert.deepEqual(data.model.chapters.map(c => c.n), ['A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'B1', 'B2', 'B3', 'B4', 'B5']);
-  assert.deepEqual(data.model.chapters.filter(c => c.part === 'B').map(c => c.id), ['c8', 'c9', 'c10', 'vault', 'c11']);
-  assert.equal(data.model.chapters.find(c => c.id === 'app').items.map(i => i.key).join(' '), 'app.desktop install.approved');
-  assert.equal(data.model.chapters.find(c => c.id === 'keys').items[0].key, 'keys.table');
-  assert.ok(data.model.chapters.find(c => c.id === 'c10').items.some(i => i.key === 'flight.video'), 'the video ad is a step of the first flight');
-  assert.match(html, /<h2 class="part">Part A, \/connect: accounts and keys/);
-  assert.match(html, /<h2 class="part">Part B, \/campaign: the first campaign<\/h2>/);
+  assert.deepEqual(data.chapters.map(c => c.n), ['A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'B1', 'B2', 'B3', 'B4', 'B5']);
+  assert.deepEqual(data.chapters.filter(c => c.part === 'B').map(c => c.id), ['c8', 'c9', 'c10', 'vault', 'c11']);
+  assert.equal(data.chapters.find(c => c.id === 'app').items.map(i => i.key).join(' '), 'app.desktop install.approved');
+  assert.equal(data.chapters.find(c => c.id === 'keys').items[0].key, 'keys.table');
+  assert.ok(data.chapters.find(c => c.id === 'c10').items.some(i => i.key === 'flight.video'), 'the video ad is a step of the first flight');
+  assert.match(html, /<h2 class="part">Part A, <bdi dir="ltr">\/connect<\/bdi>: accounts and keys/);
+  assert.match(html, /<h2 class="part">Part B, <bdi dir="ltr">\/campaign<\/bdi>: the first campaign<\/h2>/);
   assert.match(r.stdout, /== Part A, \/connect: accounts and keys/);
   assert.match(r.stdout, /^A3\. Claude in Chrome/m);
   assert.match(r.stdout, /^B3\. First campaign built PAUSED/m);

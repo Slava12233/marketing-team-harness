@@ -44,7 +44,7 @@ const COMPANY_DIRS = ['config', 'memory/state', 'memory/business', 'memory/campa
   'memory/archive', 'memory/tooling', 'memory/capabilities', 'memory/money', 'memory/inbox', 'plans', 'reports',
   'creatives/src', 'creatives/briefs', 'creatives/uploads', '.vercel'];
 const COMPANY_FILES = ['checklist.md', 'memory/HOME.md', 'memory/HOME.en.md', 'memory/HOT.md', 'memory/INDEX.md',
-  'dashboard/state.json', 'dashboard/state.local.json', 'dashboard/setup.html', 'dashboard/setup-progress.json',
+  'dashboard/state.json', 'dashboard/state.local.json', 'dashboard/setup-data.js', 'dashboard/setup-live.js', 'dashboard/setup-progress.json',
   'dashboard/bootstrap-result.json', '.env.local'];
 const HARNESS_FILES = new Set(['config/README.md']);                   // harness-owned files inside a company folder
 const HARNESS_CREATIVES = new Set(['tools', 'preview-template', 'landing-template', 'src', 'briefs', 'uploads']);

@@ -37,7 +37,7 @@ Record it at once: `**Chat language:**` in `config/operator.md` (replace the pla
 
 ## Step 1. Prerequisites
 
-`setup` step 0.5 as written (the progress page opened, the table of Git / Node / Claude Code / the desktop app / the extension, `.env` present, `.mcp.json`, the tools, Obsidian, the hooks and the account guard), with one change: anything missing is the bootstrap's, and the Operator comes back to `/connect` (not `/onboard` or `/setup`). The extension is needed for the chapters below: when it is not connected, run chapter A3 of `onboard` first (the Connectors path, then a new session and `/connect` again); the click lists of `setup` step 2 remain the fallback only when the Owner says they cannot use the extension at all.
+`setup` step 0.5 as written (the progress page opened, the table of Git / Node / Claude Code / the desktop app / the extension, `.env` present, `.mcp.json`, the tools, Obsidian, the hooks and the account guard), with one change: anything missing is installed by the harness itself, at once, by running the bootstrap with `-Yes` / `--yes` from this session (the wizard opens and ticks each install live), and the pass goes on here. The extension is needed for the chapters below: when it is not connected, run chapter A3 of `onboard` first (the Connectors path, then a new session and `/connect` again); the click lists of `setup` step 2 remain the fallback only when the Owner says they cannot use the extension at all.
 
 ## Step 2. The inventory (what already exists)
 

@@ -19,7 +19,7 @@ const TAG_RE = /^\[(ok|installed|missing|skipped|todo)\] (.*)$/;
 const STATUSES = ['ok', 'installed', 'missing', 'skipped', 'todo'];
 const KEYS = ['git', 'node', 'claude', 'env', 'app', 'chrome', 'playwright', 'obsidian', 'ffmpeg', 'hyperframes', 'obsidian_setup', 'routines', 'manifest', 'instance'];
 const HEADINGS = ['Required', 'Recommended', 'Optional', 'What remains'];
-const ESSENTIALS = ['CLAUDE.md', '.mcp.json', '.env.example', 'bootstrap.ps1', 'bootstrap.sh', 'README.md', 'dashboard/setup-page.mjs', 'docs/release-manifest.txt', 'vendor/hyperframes/.claude-plugin/marketplace.json'];
+const ESSENTIALS = ['CLAUDE.md', '.mcp.json', '.env.example', 'bootstrap.ps1', 'bootstrap.sh', 'README.md', 'dashboard/setup-page.mjs', 'dashboard/setup.html', 'docs/release-manifest.txt', 'vendor/hyperframes/.claude-plugin/marketplace.json'];
 const SENTINEL = 'SENTINEL_VALUE_NEVER_PRINTED_4711';
 
 // ---- the two shells ----
@@ -249,5 +249,49 @@ test('Node.js 20: both scripts report the optional upgrade for the video plugin,
     assert.equal(j.items.node_upgrade.status, 'skipped');
     assert.equal(j.items.node_upgrade.version, 'v20.11.0');
     assert.equal(j.items.node.status, 'ok');
+  }
+});
+
+// ---- (f) the live file of the setup wizard ----
+// An --ask run where every question is answered No (Enter, then end of input): nothing is installed, no browser
+// starts (HARNESS_NO_BROWSER), and dashboard/setup-live.js holds every item, finished, in the same shape from both.
+function askRun(kind) {
+  const dir = harness();
+  const sd = stubs(kind, 'v22.11.0');
+  try {
+    const env = { ...envWithPath(shellPath(kind, sd)), HARNESS_NO_BROWSER: '1' };
+    const r = spawnSync(kind === 'ps' ? PS : BASH, kind === 'ps'
+      ? ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(dir, 'bootstrap.ps1'), '-Ask'] : ['bootstrap.sh', '--ask'],
+      { cwd: dir, env, encoding: 'utf8', timeout: 120000, input: '\n'.repeat(20) });
+    if (r.error) throw r.error;
+    const f = path.join(dir, 'dashboard', 'setup-live.js');
+    const text = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : null;
+    return { out: (r.stdout || '') + (r.stderr || ''), text };
+  } finally { rm(dir); rm(sd); }
+}
+function liveOf(text) { const w = {}; new Function('window', text)(w); return w.SETUP_LIVE; }
+
+test('(f) a run without --check writes the live file of the wizard: every item, finished, the same from both scripts', { skip: skipPs || skipSh }, () => {
+  const ps = askRun('ps'); const sh = askRun('sh');
+  for (const [r, name] of [[ps, 'bootstrap.ps1'], [sh, 'bootstrap.sh']]) {
+    assert.ok(r.text, `${name}: dashboard/setup-live.js was not written\n${r.out}`);
+    assert.ok(r.out.includes('Open dashboard/setup.html in a browser to watch every step tick as it happens.'), `${name}: no wizard line\n${r.out}`);
+    const live = liveOf(r.text);
+    assert.equal(live.running, false, `${name}: the run is not marked finished`);
+    assert.equal(live.script, name);
+    assert.equal(live.current, '');
+    for (const k of KEYS) assert.ok(k in live.items, `${name}: item ${k} missing from the live file`);
+    assert.equal(live.items.node, 'ok', `${name}: node`);
+    assert.equal(live.items.git, 'ok', `${name}: git`);
+  }
+  const a = liveOf(ps.text), b = liveOf(sh.text);
+  for (const k of KEYS) assert.equal(a.items[k], b.items[k], `item ${k}: ps ${a.items[k]}, sh ${b.items[k]}`);
+});
+
+test('(f) --check writes no live file and opens nothing', { skip: skipPs || skipSh }, () => {
+  for (const kind of ['ps', 'sh']) {
+    const r = check(kind);
+    assert.ok(!r.out.includes('setup wizard opened'), r.out);
+    assert.ok(!r.out.includes('Open dashboard/setup.html'), r.out);
   }
 });

@@ -35,7 +35,7 @@ set -u
 
 MODE=all; CHECK=0; YES=0; ASKEACH=0; MISSING=0; RECHECK=""; AGREED=0; RECO_MISSING=""; TIMED_OUT=0
 PLAN=""; ENV_TODO=0; PAGE_TODO=0; GO=0; DECLINED=0; NOANSWER=0; ANSWER=""
-LOG=""; CUR=""; BOUND=1200; BREW_TRIED=0
+LOG=""; CUR=""; BOUND=1200; BREW_TRIED=0; LIVE_ON=0; LIVE_STARTED=""; LIVE_CUR=""; PAGE_OPENED=0
 WINGET_FLAGS="-e --source winget --accept-package-agreements --accept-source-agreements"
 # The items of dashboard/bootstrap-result.json, each with the tag of the last line printed for it.
 ITEM_KEYS="git node claude env manifest app chrome playwright obsidian node_upgrade ffmpeg hyperframes obsidian_setup routines instance"
@@ -47,8 +47,9 @@ mark() {   # mark <status>: the status of the current item; a re-check's [ok] ke
   eval "prev=\${S_$CUR:-}"
   if [ "$1" = ok ] && [ "$prev" = installed ]; then return 0; fi
   eval "S_$CUR=\$1"
+  write_live
 }
-set_status()  { eval "S_$1=\$2"; }
+set_status()  { eval "S_$1=\$2"; write_live; }
 set_version() { [ -n "$2" ] && eval "V_$1=\$2"; return 0; }
 cur() { CUR=$1; }
 say() {
@@ -84,7 +85,35 @@ write_result() {   # write_result <exit code>: dashboard/bootstrap-result.json, 
     printf '\n  }\n}\n'
   } > dashboard/bootstrap-result.json 2>/dev/null || printf '%s\n' "dashboard/bootstrap-result.json could not be written."
 }
-finish() { write_result "$1"; exit "$1"; }
+# The setup wizard (dashboard/setup.html, a static page shipped with the harness) reads dashboard/setup-live.js every
+# 2 seconds: each item's status, the item being installed, and whether the run is still going. It is written by
+# hand after every step (Node.js may be what is missing), atomically (a temp file, then a rename); --check writes
+# none and opens nothing.
+write_live() {
+  [ "$LIVE_ON" = 1 ] || return 0
+  local k s sep="" running=true
+  [ "${1:-}" = done ] && running=false
+  {
+    printf 'window.SETUP_LIVE = {"started": "%s", "updated": "%s", "script": "bootstrap.sh", "mode": "%s", "running": %s, "current": "%s", "items": {' \
+      "$LIVE_STARTED" "$(iso_now)" "$(run_mode)" "$running" "$LIVE_CUR"
+    for k in $ITEM_KEYS; do eval "s=\${S_$k:-pending}"; printf '%s"%s": "%s"' "$sep" "$k" "$s"; sep=', '; done
+    printf '}};\n'
+  } > dashboard/setup-live.js.tmp 2>/dev/null && mv -f dashboard/setup-live.js.tmp dashboard/setup-live.js 2>/dev/null
+  return 0
+}
+doing() { cur "$1"; LIVE_CUR=$1; write_live; }   # doing <item>: the wizard shows it as being installed now
+open_wizard() {   # the wizard in the default browser; 0 when the browser was started
+  local f
+  [ -f dashboard/setup.html ] || return 1
+  [ -n "${HARNESS_NO_BROWSER:-}" ] && return 1   # tests: never start a browser
+  f="$(pwd)/dashboard/setup.html"
+  case "$OS" in
+    win) cmd.exe //c start "" "$(cygpath -w "$f" 2>/dev/null || printf '%s' "$f")" >/dev/null 2>&1 ;;
+    mac) open "$f" >/dev/null 2>&1 ;;
+    *) command -v xdg-open >/dev/null 2>&1 || return 1; xdg-open "$f" >/dev/null 2>&1 & ;;
+  esac
+}
+finish() { write_result "$1"; LIVE_CUR=""; write_live done; exit "$1"; }
 usage() {
   say "Usage: bash bootstrap.sh [--ask | --yes | --check] [--help]"
   say "  (no option)  check, list what is missing, then one question installs all of it (Enter means Yes)"
@@ -375,6 +404,12 @@ elif [ "$MODE" = ask ]; then say "Mode: one question before each install. Enter 
 elif [ "$YES" = 1 ]; then say "Mode: check everything, then install all that is missing, with no question (--yes)."
 else say "Mode: check everything, then one question installs all that is missing. Enter means Yes."; fi
 say "No token or password is ever asked for here."
+# The setup wizard opens now, before the first check, and ticks every step of this run as it lands.
+if [ "$MODE" != check ] && [ -f dashboard/setup.html ]; then
+  mkdir -p dashboard 2>/dev/null; LIVE_ON=1; LIVE_STARTED=$(iso_now); write_live
+  if open_wizard; then PAGE_OPENED=1; say "The setup wizard opened in your browser (dashboard/setup.html): it ticks every step as it happens."
+  else say "Open dashboard/setup.html in a browser to watch every step tick as it happens."; fi
+fi
 
 say ""
 say "Required"
@@ -783,7 +818,7 @@ if [ "$MODE" = all ]; then
     if [ "$ENV_TODO" = 1 ] || [ "$PAGE_TODO" = 1 ]; then
       say "and will:"
       [ "$ENV_TODO" = 1 ] && say "  - copy .env.example to .env (its contents are never shown)"
-      [ "$PAGE_TODO" = 1 ] && say "  - open the setup progress page (dashboard/setup.html) in your browser"
+      [ "$PAGE_TODO" = 1 ] && say "  - fill the setup wizard (dashboard/setup.html) with the next steps, /connect and /campaign"
     fi
     if [ "$OS" = win ] && { in_plan git || in_plan node || in_plan app || in_plan chrome || in_plan obsidian || in_plan node-upgrade || in_plan ffmpeg; }; then
       say "winget may ask Windows for permission (UAC) while it installs."
@@ -800,18 +835,19 @@ if [ "$MODE" = all ]; then
   fi
   if [ "$GO" = 1 ]; then
     if [ -n "$PLAN" ]; then say ""; say "Installing"; fi
-    in_plan brew && { do_brew || MISSING=1; }
-    in_plan git && put "Git" install_git check_git
-    in_plan node && put "Node.js" install_node check_node
-    in_plan claude && put "Claude Code" install_claude check_claude
-    in_plan app && do_claude_app
-    in_plan chrome && do_chrome
-    [ "$ENV_TODO" = 1 ] && copy_env
-    in_plan playwright && playwright_now
-    in_plan obsidian && do_obsidian
-    in_plan node-upgrade && do_node_upgrade
-    in_plan ffmpeg && do_ffmpeg
-    in_plan hyperframes && hyperframes_now
+    in_plan brew && { doing brew; do_brew || MISSING=1; }
+    in_plan git && { doing git; put "Git" install_git check_git; }
+    in_plan node && { doing node; put "Node.js" install_node check_node; }
+    in_plan claude && { doing claude; put "Claude Code" install_claude check_claude; }
+    in_plan app && { doing app; do_claude_app; }
+    in_plan chrome && { doing chrome; do_chrome; }
+    [ "$ENV_TODO" = 1 ] && { doing env; copy_env; }
+    in_plan playwright && { doing playwright; playwright_now; }
+    in_plan obsidian && { doing obsidian; do_obsidian; }
+    in_plan node-upgrade && { doing node_upgrade; do_node_upgrade; }
+    in_plan ffmpeg && { doing ffmpeg; do_ffmpeg; }
+    in_plan hyperframes && { doing hyperframes; hyperframes_now; }
+    LIVE_CUR=""; write_live
   fi
 fi
 
@@ -946,16 +982,17 @@ if [ "$MODE" != check ] && [ "$DECLINED" = 0 ] && [ -f dashboard/setup-page.mjs 
     mark_claude=todo; { [ -n "$(claude_v)" ] || ran check_claude; } && mark_claude=done
     mark_obsidian=todo; [ -n "$obs_now" ] && mark_obsidian=done
     mark_app=todo; [ -n "$(claude_app_path)" ] && mark_app=done
-    obs_marks=()
+    obs_marks=(); page_open=""; [ "$PAGE_OPENED" = 1 ] || page_open=--open
     [ "$OBS_SETUP" = ok ] && obs_marks=(--mark "obsidian.vault_opened=done" --mark "obsidian.cli=done")
     say ""
     if node dashboard/setup-page.mjs --mark "install.git=$mark_git" --mark "install.node=$mark_node" \
-         --mark "install.claude=$mark_claude" --mark "app.desktop=$mark_app" --mark "obsidian.installed=$mark_obsidian" ${obs_marks[@]+"${obs_marks[@]}"} --open >/dev/null 2>&1
-    then say "A progress page opened in your browser; keep it beside Claude Code: dashboard/setup.html"
-    else say "The progress page could not be written (node dashboard/setup-page.mjs failed); /setup opens it later."; fi
+         --mark "install.claude=$mark_claude" --mark "app.desktop=$mark_app" --mark "obsidian.installed=$mark_obsidian" ${obs_marks[@]+"${obs_marks[@]}"} ${page_open:+"$page_open"} >/dev/null 2>&1
+    then if [ "$PAGE_OPENED" = 1 ]; then say "The setup wizard now shows the next steps too (/connect, then /campaign); keep it beside Claude Code: dashboard/setup.html"
+         else say "The setup wizard opened in your browser; keep it beside Claude Code: dashboard/setup.html"; fi
+    else say "The setup wizard could not be filled with the next steps (node dashboard/setup-page.mjs failed); /connect fills it later."; fi
   elif [ "$PAGE_TODO" = 1 ]; then
     say ""
-    say "The progress page needs Node.js, which this window does not find yet; /setup opens it later."
+    say "The setup wizard shows the installation; its next steps appear once Node.js is found (a new terminal window, or /connect fills them)."
   fi
 fi
 say ""

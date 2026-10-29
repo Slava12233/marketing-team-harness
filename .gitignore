@@ -21,8 +21,11 @@ node_modules/
 # Local control-room state
 dashboard/state.local.json
 
-# Generated per company by dashboard/setup-page.mjs
-dashboard/setup.html
+# Generated per company: the setup wizard's data (dashboard/setup-page.mjs) and live install file (the bootstrap);
+# the wizard page itself (setup.html, setup-wizard.js, setup-default.js) ships with the harness
+dashboard/setup-data.js
+dashboard/setup-live.js
+dashboard/setup-live.js.tmp
 dashboard/setup-progress.json
 dashboard/bootstrap-result.json
 dashboard/*.tmp

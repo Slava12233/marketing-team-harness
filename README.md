@@ -12,7 +12,7 @@ It was cut from a harness that ran real campaigns, so its rules carry what was l
 - **Seven commands with fixed outputs:** `/connect` (Part 1 of the onboarding: your language first, then every connection, `/health` green at the end), `/campaign` (Part 2: the long interview in your language, the market research, the first campaign built PAUSED and shown), `/health` (a green/yellow/red plumbing table), `/morning` (the daily report), `/next-round` (the weekly creative round and a numbered recap to pick from), `/sync` (the session closer), `/consolidate` (the weekly memory tidy).
 - **A memory vault you can open.** The folder is an Obsidian vault (Obsidian is installed by the bootstrap; everything also works as plain files): `memory/HOME.md` is the Owner's page (money against the caps, open items by owner, campaigns), `memory/inbox/owner.md` is an Inbox you write in and the harness answers (it never acts on it without a go in chat), a weekly review lands in `memory/reviews/`, and one note per campaign, flight, decision and lesson keeps the history. Three hooks (the HOT loader, the compaction checkpoint and the account guard that keeps every Meta call inside the one ad account in `config/accounts.md`), shipped turned on in `.claude/settings.json`, load the summary into every new session, save a checkpoint before a long chat is compacted, and refuse any Meta call on another ad account. Nothing to click in Obsidian and nothing to paste: the bootstrap registers the folder as a vault, turns on Obsidian's command line and opens the app on HOME (`memory/tools/obsidian-setup.mjs`). The guide is `docs/obsidian-guide.md`.
 - **More than the MCP alone:** lead forms, targeting search, audience estimates, insights breakdowns and pause-only rules through the Graph tool (`creatives/tools/meta-graph.mjs`, guide `docs/meta-graph.md`); a one-page client report in the client's language; a landing page when the company has none (`creatives/landing-template/`).
-- **A setup progress page** (`dashboard/setup.html`) that ticks itself as the wizard confirms each step and shows the Owner's own clicks as "your turn".
+- **A live setup wizard** (`dashboard/setup.html`) that opens at the bootstrap's first step, ticks every install and every wizard step as it lands, with an animation, and shows the Owner's own clicks as "your turn". When a tool is missing later, the harness installs it itself.
 - **Money rules that hold:** budgets inside the band and below the caps in `config/goals.md`, everything built PAUSED, nothing activated without the Owner's go in the same message.
 
 ## Who it is for
@@ -68,7 +68,7 @@ upgrade.ps1, .sh          upgrade this copy to a new release without touching th
 release.ps1, .sh          cuts a release: scrub gate, test suites, release manifest, version tag, zip (for whoever publishes releases); upgrade.ps1, .sh bring a working copy up to a new release
 CHANGELOG.md              what changed in each release
 LICENSE, THIRD-PARTY.md   the licence; the third-party skills and their licences
-control-room/, dashboard/ the optional status pane, its data file, and setup-page.mjs (the setup progress page)
+control-room/, dashboard/ the optional status pane, its data file, the setup wizard (setup.html) and setup-page.mjs (its data)
 examples/                 a filled example company
 ```
 

@@ -55,7 +55,10 @@ creatives/README.md
 creatives/tools/
 creatives/preview-template/
 creatives/landing-template/
-# The setup progress page generator and its smoke test
+# The setup wizard (a static page, its renderer and its shipped default), its data generator and its smoke test
+dashboard/setup.html
+dashboard/setup-wizard.js
+dashboard/setup-default.js
 dashboard/setup-page.mjs
 dashboard/setup-page.test.mjs
 # The blank company files a new copy is reset to (memory/tools/instance.mjs), also the progress-page test fixture
@@ -115,7 +118,8 @@ memory/INDEX.md
 memory/capabilities/
 dashboard/state.json
 dashboard/state.local.json
-dashboard/setup.html
+dashboard/setup-data.js
+dashboard/setup-live.js
 dashboard/setup-progress.json
 dashboard/*.tmp
 # The company's work

@@ -1,11 +1,17 @@
 #!/usr/bin/env node
-// dashboard/setup-page.mjs: writes dashboard/setup.html, the setup progress page the Operator keeps open in a
-// browser beside Claude Code while /setup runs. Node 20+, no dependencies. It finds the harness folder by walking
-// up from its own folder, so it runs from anywhere.
-//   node dashboard/setup-page.mjs                         regenerate the page from the files and the marks
-//   node dashboard/setup-page.mjs --mark <key>=<status>   record a mark (repeatable), then regenerate
-//   node dashboard/setup-page.mjs --lang he|en            store the page's default language, then regenerate
-//   node dashboard/setup-page.mjs --open | --print        also open it in the default browser | print it as text
+// dashboard/setup-page.mjs: feeds the setup wizard, dashboard/setup.html, the page the Operator keeps open in a
+// browser beside Claude Code from the bootstrap's first second to the end of /campaign. Node 20+, no dependencies.
+// The page itself is static and ships with the harness (setup.html and its renderer setup-wizard.js), so it works
+// before Node.js exists; it reads three script files beside it every 2 seconds and ticks each checkbox as it lands:
+//   setup-default.js  shipped: every chapter, item and string (EN and HE), written by --default from the tables below
+//   setup-live.js     written by bootstrap.ps1 / bootstrap.sh after every step of the installation (by hand)
+//   setup-data.js     written here: the status of every item, from the files and the marks
+// It finds the harness folder by walking up from its own folder, so it runs from anywhere.
+//   node dashboard/setup-page.mjs                         rewrite setup-data.js from the files and the marks
+//   node dashboard/setup-page.mjs --mark <key>=<status>   record a mark (repeatable), then rewrite
+//   node dashboard/setup-page.mjs --lang he|en            store the page's default language, then rewrite
+//   node dashboard/setup-page.mjs --open | --print        also open the wizard in the default browser | print it as text
+//   node dashboard/setup-page.mjs --default               rewrite the shipped setup-default.js (the maintainer's step)
 // Statuses: todo, doing, done, owner (waiting for the Owner's click), na. A mark (dashboard/setup-progress.json)
 // counts only where the files give no answer: the Console steps table of config/accounts.md, checklist.md,
 // .mcp.json, whether .env exists (it is never opened), the config/*.md placeholders, plans/*first-flight-plan.md,
@@ -13,9 +19,8 @@
 // the folder, whether the Obsidian app is installed and what Obsidian's global config (obsidian.json) says: this
 // folder in its vault list, and "cli": true (both written by memory/tools/obsidian-setup.mjs, never a click), and
 // whether the Claude desktop app is installed. The chapters follow the onboarding video: Part A (accounts and keys,
-// A0–A10, the /connect pass) and Part B (/campaign: the interview, the research, the first campaign, B1–B5). The page
-// shows names and public ids only, never a secret,
-// and loads nothing from the internet.
+// A0–A10, the /connect pass) and Part B (/campaign: the interview, the research, the first campaign, B1–B5). The
+// files carry names and public ids only, never a secret, and the page loads nothing from the internet.
 // Exit codes: 0 written, 1 a file could not be written, 2 wrong usage (unknown option, key or status).
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -66,12 +71,23 @@ const ROUND_FILES = { a: ['operator.md'], b: ['company.md'], c: ['product.md'], 
   f: ['claims.md'], g: ['accounts.md', 'product-team.md'], h: ['operator.md'], i: ['goals.md'] };
 
 const EN = {
-  code: 'en', dir: 'ltr', locale: 'en-GB', title: 'Setup progress', defaultCompany: 'Marketing Team Harness',
+  code: 'en', dir: 'ltr', locale: 'en-GB', title: 'Setup wizard', defaultCompany: 'Marketing Team Harness',
   progress: '{done}/{tracked} done', next: 'Next', yourClick: 'Your click', wizard: 'The wizard is on it',
   chapterN: 'Chapter {n}', allDone: 'Every tracked step is done.', lastUpdate: 'Last update',
-  reload: 'This page reloads every 5 seconds. It shows names and public ids only, never a secret: a token, a password or a key never goes into chat or onto this page.',
+  reload: 'This page follows every step live: it reads its progress files every 2 seconds. It shows names and public ids only, never a secret: a token, a password or a key never goes into chat or onto this page.',
   byHand: 'To update it by hand, run `node dashboard/setup-page.mjs` in the harness folder.',
   langName: { en: 'English', he: 'עברית' },
+  now: 'Now', installing: 'Installing {item}…', checking: 'Checking what this computer already has…', allSet: 'All set: every tracked step is done.',
+  installNote: 'The installation runs in the terminal window; this page ticks each item as it lands.',
+  installStopped: 'The installation finished. Anything marked missing is listed in the terminal window, with what to do.',
+  waiting: 'Waiting for the first step…', showMore: 'Show', showLess: 'Hide',
+  liveStatus: { pending: 'waiting', ok: 'already there', installed: 'installed now', missing: 'missing', skipped: 'skipped (optional)', todo: 'a later step', doing: 'installing…' },
+  install: { brew: 'Homebrew (the installer on a Mac)', git: 'Git', node: 'Node.js 20 or newer', claude: 'Claude Code',
+    env: '`.env` created from `.env.example` (its contents are never shown)', manifest: 'The harness files are complete',
+    app: 'The Claude desktop app', chrome: 'Google Chrome', playwright: '`playwright-core` (for the ad screenshots)',
+    obsidian: 'Obsidian (the window onto the memory vault)', node_upgrade: 'Node.js 22 (for the video plugin)', ffmpeg: 'FFmpeg (for video)',
+    hyperframes: 'The HyperFrames video plugin', obsidian_setup: 'Obsidian set up for the memory vault, no click',
+    routines: 'The memory routines (`/campaign` registers them)', instance: 'This folder starts as its own business' },
   status: { todo: 'to do', doing: 'in progress', done: 'done', owner: 'your turn', na: 'n/a' },
   parts: { A: 'Part A, /connect: accounts and keys (one pass; it ends with every row green)', B: 'Part B, /campaign: the first campaign' },
   chapters: { c0: 'Before you start', c1: 'Install', app: 'The Claude desktop app', chrome: 'Claude in Chrome', c2: 'Meta business basics',
@@ -146,12 +162,23 @@ const EN = {
   },
 };
 const HE = {
-  code: 'he', dir: 'rtl', locale: 'he-IL', title: 'התקדמות ההתקנה', defaultCompany: 'Marketing Team Harness',
+  code: 'he', dir: 'rtl', locale: 'he-IL', title: 'אשף ההתקנה', defaultCompany: 'Marketing Team Harness',
   progress: '{done}/{tracked} בוצעו', next: 'הצעד הבא', yourClick: 'הלחיצה שלכם', wizard: 'האשף מטפל בזה',
   chapterN: 'פרק {n}', allDone: 'כל השלבים שבמעקב בוצעו.', lastUpdate: 'עדכון אחרון',
-  reload: 'הדף מתרענן כל 5 שניות. מוצגים בו שמות ומזהים ציבוריים בלבד, אף פעם לא סוד: טוקן, סיסמה או מפתח לא נכנסים לצ׳אט ולא לדף הזה.',
+  reload: 'הדף עוקב אחרי כל צעד בזמן אמת: הוא קורא את קובצי ההתקדמות כל 2 שניות. מוצגים בו שמות ומזהים ציבוריים בלבד, אף פעם לא סוד: טוקן, סיסמה או מפתח לא נכנסים לצ׳אט ולא לדף הזה.',
   byHand: 'לעדכון ידני, הריצו `node dashboard/setup-page.mjs` בתיקיית הפרויקט.',
   langName: { en: 'English', he: 'עברית' },
+  now: 'עכשיו', installing: 'מתקין את {item}…', checking: 'בודק מה כבר מותקן במחשב…', allSet: 'הכול מוכן: כל השלבים שבמעקב בוצעו.',
+  installNote: 'ההתקנה רצה בחלון הטרמינל; הדף מסמן כל פריט ברגע שהוא מוכן.',
+  installStopped: 'ההתקנה הסתיימה. מה שמסומן כחסר מופיע בחלון הטרמינל, עם מה לעשות.',
+  waiting: 'ממתין לצעד הראשון…', showMore: 'הצגה', showLess: 'הסתרה',
+  liveStatus: { pending: 'ממתין', ok: 'כבר קיים', installed: 'הותקן עכשיו', missing: 'חסר', skipped: 'דולג (אופציונלי)', todo: 'בשלב מאוחר יותר', doing: 'מתקין…' },
+  install: { brew: 'Homebrew (תוכנת ההתקנה ב-Mac)', git: 'Git', node: 'Node.js בגרסה 20 ומעלה', claude: 'Claude Code',
+    env: 'הקובץ `.env` נוצר מתוך `.env.example` (התוכן שלו לא מוצג אף פעם)', manifest: 'קובצי הכלי שלמים',
+    app: 'אפליקציית Claude למחשב', chrome: 'Google Chrome', playwright: '`playwright-core` (לצילומי המודעות)',
+    obsidian: 'Obsidian (החלון אל כספת הזיכרון)', node_upgrade: 'Node.js 22 (לתוסף הווידאו)', ffmpeg: 'FFmpeg (לווידאו)',
+    hyperframes: 'תוסף הווידאו HyperFrames', obsidian_setup: 'Obsidian הוגדר לכספת הזיכרון, בלי לחיצה',
+    routines: 'רוטינות הזיכרון (`/campaign` רושם אותן)', instance: 'התיקייה מתחילה כעסק משלה' },
   status: { todo: 'לביצוע', doing: 'בתהליך', done: 'בוצע', owner: 'התור שלכם', na: 'לא רלוונטי' },
   parts: { A: 'חלק א, /connect: החשבונות והמפתחות (מעבר אחד; מסתיים כשכל השורות ירוקות)', B: 'חלק ב, /campaign: הקמפיין הראשון' },
   chapters: { c0: 'לפני שמתחילים', c1: 'התקנה', app: 'אפליקציית Claude למחשב', chrome: 'Claude in Chrome', c2: 'יסודות העסק ב-Meta',
@@ -227,7 +254,6 @@ const HE = {
 const STRINGS = { en: EN, he: HE };
 
 const norm = s => String(s ?? '').replace(/[`"'“”‘’*]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
-const esc = s => String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 const plain = s => String(s).replace(/`/g, '');
 const isDir = p => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
@@ -384,125 +410,19 @@ function buildModel(root, progress) {   // the files win, then the mark, then th
   return { lang, company: f.company, generatedAt: new Date().toISOString(), done, tracked, next, chapters };
 }
 
-// The page body. It runs here for the first paint and, as its own source text, in the browser when the
-// language toggle is pressed, so it uses nothing but its arguments.
-function renderPage(m, S, G) {
-  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
-  function fmt(s) { return esc(s).replace(/`([^`]+)`/g, '<code dir="ltr">$1</code>'); }
-  function tpl(s, v) { return s.replace(/\{(\w+)\}/g, function (_, k) { return v[k]; }); }
-  function hinted(it) { return it.status === 'owner' || (it.status === 'todo' && /^(obsidian|app|chrome|keys)[.]/.test(it.key)); }
-  var pct = m.tracked ? Math.round(100 * m.done / m.tracked) : 100, nx = m.next, h = '', when = m.generatedAt, part = '';
-  h += '<h1>' + esc(S.title) + ' · ' + esc(m.company || S.defaultCompany) + '</h1>';
-  h += '<div class="bar" role="progressbar" aria-label="' + esc(S.title) + '" aria-valuemin="0" aria-valuemax="' + m.tracked +
-    '" aria-valuenow="' + m.done + '"><span style="width:' + pct + '%"></span></div>';
-  h += '<p class="count">' + esc(tpl(S.progress, m)) + '</p>';
-  h += '<section class="next st-' + (nx ? nx.status : 'done') + '"><h2>' + esc(S.next) + '</h2>';
-  if (!nx) h += '<p class="what">' + esc(S.allDone) + '</p>';
-  else {
-    h += '<p class="what">' + fmt(S.items[nx.key]) + '</p><p class="who">';
-    if (nx.status === 'owner') h += esc(S.yourClick) + (S.hints[nx.key] ? ': ' + fmt(S.hints[nx.key]) : '');
-    else if (nx.status === 'doing') h += esc(S.wizard);
-    else h += esc(tpl(S.chapterN, { n: nx.n })) + ' · ' + fmt(S.chapters[nx.chapter]) +
-      (hinted(nx) && S.hints[nx.key] ? ' · ' + fmt(S.hints[nx.key]) : '');
-    h += '</p>';
-  }
-  h += '</section>';
-  for (var i = 0; i < m.chapters.length; i++) {
-    var c = m.chapters[i], head = '<span class="num">' + esc(c.n) + '</span><span class="title">' + fmt(S.chapters[c.id]) + '</span>';
-    if (c.part !== part) { part = c.part; h += '<h2 class="part">' + esc(S.parts[part]) + '</h2>'; }
-    if (c.info) {
-      h += '<section class="chapter info"><h2>' + head + '</h2><ul class="lines">';
-      for (var j = 0; j < S.info[c.id].length; j++) h += '<li>' + fmt(S.info[c.id][j]) + '</li>';
-      h += '</ul></section>';
-      continue;
-    }
-    h += '<section class="chapter st-' + c.status + '"><h2><span class="glyph" role="img" aria-label="' + esc(S.status[c.status]) +
-      '" title="' + esc(S.status[c.status]) + '">' + G[c.status] + '</span>' + head +
-      (c.tracked ? '<span class="cnt">' + c.done + '/' + c.tracked + '</span>' : '') + '</h2><ul class="items">';
-    for (var k = 0; k < c.items.length; k++) {
-      // a hint shows on the Owner's turn, and on an open Obsidian, desktop-app, extension or keys-table item (it names what does it)
-      var it = c.items[k], hint = hinted(it) && S.hints[it.key];
-      h += '<li class="st-' + it.status + '"><label><input type="checkbox" disabled' + (it.status === 'done' ? ' checked' : '') +
-        '><span class="text"><span class="label">' + fmt(S.items[it.key]) + '</span> <span class="st">' + G[it.status] + ' ' +
-        esc(S.status[it.status]) + '</span>' + (hint ? '<span class="hint">' + fmt(hint) + '</span>' : '') + '</span></label></li>';
-    }
-    h += '</ul></section>';
-  }
-  try { when = new Date(m.generatedAt).toLocaleString(S.locale, { dateStyle: 'medium', timeStyle: 'medium' }); } catch (e) { /* keep ISO */ }
-  h += '<footer><p>' + esc(S.lastUpdate) + ' ' + esc(when) + '</p><p>' + esc(S.reload) + '</p><p class="langs">';
-  ['en', 'he'].forEach(function (l) {
-    h += '<button type="button" data-lang="' + l + '" lang="' + l + '" dir="' + (l === 'he' ? 'rtl' : 'ltr') + '" aria-pressed="' +
-      (l === S.code) + '">' + esc(S.langName[l]) + '</button> ';
-  });
-  return h + '</p><p>' + fmt(S.byHand) + '</p></footer>';
+// The data files the static page reads (classic scripts: a file:// page may load them, never fetch them). The
+// JSON is escaped so no text in it can end the script.
+const jsJson = v => JSON.stringify(v).replace(/[<>&\u2028\u2029]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+function dataJs(model) {   // dashboard/setup-data.js: this folder's statuses (generated, never committed)
+  return '// dashboard/setup-data.js: written by dashboard/setup-page.mjs; read by dashboard/setup.html. Never hand-edit.\n' +
+    'window.SETUP_DATA = ' + jsJson(model) + ';\n';
 }
-
-const CSS = `*{box-sizing:border-box}html,body{background:#fff}
-body{margin:0;color:#101828;font:15px/1.5 -apple-system,"Segoe UI",Arial,sans-serif}
-main{max-width:720px;margin:0 auto;padding:20px 16px 32px}.switching #app{visibility:hidden}
-h1{font-size:20px;line-height:1.3;margin:0 0 12px;font-weight:600}
-h2{font-size:16px;line-height:1.35;margin:0 0 6px;font-weight:600;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
-.bar{height:8px;background:#EAECF0;border-radius:4px;overflow:hidden}.bar span{display:block;height:100%;background:#0F6E56}
-.count{margin:6px 0 16px;color:#475467;font-size:14px}
-.next{border:1px solid #D0D5DD;border-radius:8px;padding:12px 14px;margin:0 0 20px}.next h2{font-size:13px;color:#475467;margin:0 0 2px}
-.next p{margin:0}.next .what{font-weight:600}.next .who{color:#475467}.next.st-owner{border-color:#B45309}.next.st-owner .who{color:#B45309}
-.chapter{border-top:1px solid #EAECF0;padding:12px 0}.num{color:#475467;min-width:2.2em}.glyph{min-width:1em;text-align:center}
-h2.part{font-size:14px;color:#475467;margin:20px 0 6px;font-weight:600}
-.cnt{margin-inline-start:auto;color:#475467;font-size:13px;font-weight:400}
-.chapter.st-done .glyph{color:#0F6E56}.chapter.st-owner .glyph{color:#B45309}.chapter.st-todo .glyph{color:#475467}
-ul{list-style:none;margin:0;padding:0}.items li{padding:3px 0}.items label{display:flex;gap:8px;align-items:flex-start}
-.items input{flex:none;margin:4px 0 0}.text{flex:1;min-width:0}.st{white-space:nowrap;font-size:13px;color:#475467}
-.hint{display:block;font-size:13px;color:#475467}li.st-done .st{color:#0F6E56}li.st-owner .st,li.st-owner .hint{color:#B45309}
-li.st-doing .st{color:#101828}li.st-na .label,li.st-na .st{color:#98A2B3}.lines li{color:#475467;padding:2px 0}
-code{font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:.9em;background:#F2F4F7;border-radius:4px;padding:0 4px}
-footer{border-top:1px solid #EAECF0;margin-top:4px;padding-top:12px;color:#475467;font-size:13px}footer p{margin:0 0 8px}
-button{font:inherit;color:#101828;background:#fff;border:1px solid #D0D5DD;border-radius:6px;padding:3px 10px;cursor:pointer}
-button[aria-pressed="true"]{border-color:#101828;font-weight:600}`;
-
-function pageHtml(model) {   // the whole page: first paint here, the data and both string tables embedded
-  const S = STRINGS[model.lang], title = esc(S.title + ' · ' + (model.company || S.defaultCompany));
-  const data = JSON.stringify({ model, strings: STRINGS, glyphs: GLYPHS })
-    .replace(/[<>&]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
-  const src = renderPage.toString();
-  if (/<\/script|<!--/i.test(src)) throw new Error('renderPage must not contain a script end or comment opener');
-  return `<!doctype html>
-<html lang="${model.lang}" dir="${S.dir}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="5">
-<meta name="color-scheme" content="light">
-<title>${title}</title>
-<style>${CSS}</style>
-<script>try{var l=localStorage.getItem('lang');if((l==='he'||l==='en')&&l!=='${model.lang}')document.documentElement.classList.add('switching')}catch(e){}</script>
-</head>
-<body>
-<main id="app">${renderPage(model, S, GLYPHS)}</main>
-<script type="application/json" id="setup-data">${data}</script>
-<script>
-(function () {
-  var D = JSON.parse(document.getElementById('setup-data').textContent), root = document.documentElement, l = null;
-  var render = ${src};
-  function show(lang) {
-    var S = D.strings[lang];
-    root.lang = lang; root.dir = S.dir;
-    document.title = S.title + ' · ' + (D.model.company || S.defaultCompany);
-    document.getElementById('app').innerHTML = render(D.model, S, D.glyphs);
-  }
-  try { l = localStorage.getItem('lang'); } catch (e) {}
-  try { if ((l === 'he' || l === 'en') && l !== D.model.lang) show(l); } finally { root.classList.remove('switching'); }
-  document.addEventListener('click', function (e) {
-    var b = e.target && e.target.closest ? e.target.closest('button[data-lang]') : null;
-    if (!b) return;
-    l = b.getAttribute('data-lang');
-    try { localStorage.setItem('lang', l); } catch (x) {}
-    show(l);
-  });
-})();
-</script>
-</body>
-</html>
-`;
+function defaultJs() {   // dashboard/setup-default.js: the chapters, items and strings, shipped (the page's first paint)
+  let a = 0, b = 1;
+  const chapters = CHAPTERS.map(c => ({ id: c.id, n: c.part === 'B' ? 'B' + (b++) : 'A' + (a++), part: c.part, ...(c.info ? { info: true } : { items: c.items }) }));
+  return '// dashboard/setup-default.js: written by `node dashboard/setup-page.mjs --default` from its tables; shipped with the\n' +
+    '// harness so the setup wizard (dashboard/setup.html) renders before Node.js is installed. Never hand-edit.\n' +
+    'window.SETUP_DEFAULT = ' + jsJson({ chapters, optional: OPTIONAL, hinted: HINTED_TODO.source, glyphs: GLYPHS, strings: STRINGS }) + ';\n';
 }
 
 function writeAtomic(file, text) {   // temp file + rename, so a reload never meets a half-written page
@@ -554,16 +474,17 @@ function printText(model) {   // the checklist as plain text, for the wizard to 
 
 const keyList = () => 'Valid keys:\n' + CHAPTERS.filter(c => c.items).map(c => `  ${plain(EN.chapters[c.id])}: ${c.items.join(' ')}`).join('\n') +
   `\nValid statuses: ${STATUSES.join(', ')} (owner = waiting for the Owner's click)`;
-const usage = () => `Usage: node dashboard/setup-page.mjs [--mark <key>=<status>]... [--lang he|en] [--open] [--print] [--help]
-Writes dashboard/setup.html, the setup progress page (offline; it reloads itself every 5 seconds).
+const usage = () => `Usage: node dashboard/setup-page.mjs [--mark <key>=<status>]... [--lang he|en] [--open] [--print] [--default] [--help]
+Writes dashboard/setup-data.js, which the setup wizard dashboard/setup.html reads every 2 seconds (offline, static).
   --mark <key>=<status>  record a mark in dashboard/setup-progress.json (repeatable); where the files answer, they win
   --lang he|en           store the page's default language (otherwise the chat language in config/operator.md)
-  --open                 open the page in the default browser afterwards
+  --open                 open the wizard (dashboard/setup.html) in the default browser afterwards
   --print                also print the checklist as text
+  --default              rewrite the shipped dashboard/setup-default.js from the tables (after a change to them)
 ${keyList()}`;
 
 function main(argv) {
-  const o = { marks: [], lang: null, open: false, print: false, help: false };
+  const o = { marks: [], lang: null, open: false, print: false, help: false, default: false };
   for (let i = 0; i < argv.length; i++) {
     let a = argv[i], v = null;
     if (/^--(mark|lang)=/.test(a)) { v = a.slice(a.indexOf('=') + 1); a = a.slice(0, a.indexOf('=')); }
@@ -571,7 +492,7 @@ function main(argv) {
       if (v === null) v = argv[++i];
       if (v === undefined) { console.error(`${a} needs a value\n${usage()}`); return 2; }
       if (a === '--mark') o.marks.push(v); else o.lang = v;
-    } else if (a === '--open' || a === '--print') o[a.slice(2)] = true;
+    } else if (a === '--open' || a === '--print' || a === '--default') o[a.slice(2)] = true;
     else if (a === '--help' || a === '-h') o.help = true;
     else { console.error(`Unknown option: ${a}\n${usage()}`); return 2; }
   }
@@ -584,6 +505,12 @@ function main(argv) {
 
   const root = findRoot(dirname(fileURLToPath(import.meta.url)));
   const progFile = join(root, 'dashboard', 'setup-progress.json'), pageFile = join(root, 'dashboard', 'setup.html');
+  const dataFile = join(root, 'dashboard', 'setup-data.js');
+  if (o.default) {
+    try { writeAtomic(join(root, 'dashboard', 'setup-default.js'), defaultJs()); } catch (e) { console.error(`setup page: could not write (${e.message})`); return 1; }
+    console.log('setup page: dashboard/setup-default.js rewritten from the tables');
+    return 0;
+  }
   const prog = loadProgress(progFile);
   let model;
   try {
@@ -594,7 +521,7 @@ function main(argv) {
       writeAtomic(progFile, JSON.stringify(prog, null, 2) + '\n');
     }
     model = buildModel(root, prog);
-    writeAtomic(pageFile, pageHtml(model));
+    writeAtomic(dataFile, dataJs(model));
   } catch (e) { console.error(`setup page: could not write (${e.message})`); return 1; }
 
   const shown = Object.fromEntries(model.chapters.flatMap(c => (c.items || []).map(i => [i.key, i.status])));
@@ -602,7 +529,10 @@ function main(argv) {
   if (o.print) printText(model);
   const nx = model.next ? `${plain(EN.items[model.next.key])} [${model.next.key}, ${EN.status[model.next.status]}]` : 'none';
   console.log(`setup page: ${model.done}/${model.tracked} done, next: ${nx} → dashboard/setup.html`);
-  if (o.open) console.log(openPage(pageFile) ? `opened in the default browser: ${pageFile}` : `open this file in a browser: ${pageFile}`);
+  if (o.open) {
+    if (!existsSync(pageFile)) console.log(`the wizard page is missing (${pageFile}): unzip the harness again to get it`);
+    else console.log(openPage(pageFile) ? `opened in the default browser: ${pageFile}` : `open this file in a browser: ${pageFile}`);
+  }
   return 0;
 }
 
