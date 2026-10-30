@@ -33,6 +33,7 @@ Only when Google is one of the platforms in `config/operator.md`; otherwise ever
 | `google_ads_customer_id` | {{GOOGLE_ADS_CUSTOMER_ID}} |
 | `google_ads_manager_id` | {{GOOGLE_ADS_MANAGER_ID}} |
 | `google_cloud_project_id` | {{GOOGLE_CLOUD_PROJECT_ID}} |
+| `google_service_account` | {{GOOGLE_SERVICE_ACCOUNT}} |
 | `google_api_access_level` | {{GOOGLE_API_ACCESS_LEVEL}} |
 | `google_currency` | {{GOOGLE_CURRENCY}} |
 | `google_time_zone` | {{GOOGLE_TIME_ZONE}} |
@@ -96,9 +97,9 @@ The MCP servers are declared in the repository's `.mcp.json` (project scope): op
 | Google Ads account (only with Google) | {{STATUS}} | {{DATE}} | the company's own account, made in Expert mode without a first campaign; n/a when the platforms in `config/operator.md` leave Google out |
 | Billing on the Google Ads account | {{STATUS}} | {{DATE}} | required before any Google ad can run |
 | Advertiser verification on Google Ads | {{STATUS}} | {{DATE}} | Google asks for it within days of the first ad; the identity documents are the Owner's |
-| Cloud project with the Google Ads API enabled | {{STATUS}} | {{DATE}} | the company's own project; `google_cloud_project_id` above |
-| OAuth consent screen and Desktop client | {{STATUS}} | {{DATE}} | External, published (in production), the adwords scope; the client id and secret moved into `.env` by `env-set.mjs` |
+| Cloud project with the Google Ads API enabled | {{STATUS}} | {{DATE}} | the company's own project, made from the command line: `google-cloud-setup.mjs run`; `google_cloud_project_id` above |
+| Service account added to the Google Ads account | {{STATUS}} | {{DATE}} | `google-cloud-setup.mjs run` makes it and its key (in `.secrets/`, its path in `.env`); then Google Ads > Admin > Access and security > + > `google_service_account` > Standard. The fallback, when an organization blocks keys: an OAuth client (`docs/google-setup-guide.md`) |
 | Google Ads API access level Explorer | {{STATUS}} | {{DATE}} | applied for in the Cloud Console; Test reaches test accounts only |
-| Google login (refresh token in `.env`) | {{STATUS}} | {{DATE}} | `google-ads.mjs login`, the Owner clicks Allow; checked with `google-ads.mjs check` |
+| Google login checked (`google-ads.mjs check`) | {{STATUS}} | {{DATE}} | the service account reaches the account (`accounts`, then `check` green); with the fallback, `google-ads.mjs login` first (the Owner clicks Allow) |
 | Google conversion action and Google tag | {{STATUS}} | {{DATE}} | `google-ads.mjs conversions create`; the tag on the site is a request to the product team (or the Owner) |
 <!-- setup: status is done / open / n/a / unknown; every row also goes into checklist.md (status open, done or n/a) with owner "Owner" unless named -->

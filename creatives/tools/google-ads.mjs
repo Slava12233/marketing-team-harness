@@ -6,7 +6,7 @@
 //
 // Usage (from the repository root; Node 20+, no dependencies). Every subcommand takes --dry-run (prints the exact
 // requests with the secrets shown as [token]; no network) and --json (raw JSON to stdout; human lines go to stderr):
-//   node creatives/tools/google-ads.mjs login [--port <n>]
+//   node creatives/tools/google-ads.mjs login [--port <n>]       only with the OAuth fallback (a service account needs no login)
 //   node creatives/tools/google-ads.mjs check
 //   node creatives/tools/google-ads.mjs accounts
 //   node creatives/tools/google-ads.mjs search --gaql "SELECT ... FROM ..." [--out <file.csv>]
@@ -29,10 +29,15 @@
 //   node creatives/tools/google-ads.mjs recipe list | recipe show <name> | recipe run <name> [--set NAME=value ...] [--vars <file.json>] [--validate] [--go "…"]
 //                                       the ready-made specs in creatives/tools/google-ads-recipes/ (add your own: no code)
 //
-// Configuration, from the repository-root .env only (template: .env.example); no other .env key is read:
-//   GOOGLE_ADS_CLIENT_ID          required; the OAuth client (Desktop type) of the company's own Google Cloud project.
-//   GOOGLE_ADS_CLIENT_SECRET      required; that client's secret (written by env-set.mjs --from-clipboard, never seen).
-//   GOOGLE_ADS_REFRESH_TOKEN      required for every call but login; written by login, never printed.
+// Configuration, from the repository-root .env only (template: .env.example); no other .env key is read. Two ways to
+// sign in; the service account wins when its key is set:
+//   GOOGLE_ADS_JSON_KEY_FILE      the service account's JSON key, a path relative to the harness folder (written by
+//                                 google-cloud-setup.mjs, normally .secrets/google-ads-key.json, never committed, never
+//                                 printed). The service account is added as a user of the Google Ads account (Admin >
+//                                 Access and security); no OAuth client, no consent screen, no refresh token.
+//   GOOGLE_ADS_CLIENT_ID          the fallback: the OAuth client (Desktop type) of the company's own Google Cloud project.
+//   GOOGLE_ADS_CLIENT_SECRET      that client's secret (written by env-set.mjs --from-clipboard, never seen).
+//   GOOGLE_ADS_REFRESH_TOKEN      required with the OAuth client for every call but login; written by login, never printed.
 //   GOOGLE_ADS_CUSTOMER_ID        required; the Google Ads account (10 digits, dashes optional). Every account path is
 //                                 built from it; it must match google_ads_customer_id in config/accounts.md.
 //   GOOGLE_ADS_LOGIN_CUSTOMER_ID  optional; the manager account (MCC) the login reaches the account through.
@@ -65,7 +70,7 @@ import { fileURLToPath } from "node:url";
 
 const SELF = fileURLToPath(import.meta.url);
 export const REPO = path.resolve(path.dirname(SELF), "..", "..");
-export const ENV_KEYS = ["GOOGLE_ADS_CLIENT_ID", "GOOGLE_ADS_CLIENT_SECRET", "GOOGLE_ADS_REFRESH_TOKEN", "GOOGLE_ADS_CUSTOMER_ID",
+export const ENV_KEYS = ["GOOGLE_ADS_JSON_KEY_FILE", "GOOGLE_ADS_CLIENT_ID", "GOOGLE_ADS_CLIENT_SECRET", "GOOGLE_ADS_REFRESH_TOKEN", "GOOGLE_ADS_CUSTOMER_ID",
   "GOOGLE_ADS_LOGIN_CUSTOMER_ID", "GOOGLE_ADS_DEVELOPER_TOKEN", "GOOGLE_ADS_API_VERSION"];
 const ADS_HOST = "googleads.googleapis.com";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -107,6 +112,30 @@ export function readEnvFile(file, keys = ENV_KEYS) {
   }
   return out;
 }
+// ---------- the service account (GOOGLE_ADS_JSON_KEY_FILE) ----------
+// readServiceKey: the key file's three fields the sign-in needs, or a UsageError naming what is wrong. The private key
+// is never printed; the caller adds it to the scrubber.
+export function readServiceKey(file) {
+  let j;
+  try { j = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) {
+    throw new UsageError(e.code === "ENOENT"
+      ? `GOOGLE_ADS_JSON_KEY_FILE names ${file}, which does not exist: run node creatives/tools/google-cloud-setup.mjs run (it writes the key there).`
+      : `GOOGLE_ADS_JSON_KEY_FILE (${file}) is not a JSON key file: create a new key with node creatives/tools/google-cloud-setup.mjs run.`);
+  }
+  if (!j || j.type !== "service_account" || !j.client_email || !j.private_key) {
+    throw new UsageError(`GOOGLE_ADS_JSON_KEY_FILE (${file}) is not a service account key (type service_account with client_email and private_key).`);
+  }
+  return { email: String(j.client_email), privateKey: String(j.private_key), tokenUri: String(j.token_uri || TOKEN_URL) };
+}
+// serviceAssertion: the signed JWT (RS256) that Google's token endpoint exchanges for an access token, one hour.
+export function serviceAssertion(key, nowMs = Date.now()) {
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const iat = Math.floor(nowMs / 1000);
+  const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64({ iss: key.email, scope: SCOPE, aud: key.tokenUri, iat, exp: iat + 3600 })}`;
+  const sig = crypto.sign("RSA-SHA256", Buffer.from(unsigned), key.privateKey).toString("base64url");
+  return `${unsigned}.${sig}`;
+}
+
 // setEnvLine: NAME=value written once, every other NAME= line removed, everything else kept with its line endings
 // (the same rule as env-set.mjs). The file is written through a temporary file and closed to the user.
 export function setEnvLine(text, name, value) {
@@ -127,7 +156,7 @@ export function setEnvLine(text, name, value) {
   }
   return out.join(eol);
 }
-function writeEnvAtomic(file, text) {
+export function writeEnvAtomic(file, text) {
   const tmp = file + ".tmp";
   fs.writeFileSync(tmp, text, { encoding: "utf8", mode: 0o600 });
   fs.renameSync(tmp, file);
@@ -694,7 +723,7 @@ export function describeError(json, status) {
 export function fixList(codes, message) {
   const all = codes.join(" ") + " " + String(message || "");
   if (/invalid_grant|OAUTH_TOKEN_(EXPIRED|REVOKED|INVALID)|invalid_client|unauthorized_client/i.test(all)) {
-    return "The login is no longer valid (expired, revoked, or the OAuth client changed). Run: node creatives/tools/google-ads.mjs login (the Owner clicks Allow). A client in Testing mode on the consent screen expires its logins after 7 days: publish the consent screen (Google Auth Platform > Audience > Publish app).";
+    return "The sign-in is no longer valid. With the service account (GOOGLE_ADS_JSON_KEY_FILE): its key was deleted or disabled; make a new one with node creatives/tools/google-cloud-setup.mjs run --project <id>. With the OAuth fallback: the login expired, was revoked or the client changed; run node creatives/tools/google-ads.mjs login (the Owner clicks Allow). A client in Testing mode on the consent screen expires its logins after 7 days: publish the consent screen (Google Auth Platform > Audience > Publish app).";
   }
   if (/DEVELOPER_TOKEN|NOT_APPROVED|test account|TEST_ACCOUNT|access level|explorer/i.test(all)) {
     return "The Google Cloud project's Google Ads API access is Test only, so it reaches test accounts only. The Owner applies for Explorer in the Cloud Console (Google Ads API > Overview > Upgrade access level > Apply); review is usually automated. Nothing was retried.";
@@ -766,13 +795,20 @@ export async function run(argv, opts = {}) {
   const version = String(fileEnv.GOOGLE_ADS_API_VERSION || DEFAULT_VERSION).trim();
   const problems = [];
   const noEnv = "No .env at the repository root. Copy .env.example to .env (the bootstrap does it), then follow docs/google-setup-guide.md.";
-  if ((!clientId || !clientSecret) && !["recipe list", "recipe show"].includes(key)) {
+  const offline = ["recipe list", "recipe show"].includes(key);
+  // The service account (GOOGLE_ADS_JSON_KEY_FILE) wins over the OAuth client; its key is read only when a call needs it.
+  const keyFile = fileEnv.GOOGLE_ADS_JSON_KEY_FILE ? path.resolve(io.repo, fileEnv.GOOGLE_ADS_JSON_KEY_FILE) : "";
+  let serviceKey = null;
+  if (keyFile && !offline && key !== "login") {
+    try { serviceKey = readServiceKey(keyFile); scrub.add(serviceKey.privateKey); } catch (e) { problems.push(e.message); }
+  }
+  if (!keyFile && (!clientId || !clientSecret) && !offline) {
     problems.push(envExists
-      ? "GOOGLE_ADS_CLIENT_ID and GOOGLE_ADS_CLIENT_SECRET must both be set in .env: copy each from the Cloud Console (Google Auth Platform > Clients) and run node creatives/tools/env-set.mjs --from-clipboard <NAME> (never paste a value in chat)."
+      ? "Google Ads has no sign-in in .env: run node creatives/tools/google-cloud-setup.mjs run (a service account, GOOGLE_ADS_JSON_KEY_FILE), or, as the fallback, set GOOGLE_ADS_CLIENT_ID and GOOGLE_ADS_CLIENT_SECRET from the Cloud Console (Google Auth Platform > Clients) with node creatives/tools/env-set.mjs --from-clipboard <NAME> (never paste a value in chat)."
       : noEnv);
   }
   const needsAccount = !["login", "accounts", "geo-search", "recipe list", "recipe show"].includes(key);
-  if (!["login", "recipe list", "recipe show"].includes(key) && !refresh) problems.push("GOOGLE_ADS_REFRESH_TOKEN is not set: run node creatives/tools/google-ads.mjs login first (the Owner clicks Allow in the browser).");
+  if (!keyFile && !["login", "recipe list", "recipe show"].includes(key) && !refresh) problems.push("GOOGLE_ADS_REFRESH_TOKEN is not set: run node creatives/tools/google-ads.mjs login first (the Owner clicks Allow in the browser).");
   if (needsAccount && !customer) problems.push("GOOGLE_ADS_CUSTOMER_ID is not set in .env: run accounts, then write the chosen id (10 digits) with env-set.mjs or by hand; see .env.example.");
   else if (customer && !isCustomerId(customer)) problems.push("GOOGLE_ADS_CUSTOMER_ID in .env is not a 10-digit Google Ads customer id (dashes optional).");
   if (loginCustomer && !isCustomerId(loginCustomer)) problems.push("GOOGLE_ADS_LOGIN_CUSTOMER_ID in .env is not a 10-digit manager account id.");
@@ -835,7 +871,8 @@ export async function run(argv, opts = {}) {
       }
       case "check":
         return { steps: [
-          req("POST", TOKEN_URL, { grant_type: "refresh_token", refresh_token: "[token]" }),
+          keyFile ? req("POST", TOKEN_URL, { grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: "[signed with the service account key]" })
+            : req("POST", TOKEN_URL, { grant_type: "refresh_token", refresh_token: "[token]" }),
           req("GET", "customers:listAccessibleCustomers"),
           q("SELECT customer.id, customer.descriptive_name, customer.currency_code, customer.time_zone, customer.status, customer.manager, customer.test_account FROM customer"),
           q("SELECT conversion_action.id, conversion_action.name, conversion_action.status FROM conversion_action WHERE conversion_action.status = 'ENABLED'"),
@@ -1005,9 +1042,15 @@ export async function run(argv, opts = {}) {
   let accessToken = "";
   async function token() {
     if (accessToken) return accessToken;
-    const form = new URLSearchParams({ grant_type: "refresh_token", refresh_token: refresh, client_id: clientId, client_secret: clientSecret });
-    const r = await send("POST", TOKEN_URL, { "Content-Type": "application/x-www-form-urlencoded" }, form.toString(), "oauth2/token");
-    if (!r.access_token) throw new AdsError("Google returned no access token: run login again");
+    let form, url = TOKEN_URL;
+    if (serviceKey) {   // the service account: a signed assertion, no refresh token
+      const assertion = serviceAssertion(serviceKey, io.now().getTime());
+      scrub.add(assertion);
+      form = new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion });
+      url = serviceKey.tokenUri;
+    } else form = new URLSearchParams({ grant_type: "refresh_token", refresh_token: refresh, client_id: clientId, client_secret: clientSecret });
+    const r = await send("POST", url, { "Content-Type": "application/x-www-form-urlencoded" }, form.toString(), "oauth2/token");
+    if (!r.access_token) throw new AdsError(serviceKey ? "Google returned no access token for the service account: create a new key with google-cloud-setup.mjs run" : "Google returned no access token: run login again");
     scrub.add(r.access_token);
     accessToken = r.access_token;
     return accessToken;
@@ -1063,6 +1106,7 @@ export async function run(argv, opts = {}) {
 
   // ---------- executors ----------
   async function execLogin() {
+    if (keyFile) { human("This folder signs in with a service account (GOOGLE_ADS_JSON_KEY_FILE in .env): no login is needed. Run check."); return 0; }
     if (!clientId || !clientSecret) { for (const p of problems) err(p); return 2; }
     const verifier = crypto.randomBytes(48).toString("base64url");
     const challenge = crypto.createHash("sha256").update(verifier).digest("base64url");
@@ -1116,10 +1160,13 @@ export async function run(argv, opts = {}) {
     let conv = [];
     try { conv = await searchCustomer(plan.steps[3].body.query); } catch { /* reported below as no data */ }
     const reachable = names.includes(customer) || Boolean(loginCustomer);
-    const out = { login: "ok", accessible: names.length, customer: { id: cu.id, name: cu.descriptiveName, currency: cu.currencyCode, time_zone: cu.timeZone,
+    const out = { login: "ok", auth: serviceKey ? "service_account" : "oauth_client", service_account: serviceKey ? serviceKey.email : null, accessible: names.length, customer: { id: cu.id, name: cu.descriptiveName, currency: cu.currencyCode, time_zone: cu.timeZone,
       status: cu.status, manager: cu.manager, test_account: cu.testAccount }, through_manager: loginCustomer || null, conversion_actions: conv.length, bound: bound || null };
     if (o.json) say(JSON.stringify(out, null, 2));
-    human(`login           : ok (the refresh token works; ${names.length} account(s) reachable)`);
+    human(serviceKey
+      ? `login           : ok (service account ${serviceKey.email}; ${names.length} account(s) it was added to)`
+      : `login           : ok (the refresh token works; ${names.length} account(s) reachable)`);
+    if (serviceKey && !names.includes(customer) && !loginCustomer) human(`                  ${customer} has not added the service account yet: Google Ads > Admin > Access and security > + > ${serviceKey.email} (Standard)`);
     human(`google ads      : ${customer} "${cu.descriptiveName || ""}", status ${cu.status || "?"}, ${cu.currencyCode || "?"}, ${cu.timeZone || "?"}${cu.testAccount ? " (TEST ACCOUNT)" : ""}${cu.manager ? " (a MANAGER account: choose a client account)" : ""}`);
     human(`reached         : ${loginCustomer ? `through manager ${loginCustomer}` : reachable ? "directly" : "not in the list of accounts this login reaches"}`);
     human(`config binding  : ${bound ? `config/accounts.md names ${bound} (matches)` : "config/accounts.md has no google_ads_customer_id yet: write it in /connect"}`);

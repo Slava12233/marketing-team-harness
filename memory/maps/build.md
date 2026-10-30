@@ -84,6 +84,7 @@ Every note under `learnings/google-platform/`, read by `google-ads-build` before
 - [[2026-10-30-a-paused-campaign-serves-nothing]]
 - [[2026-10-30-oauth-client-in-testing-expires-logins-after-7-days]]
 - [[2026-10-30-official-google-ads-mcp-is-read-only]]
+- [[2026-10-30-a-service-account-signs-in-without-oauth]]
 
 ## Learnings that affect a build
 - every note under `learnings/tooling/` and `learnings/money/` (grep `memory/INDEX.md` for `learnings/tooling` and `learnings/money`)

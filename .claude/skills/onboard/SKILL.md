@@ -88,7 +88,7 @@ Everything else is `setup-console` as written: how every step runs (navigate, sa
 
 ### G. Google Ads (marks `google.*`; only when Google is a platform in `config/operator.md`)
 
-`/connect` step 3b runs it: the company's own Google Ads account, billing, the Cloud project with the Google Ads API, the consent screen published and a Desktop client (id and secret moved into `.env` by `env-set.mjs`, unseen), the Explorer application, `google-ads.mjs login` (the Owner clicks Allow), the account picked, the conversion action. The step bodies and pitfalls are `docs/google-setup-guide.md`; this page's hard-stop list applies as written. `n/a` for every item when Google is not a platform.
+`/connect` step 3b runs it: the company's own Google Ads account, billing, the Cloud project, the Google Ads API and a service account with its key from the command line (`google-cloud-setup.mjs`: gcloud, the Owner signs in once; the key written into `.secrets/` unseen), the service account added in Google Ads and the Explorer application (the two browser forms), the account picked, the conversion action; the OAuth client and `google-ads.mjs login` only as the fallback. The step bodies and pitfalls are `docs/google-setup-guide.md`; this page's hard-stop list applies as written. `n/a` for every item when Google is not a platform.
 
 ### A10. The keys table  (mark `keys.table`)
 

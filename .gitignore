@@ -1,5 +1,7 @@
 # Secrets
 .env
+# The Google service account key (google-cloud-setup.mjs) and any other key file
+.secrets/
 .env.*
 !.env.example
 .env.local

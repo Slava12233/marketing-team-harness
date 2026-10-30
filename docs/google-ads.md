@@ -48,16 +48,16 @@ You rarely type these commands. Ask in the chat ("build the Search campaign from
 
 ## Before the first use
 
-1. **The company's own Google Cloud project and OAuth client.** Chapter G of `/connect` drives it in the Owner's Chrome (`docs/google-setup-guide.md`):
-   - the project, with the Google Ads API enabled;
-   - the consent screen published, with the Google Ads scope;
-   - a client of type Desktop app.
+1. **The company's own Google Cloud project and service account, from the command line.** `creatives/tools/google-cloud-setup.mjs` drives gcloud (`docs/google-setup-guide.md`, G4):
+   - `install` puts gcloud on the computer when it is missing;
+   - `login`: the Owner signs in to Google once, in the browser;
+   - `run --project <id>` creates the project when missing, turns the Google Ads API on, creates the service account and its key (gcloud writes it into `.secrets/google-ads-key.json`, never shown) and writes `GOOGLE_ADS_JSON_KEY_FILE` into `.env`.
 
-   Its id and secret are copied in the console and moved into `.env` by `node creatives/tools/env-set.mjs --from-clipboard GOOGLE_ADS_CLIENT_ID` (then `GOOGLE_ADS_CLIENT_SECRET`), unseen.
-2. **API access.** A new project reaches test accounts only (Test access). The Owner applies for Explorer in the Cloud Console (Google Ads API → Overview → Upgrade access level). Google sunset developer tokens on 2026-09-09; access follows the project now.
-3. **The login.** `node creatives/tools/google-ads.mjs login`. The Owner signs in with the Google user who can open the company's Google Ads account and clicks Allow. The tool catches Google's answer on this computer (a local address, `127.0.0.1`), writes `GOOGLE_ADS_REFRESH_TOKEN` into `.env`, and prints only its length.
+   The tool signs in with that key (a signed assertion, no refresh token, nothing expires). Then the service account is added to the Google Ads account: Admin → Access and security → + → its e-mail → Standard (a browser form; Google has no API for it).
+2. **API access.** A new project reaches test accounts only (Test access). The Owner applies for Explorer in the Cloud Console (Google Ads API → Overview → Upgrade access level; `run` prints the link). Google sunset developer tokens on 2026-09-09; access follows the project now.
+3. **The fallback, an OAuth client.** Only when an organization blocks service account keys: a published consent screen and a Desktop client in the Cloud Console, their id and secret moved into `.env` by `env-set.mjs --from-clipboard`, then `node creatives/tools/google-ads.mjs login` (the Owner clicks Allow; the refresh token goes into `.env` unseen). Leave `GOOGLE_ADS_JSON_KEY_FILE` empty in this route.
 4. **The account.** Set it up in this order:
-   - `accounts` lists the accounts the login reaches;
+   - `accounts` lists the accounts the sign-in reaches;
    - put the company's own account into `.env` as `GOOGLE_ADS_CUSTOMER_ID`, and into `config/accounts.md` as `google_ads_customer_id`;
    - when the account is reached through a manager account (an agency MCC), put the manager into `.env` as `GOOGLE_ADS_LOGIN_CUSTOMER_ID`;
    - then `check`.
@@ -92,7 +92,8 @@ The main session runs these only after the Owner's go in the same message, as `C
 
 | What you see | What it means | What to do |
 |---|---|---|
-| `invalid_grant` | The login expired or was revoked. A consent screen still in Testing expires it after 7 days | Publish the consent screen (Google Auth Platform → Audience → Publish app), then `login` again |
+| `invalid_grant` | With the OAuth fallback: the login expired or was revoked (a consent screen still in Testing expires it after 7 days). With the service account: its key was deleted or disabled | OAuth: publish the consent screen (Google Auth Platform → Audience → Publish app), then `login` again. Service account: `google-cloud-setup.mjs run --project <id>` makes a new key |
+| "has not added the service account yet" | The service account is not a user of the Google Ads account | Google Ads → Admin → Access and security → + → the service account's e-mail → Standard |
 | "Test only" / `DEVELOPER_TOKEN_NOT_APPROVED` / a test-account error | The Cloud project's access is Test | The Owner applies for Explorer; meanwhile only test accounts work |
 | `USER_PERMISSION_DENIED` | The signed-in user cannot open this account, or reaches it only through a manager | Set `GOOGLE_ADS_LOGIN_CUSTOMER_ID`, or add the user in Google Ads → Admin → Access and security |
 | `CUSTOMER_NOT_ENABLED` | The account has no billing yet, or was cancelled | Google Ads → Billing |

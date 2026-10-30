@@ -9,7 +9,9 @@ import { join } from "node:path";
 import {
   run, readEnvFile, setEnvLine, scrubText, adLength, validateBuildSpec, buildOperations, isReadOnlyQuery, reportQuery,
   reportRows, configuredCustomer, googleDailyLimit, validateConversionSpec, fixList, guardOperations, checkServicePath, fillRecipe,
+  serviceAssertion,
 } from "./google-ads.mjs";
+import { generateKeyPairSync, verify } from "node:crypto";
 
 const CUSTOMER = "1234567890";
 const MANAGER = "9876543210";
@@ -397,6 +399,44 @@ test("check reads the account and the conversion actions", async () => {
     assert.equal(r.code, 0, r.err);
     assert.match(r.out, /"Co", status ENABLED, ILS/);
     assert.match(r.out, /1 enabled conversion action/);
+    assertHygiene(r);
+  } finally { clean(repo); }
+});
+
+test("the service account: a signed JWT for the token, no OAuth client or refresh token, the key never printed", async () => {
+  const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const pem = privateKey.export({ type: "pkcs8", format: "pem" });
+  const email = "harness-google-ads@acme-ads-1a2b.iam.gserviceaccount.com";
+  // The assertion: RS256 over header.claims, the Google Ads scope, one hour, verifiable with the public key.
+  const jwt = serviceAssertion({ email, privateKey: pem, tokenUri: "https://oauth2.googleapis.com/token" }, Date.parse("2026-10-30T10:00:00Z"));
+  const [h, c, s] = jwt.split(".");
+  assert.deepEqual(JSON.parse(Buffer.from(h, "base64url")), { alg: "RS256", typ: "JWT" });
+  const claims = JSON.parse(Buffer.from(c, "base64url"));
+  assert.equal(claims.iss, email); assert.equal(claims.scope, "https://www.googleapis.com/auth/adwords");
+  assert.equal(claims.exp - claims.iat, 3600);
+  assert.ok(verify("RSA-SHA256", Buffer.from(`${h}.${c}`), publicKey, Buffer.from(s, "base64url")));
+  const repo = makeRepo({ env: { GOOGLE_ADS_CLIENT_ID: null, GOOGLE_ADS_CLIENT_SECRET: null, GOOGLE_ADS_REFRESH_TOKEN: null, GOOGLE_ADS_JSON_KEY_FILE: ".secrets/google-ads-key.json" } });
+  try {
+    // A missing key file is a configuration problem with the setup command, before anything is sent.
+    let r = await go(["check"], { repo });
+    assert.equal(r.code, 2); assert.match(r.err, /google-cloud-setup\.mjs run/); assert.equal(r.fetch.calls.length, 0);
+    mkdirSync(join(repo, ".secrets"));
+    writeFileSync(join(repo, ".secrets", "google-ads-key.json"), JSON.stringify({ type: "service_account", client_email: email, private_key: pem, token_uri: "https://oauth2.googleapis.com/token" }));
+    const fetch = mockFetch([
+      { ...TOKEN_ROUTE, when: (call) => /grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer/.test(call.rawBody) && /assertion=/.test(call.rawBody) },
+      { method: "GET", path: "customers:listAccessibleCustomers", reply: { resourceNames: [] } },
+      { method: "POST", path: `customers/${CUSTOMER}/googleAds:search`, when: (q) => /FROM customer/.test(q.body.query), reply: { results: [{ customer: { id: CUSTOMER, descriptiveName: "Co", currencyCode: "ILS", timeZone: "Asia/Jerusalem", status: "ENABLED" } }] } },
+      { method: "POST", path: `customers/${CUSTOMER}/googleAds:search`, when: (q) => /FROM conversion_action/.test(q.body.query), reply: { results: [] } },
+    ]);
+    r = await go(["check"], { repo, fetch });
+    assert.equal(r.code, 0, r.err);
+    assert.match(r.out, new RegExp(`service account ${email.replace(/\./g, "\\.")}`));
+    assert.match(r.out, /has not added the service account yet: Google Ads > Admin > Access and security/);
+    assert.ok(!r.out.includes("PRIVATE KEY") && !r.err.includes("PRIVATE KEY"), "the key was printed");
+    for (const call of fetch.calls) assert.ok(!call.url.includes("assertion"), "the assertion reached a URL");
+    assert.equal(fetch.calls[0].headers["Content-Type"], "application/x-www-form-urlencoded");
+    r = await go(["login"], { repo });
+    assert.equal(r.code, 0); assert.match(r.out, /no login is needed/);
     assertHygiene(r);
   } finally { clean(repo); }
 });

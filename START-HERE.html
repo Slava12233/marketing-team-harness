@@ -178,7 +178,8 @@
       <tr data-only="codex"><td>השומר לא חוסם, או ה-hooks לא רצים</td><td><code>/hooks</code> ב-Codex, ומאשרים. אחרי עדכון מאשרים שוב</td></tr>
       <tr><td>חסר Node.js או Git</td><td>הכלי מריץ את ה-bootstrap בעצמו. לבדיקה בלבד: <code>bootstrap.ps1 -Check</code></td></tr>
       <tr><td>הפעלה נכשלה, שגיאה <code>#3858013</code></td><td>הבעלים מאמת מספר טלפון בחשבון המודעות</td></tr>
-      <tr><td>גוגל: <code>invalid_grant</code></td><td>מפרסמים את מסך ההסכמה (Publish app) ומתחברים שוב: <code>node creatives/tools/google-ads.mjs login</code></td></tr>
+      <tr><td>גוגל: <code>invalid_grant</code></td><td>יוצרים מפתח חדש ל-service account: <code>node creatives/tools/google-cloud-setup.mjs run --project &lt;id&gt;</code></td></tr>
+      <tr><td>גוגל: "has not added the service account yet"</td><td>ב-Google Ads: Admin ← Access and security ← + ← כתובת ה-service account ← Standard</td></tr>
     </tbody>
   </table>
 
@@ -187,6 +188,7 @@
     <tbody>
       <tr><td><code>powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check</code></td><td>מה חסר במחשב, בלי להתקין. הבחירה בין Claude ל-Codex נשמרת ב-<code>dashboard/agent.json</code>, ו-<code>-Claude</code> או <code>-Codex</code> מחליפים אותה</td></tr>
       <tr><td><code>node creatives/tools/meta-upload.mjs --check</code></td><td>הטוקן של Meta עובד</td></tr>
+      <tr><td><code>node creatives/tools/google-cloud-setup.mjs run --project &lt;id&gt;</code></td><td>כל צד ה-Google Cloud משורת הפקודה: הפרויקט, ה-API, ה-service account והמפתח, בלי קונסולה</td></tr>
       <tr><td><code>node creatives/tools/google-ads.mjs check</code></td><td>החיבור לגוגל עובד</td></tr>
       <tr><td><code>node memory/tools/codex-sync.mjs --write</code></td><td>אחרי שינוי בקבצים של Claude, מעדכן את קבצי Codex</td></tr>
     </tbody>

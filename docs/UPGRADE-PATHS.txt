@@ -98,6 +98,7 @@ config/
 [never]
 # The company's secrets
 .env
+.secrets/
 .env.*
 !.env.example
 # The company's notes in the vault
