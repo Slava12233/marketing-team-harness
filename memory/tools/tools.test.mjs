@@ -345,6 +345,23 @@ test('the SessionStart hook with --codex also carries the files CLAUDE.md import
   assert.equal(out.additionalContext, 'config/b.md (imported by CLAUDE.md):\n\n# B file\n\n---\n\nconfig/a.md (imported by CLAUDE.md):\n\n# A file');
 });
 
+test('the quick guide START-HERE.html opens once per folder and computer, and again in a copied folder', async () => {
+  const { openGuideOnce } = await import(pathToFileURL(path.join(HARNESS, '.claude', 'hooks', 'session-start.mjs')).href);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'guide-'));
+  delete process.env.HARNESS_NO_GUIDE;
+  const opened = [];
+  const open = url => opened.push(url);
+  assert.equal(openGuideOnce(root, { open }), false); // no guide in the folder
+  fs.writeFileSync(path.join(root, 'START-HERE.html'), '<!doctype html>');
+  assert.equal(openGuideOnce(root, { open, codex: true }), true);
+  assert.match(opened[0], /^file:\/\/.*START-HERE\.html#codex$/);
+  assert.equal(openGuideOnce(root, { open }), false); // the marker: once per folder
+  const marker = path.join(root, 'dashboard', 'guide-opened.json');
+  fs.writeFileSync(marker, JSON.stringify({ folder: path.join(os.tmpdir(), 'another-folder'), computer: os.hostname() }));
+  assert.equal(openGuideOnce(root, { open }), true); // a folder copied from elsewhere opens it again
+  assert.equal(opened.length, 2);
+});
+
 test('the PreCompact hook reads a Codex rollout transcript too', async () => {
   const { lastAssistantTexts } = await import(pathToFileURL(path.join(HARNESS, '.claude', 'hooks', 'pre-compact.mjs')).href);
   const lines = [

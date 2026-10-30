@@ -24,6 +24,7 @@ README.md
 ONBOARDING.md
 THIRD-PARTY.md
 LICENSE
+START-HERE.html
 CHANGELOG.md
 docs/
 bootstrap.sh

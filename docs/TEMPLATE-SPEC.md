@@ -32,6 +32,7 @@ The harness is **company-agnostic**. Everything specific to a company lives in `
 CLAUDE.md                 rules only; imports config/*.md with @config/<file>.md lines
 README.md                 what this is, quick start, "Use this template"
 ONBOARDING.md             plain-language manual for a new Operator
+START-HERE.html           the one-page Hebrew quick guide (every command, the install for Claude Code or Codex, the iron rules, what goes wrong); opened once per folder and computer by session-start.mjs (marker dashboard/guide-opened.json, git-ignored; HARNESS_NO_GUIDE=1 skips it)
 THIRD-PARTY.md            sources and licences of the third-party skills and of the vendored HyperFrames plugin
 LICENSE                   the licence the template is used under
 CHANGELOG.md              the version log, one entry per tagged release

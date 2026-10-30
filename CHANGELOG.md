@@ -13,6 +13,7 @@ The product build of 2026-10-26: what a buyer needs to go from a computer withou
 
 ### Added
 
+- **The quick guide `START-HERE.html`.** One page in Hebrew, right to left, light and dark: the install at a client for Claude Code or Codex (a switch rewrites every command as `/x` or `$x`), the fixed order of work, every command with what it does, when, and whether it touches the account, what to ask in words, the iron rules, where things are, what to do when something breaks, and the installer's terminal checks. `session-start.mjs` opens it in the browser on the first session in a folder, once per folder and computer (`dashboard/guide-opened.json`, git-ignored; a copied folder opens it again; `HARNESS_NO_GUIDE=1` skips it), and tells the session so.
 - **OpenAI Codex.** The harness also runs in Codex (the app or the CLI); guide `docs/codex.md`. `memory/tools/codex-sync.mjs` (test `codex-sync.test.mjs`) generates the Codex edition from the Claude source, so there is one source and no drift:
   - `AGENTS.md`: a Codex preface (the commands as `$skills`, the question tool, the Codex Chrome extension, no widgets or control room, `codex mcp login`, the network, the go ticket) and `CLAUDE.md`, its imports replaced by one line;
   - `.agents/skills/`: every skill, long descriptions cut at a sentence, explicit-only skills marked in `agents/openai.yaml`;

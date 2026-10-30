@@ -27,6 +27,8 @@ dashboard/setup-data.js
 dashboard/setup-live.js
 dashboard/setup-live.js.tmp
 dashboard/setup-progress.json
+# The quick guide START-HERE.html was opened in this folder on this computer (session-start.mjs)
+dashboard/guide-opened.json
 dashboard/bootstrap-result.json
 dashboard/*.tmp
 

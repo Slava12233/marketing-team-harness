@@ -15,9 +15,14 @@
 // context also carries the company files CLAUDE.md imports (its @config/*.md lines, in order), each under its path.
 // Codex sends the same stdin fields and takes the same hookSpecificOutput.additionalContext
 // (learn.chatgpt.com/docs/hooks, read 2026-10-30).
+// The quick guide: on the first SessionStart (source startup) in a folder, START-HERE.html (the Hebrew quick guide) opens in
+// the default browser, once per folder and computer (marker dashboard/guide-opened.json, git-ignored; a copied folder
+// opens it again). HARNESS_NO_GUIDE=1 skips it. The context then says so, so the session can point to it.
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import os from 'node:os';
+import { spawn } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 function readStdin() {
   try { return fs.readFileSync(0, 'utf8'); } catch { return ''; }
@@ -69,6 +74,34 @@ export function contextText(starts, { codex = false } = {}) {
   return parts.join('\n\n---\n\n');
 }
 
+/** Opens START-HERE.html once per folder and computer. Returns true when it was opened. */
+export function openGuideOnce(root, { codex = false, open = openUrl } = {}) {
+  if (!root || process.env.HARNESS_NO_GUIDE === '1') return false;
+  const guide = path.join(root, 'START-HERE.html');
+  if (!fs.existsSync(guide)) return false;
+  const marker = path.join(root, 'dashboard', 'guide-opened.json');
+  const here = { folder: path.resolve(root), computer: os.hostname() };
+  try {
+    const m = JSON.parse(fs.readFileSync(marker, 'utf8'));
+    if (m.folder === here.folder && m.computer === here.computer) return false;
+  } catch { /* not opened here yet */ }
+  try {
+    fs.mkdirSync(path.dirname(marker), { recursive: true });
+    fs.writeFileSync(marker, JSON.stringify({ ...here, opened: new Date().toISOString() }) + '\n');
+  } catch { return false; } // no marker, no open: never a browser on every session
+  open(pathToFileURL(guide).href + (codex ? '#codex' : ''));
+  return true;
+}
+
+function openUrl(url) {
+  try {
+    const [cmd, args, opts] = process.platform === 'win32'
+      ? ['cmd.exe', ['/d', '/s', '/c', `start "" "${url}"`], { windowsVerbatimArguments: true }]
+      : [process.platform === 'darwin' ? 'open' : 'xdg-open', [url], {}];
+    spawn(cmd, args, { detached: true, stdio: 'ignore', windowsHide: true, ...opts }).unref();
+  } catch { /* no browser: the guide stays in the folder */ }
+}
+
 const isMain = (() => { try { return path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1] || ''); } catch { return false; } })();
 if (isMain) {
   try {
@@ -77,7 +110,16 @@ if (isMain) {
     const here = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
     // Claude Code always sets CLAUDE_PROJECT_DIR for hooks; then only that project is searched.
     const starts = process.env.CLAUDE_PROJECT_DIR ? [process.env.CLAUDE_PROJECT_DIR] : [input.cwd, process.cwd(), here];
-    const additionalContext = contextText(starts, { codex: process.argv.includes('--codex') });
+    const codex = process.argv.includes('--codex');
+    let additionalContext = contextText(starts, { codex });
+    if (input.hook_event_name !== 'SubagentStart' && (!input.source || input.source === 'startup')) {
+      const hot = findHot(starts);
+      const root = hot ? path.dirname(path.dirname(hot)) : findUp(starts, 'CLAUDE.md');
+      if (openGuideOnce(root, { codex })) {
+        const note = 'START-HERE.html (the Hebrew quick guide to every command) was just opened in the browser for the Operator: the first session in this folder on this computer.';
+        additionalContext = additionalContext ? `${note}\n\n${additionalContext}` : note;
+      }
+    }
     if (additionalContext) {
       const hookEventName = input.hook_event_name === 'SubagentStart' ? 'SubagentStart' : 'SessionStart';
       process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName, additionalContext } }));

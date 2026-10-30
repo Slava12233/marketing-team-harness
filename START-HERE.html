@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מדריך מהיר</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --card: #ffffff; --ink: #1d1d1b; --muted: #5f5e58; --line: #e3e1d9;
+    --accent: #1f5fbf; --accent-soft: #e6eefb; --warn: #9a3412; --warn-soft: #fdeee4;
+    --ok: #166534; --code: #f0efe9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --card: #1d1d1b; --ink: #eceae3; --muted: #a8a69d; --line: #33322e;
+      --accent: #7aa7ec; --accent-soft: #1d2a3f; --warn: #f2a37a; --warn-soft: #3a2418;
+      --ok: #86d19b; --code: #2a2926;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141413; --card: #1d1d1b; --ink: #eceae3; --muted: #a8a69d; --line: #33322e;
+    --accent: #7aa7ec; --accent-soft: #1d2a3f; --warn: #f2a37a; --warn-soft: #3a2418;
+    --ok: #86d19b; --code: #2a2926;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 "Segoe UI", "Arial Hebrew", Arial, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+  p { margin: 8px 0; }
+  .lead { color: var(--muted); margin-bottom: 16px; }
+  .bar { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 10px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+  .bar span { color: var(--muted); font-size: 14px; }
+  .bar button { font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .bar button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .bar .hint { font-size: 13px; }
+  code, .cmd { font-family: Consolas, "Courier New", monospace; font-size: 14px; background: var(--code); padding: 1px 6px; border-radius: 5px; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+  .cmd { font-weight: 700; color: var(--accent); }
+  pre { direction: ltr; text-align: left; background: var(--code); padding: 10px 12px; border-radius: 8px; overflow-x: auto; font: 14px/1.5 Consolas, "Courier New", monospace; margin: 6px 0; white-space: pre-wrap; word-break: break-all; }
+  ol.steps { list-style: none; padding: 0; margin: 0; counter-reset: s; }
+  ol.steps > li { counter-increment: s; position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 12px 14px; padding-inline-start: 52px; margin-bottom: 10px; }
+  ol.steps > li::before { content: counter(s); position: absolute; inset-inline-start: 14px; top: 12px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 14px; }
+  ol.steps b { display: block; }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .flow .arrow { color: var(--muted); }
+  .flow .go { background: var(--warn-soft); color: var(--warn); border-radius: 6px; padding: 1px 8px; font-weight: 700; font-size: 14px; }
+  .table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .table th, .table td { text-align: start; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .table th { background: var(--accent-soft); font-size: 14px; }
+  .table tr:last-child td { border-bottom: 0; }
+  .tag { font-size: 13px; white-space: nowrap; font-weight: 600; }
+  .tag.no { color: var(--ok); }
+  .tag.paused { color: var(--accent); }
+  .rules { background: var(--warn-soft); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .rules li { margin: 6px 0; }
+  .say { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+  .say div { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .say q { font-weight: 700; quotes: "„" "”"; }
+  .say small { display: block; color: var(--muted); }
+  .muted { color: var(--muted); font-size: 14px; }
+  [data-only] { }
+  body.codex [data-only="claude"], body.claude [data-only="codex"] { display: none; }
+  @media (max-width: 640px) {
+    .table thead { display: none; }
+    .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+    .table tr { border-bottom: 1px solid var(--line); padding: 6px 0; }
+    .table td { border: 0; padding: 4px 10px; }
+  }
+  @media print { .bar { position: static; } body { background: #fff; } }
+</style>
+</head>
+<body class="claude">
+<main>
+  <h1>מדריך מהיר: צוות השיווק</h1>
+  <p class="lead">הכלי מנתח, מתכנן, כותב ובונה קמפיינים ב-Meta (פייסבוק, אינסטגרם, וואטסאפ) ובגוגל. <b>הכול נבנה מושהה (PAUSED).</b> שום דבר לא עולה לאוויר ושום שקל לא יוצא בלי אישור של הבעלים באותה הודעה.</p>
+
+  <div class="bar" role="group" aria-label="עם מה עובדים">
+    <span>אני עובד עם:</span>
+    <button type="button" data-mode="claude" aria-pressed="true">Claude Code</button>
+    <button type="button" data-mode="codex" aria-pressed="false">Codex</button>
+    <span class="hint" data-only="codex">ב-Codex כל פקודה מתחילה ב-<code>$</code> במקום <code>/</code></span>
+  </div>
+
+  <h2>1. התקנה אצל הלקוח (פעם אחת)</h2>
+  <ol class="steps">
+    <li><b>תיקייה חדשה לעסק.</b> מורידים את הריפו לתיקייה ריקה:
+      <pre>git clone &lt;repo-url&gt; &lt;client-name&gt;</pre>
+      במקום <code>&lt;repo-url&gt;</code> שמים את כתובת הריפו, ובמקום <code>&lt;client-name&gt;</code> את שם התיקייה של הלקוח. אפשר גם להוריד את ה-ZIP ולפרוס אותו. <b>תיקייה אחת לכל עסק.</b> עותק של תיקייה של לקוח אחר מתאפס לבד: הקבצים הקודמים עוברים ל-<code>.previous-company/</code>, ושום דבר לא נמחק.</li>
+    <li><b>Bootstrap.</b> מתקין את כל מה שחסר בלי שאלות (<bdi dir="ltr">Git, Node.js, Claude Code, Chrome, Obsidian</bdi> ועוד) ופותח את אשף ההתקדמות <code>dashboard/setup.html</code>. מריצים בתוך התיקייה:
+      <pre>powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Yes</pre>
+      ב-Mac:
+      <pre>bash bootstrap.sh --yes</pre></li>
+    <li data-only="claude"><b>פותחים את התיקייה ב-Claude.</b> אפליקציית Claude, לשונית <b>Code</b>, <b>Open folder</b>, <b>Trust</b>, ומאשרים את שני השרתים <code>meta-ads</code> ו-<code>fal</code>.</li>
+    <li data-only="codex"><b>פותחים את התיקייה ב-Codex.</b> את התיקייה עצמה, לא תיקייה מעליה. אפשר באפליקציית Codex, או <code>codex</code> בטרמינל בתוך התיקייה. אחר כך:
+      <br>א. <b>Trust project</b>.
+      <br>ב. <code>/hooks</code>, ומאשרים את שלושת ה-hooks. <b>בלי זה שומר החשבון כבוי.</b>
+      <br>ג. בטרמינל:
+      <pre>codex mcp login meta-ads</pre>
+      <pre>codex mcp login fal</pre>
+      ד. פותחים סשן חדש.
+      <br>להתקנת Codex: <code>npm install -g @openai/codex</code></li>
+    <li><b>תוסף כרום.</b> <span data-only="claude">באפליקציית Claude: Settings, Connectors, Claude in Chrome.</span><span data-only="codex">באפליקציית Codex: Plugins, Chrome.</span> הבעלים צריך להיות מחובר בכרום שלו לפייסבוק ולגוגל.</li>
+    <li><b>מקלידים <span class="cmd">/connect</span>.</b> הכלי מחבר הכול, צעד אחר צעד, ונגמר בבדיקה ירוקה.</li>
+    <li><b>מקלידים <span class="cmd">/campaign</span>.</b> ראיון, מחקר, תוכנית ובניית הקמפיין הראשון, מושהה.</li>
+  </ol>
+
+  <h2>2. הסדר הקבוע</h2>
+  <div class="flow">
+    <span class="cmd">/connect</span><span class="arrow">←</span>
+    <span class="cmd">/campaign</span><span class="arrow">←</span>
+    <span class="go">אישור go של הבעלים</span><span class="arrow">←</span>
+    <span>כל בוקר <span class="cmd">/morning</span></span><span class="arrow">←</span>
+    <span>סוף כל סשן <span class="cmd">/sync</span></span><span class="arrow">←</span>
+    <span>פעם בשבוע <span class="cmd">/consolidate</span> ואז <span class="cmd">/next-round</span></span>
+  </div>
+  <p class="muted">בכל רגע אפשר להריץ <span class="cmd">/health</span>, וגם פשוט לבקש במילים (סעיף 4).</p>
+
+  <h2>3. כל הפקודות</h2>
+  <table class="table">
+    <thead><tr><th>פקודה</th><th>מה היא עושה</th><th>מתי</th><th>נוגעת בחשבון?</th></tr></thead>
+    <tbody>
+      <tr><td><span class="cmd">/connect</span></td><td>חלק 1, החיבורים. שואלת שפה ואיפה לפרסם (Meta, גוגל או שניהם). בודקת מה כבר קיים, ומחברת בכרום של הבעלים: עסק, עמוד, חשבון מודעות, פיקסל, אפליקציה וטוקן, וואטסאפ, טפסי לידים, דומיין, fal וגוגל. נגמרת ב-<span class="cmd">/health</span> ירוק.</td><td>בהתקנה, או כדי להמשיך מאיפה שנעצרנו</td><td><span class="tag no">לא בונה כלום</span></td></tr>
+      <tr><td><span class="cmd">/campaign</span></td><td>חלק 2, הקמפיין: ראיון ארוך, מחקר שוק של הסוכנים, תוכנית ובחירות הבעלים. אחר כך קופי ובדיקת ציות, קריאייטיב, העלאה, בנייה ותצוגות מקדימות של Meta.</td><td>אחרי <span class="cmd">/connect</span> ירוק, ולכל קמפיין חדש</td><td><span class="tag paused">בונה PAUSED בלבד</span></td></tr>
+      <tr><td><span class="cmd">/health</span></td><td>בדיקה של כל החיבורים, הלוגינים והקבצים, וההוצאה מול התקרות, בטבלה ירוקה, צהובה ואדומה. <span class="cmd">/health --keys</span> מציגה רק את טבלת המפתחות.</td><td>בתחילת סשן, לפני השקה, וכשמשהו מוזר</td><td><span class="tag no">קריאה בלבד</span></td></tr>
+      <tr><td><span class="cmd">/morning</span></td><td>פתיחת היום: תיבת הבעלים, קריאה חיה של החשבון, מה השתנה בלילה, דגלים ואבחון של Meta, הוצאה, משימות פתוחות והמלצות. הדוח נשמר ב-<code>reports/</code>.</td><td>כל בוקר שיש קמפיין חי</td><td><span class="tag no">לא. תקלה מגיעה כרשימת קליקים, והבעלים עוצר</span></td></tr>
+      <tr><td><span class="cmd">/sync</span></td><td>סגירת סשן: קריאה חיה, עדכון הזיכרון, הצ'קליסט והדשבורד, בדיקת תקינות וקומיט מקומי.</td><td>בסוף כל סשן</td><td><span class="tag no">לא</span></td></tr>
+      <tr><td><span class="cmd">/next-round</span></td><td>הסבב השבועי: מספרים, רעיונות לקריאייטיב ולקופי, מתחרים, ציות, ורשימה ממוספרת. הבעלים בוחר, ורק מה שנבחר נבנה.</td><td>פעם בשבוע, אחרי שבוע של נתונים</td><td><span class="tag paused">בונה PAUSED בלבד</span></td></tr>
+      <tr><td><span class="cmd">/consolidate</span></td><td>ניקוי שבועי של הזיכרון: כפילויות, עובדות ישנות וארכוב.</td><td>לפני <span class="cmd">/next-round</span></td><td><span class="tag no">לא</span></td></tr>
+      <tr><td><span class="cmd">/setup</span></td><td>מפנה ל-<span class="cmd">/connect</span> או ל-<span class="cmd">/campaign</span>. אפשר להריץ שוב חלק אחד כשעובדה משתנה, למשל המוצר, הקהל או התקציב.</td><td>כשמשהו בעסק השתנה</td><td><span class="tag no">לא</span></td></tr>
+      <tr><td><span class="cmd">/onboard</span></td><td>שם ישן ל-<span class="cmd">/connect</span>.</td><td>—</td><td><span class="tag no">לא</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. או פשוט לבקש במילים</h2>
+  <div class="say">
+    <div><q>איך הלך השבוע?</q><small>דוח ביצועים מול השבוע הקודם</small></div>
+    <div><q>תעצור את הקמפיין</q><small>עצירה מותרת תמיד</small></div>
+    <div><q>תראה לי את המודעות</q><small>צילומי מסך של Meta עצמה</small></div>
+    <div><q>תכתוב 5 וריאציות למודעה 2</q><small>קופי שעובר בדיקת ציות</small></div>
+    <div><q>מה המתחרים מפרסמים?</q><small>סריקה של ספריית המודעות ושל האינטרנט</small></div>
+    <div><q>תבדוק את דף הנחיתה</q><small>בקשת שינוי לאתר, אף פעם לא עריכה של האתר</small></div>
+    <div><q>תבנה קמפיין חיפוש בגוגל</q><small>מושהה, בדיקה של גוגל קודם</small></div>
+    <div><q>תכין דוח ללקוח</q><small>עמוד אחד, ב-HTML וב-PDF, וגרסה לוואטסאפ</small></div>
+  </div>
+
+  <h2>5. כללי ברזל</h2>
+  <ul class="rules">
+    <li><b>הפעלה, העלאת תקציב והארכה רק עם go של הבעלים באותה הודעה.</b> קודם הכלי מציג כמה זה עולה ליום, את התקרה ואת תאריך הסיום. אחר כך הבעלים כותב, למשל: <q>מאשר: להפעיל את &lt;הקמפיין&gt;, &lt;סכום&gt; ליום, תקרה &lt;סכום&gt;</q>. הניסוח המדויק נקבע ב-<code>config/operator.md</code>.</li>
+    <li><b>הכול נבנה מושהה.</b> קריאה ועצירה מותרות תמיד.</li>
+    <li><b>חשבון מודעות אחד לכל תיקייה.</b> ניסיון לגעת בחשבון אחר נחסם לפני שהוא נשלח.</li>
+    <li><b>סודות לעולם לא בצ'אט.</b> הטוקן עובר מכפתור ההעתקה של Meta לקובץ <code>.env</code> בלי שאף אחד רואה אותו. סוד שהודבק בצ'אט נחשב שרוף, וצריך להחליף אותו.</li>
+    <li><b>כל עותק הוא עסק חדש.</b> לוגינים שכבר קיימים במחשב נבדקים מחדש לעסק הזה.</li>
+    <li data-only="codex"><b>ב-Codex:</b> לפני הפעלה הכלי כותב לעצמו "כרטיס go" עם המילים של הבעלים, ובלעדיו השומר חוסם. זה קורה אוטומטית, והסוכנים לעולם לא כותבים כרטיס כזה.</li>
+  </ul>
+
+  <h2>6. איפה מה נמצא</h2>
+  <table class="table">
+    <tbody>
+      <tr><td><code>config/</code></td><td>עובדות העסק: מוצר, קהלים, מותג, טענות מותרות, חשבונות, תקציב ותקרות</td></tr>
+      <tr><td><code>plans/</code> · <code>reports/</code></td><td>תוכניות ודוחות, עם תאריך בשם</td></tr>
+      <tr><td><code>memory/HOME.md</code></td><td>דף הבעלים, נפתח ב-Obsidian</td></tr>
+      <tr><td><code>memory/inbox/owner.md</code></td><td>תיבת הבעלים: כותבים שם בקשה, והכלי עונה ב-<span class="cmd">/morning</span></td></tr>
+      <tr><td><code>checklist.md</code></td><td>מה פתוח ואצל מי</td></tr>
+      <tr><td><code>dashboard/setup.html</code></td><td>אשף ההתקדמות של ההתקנה, מסמן את עצמו</td></tr>
+      <tr><td><code>START-HERE.html</code></td><td>המדריך הזה</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. כשמשהו לא עובד</h2>
+  <table class="table">
+    <thead><tr><th>מה רואים</th><th>מה עושים</th></tr></thead>
+    <tbody>
+      <tr><td>הכלים של Meta לא מופיעים</td><td><span data-only="claude"><code>/mcp</code>, ‏<code>meta-ads</code>, ‏log in</span><span data-only="codex"><code>codex mcp login meta-ads</code></span>, ואז סשן חדש</td></tr>
+      <tr><td><code>account guard: … names ad account</code></td><td>זה חשבון לא נכון. חשבון של עסק אחר צריך תיקייה אחרת</td></tr>
+      <tr data-only="codex"><td>השומר לא חוסם, או ה-hooks לא רצים</td><td><code>/hooks</code> ב-Codex, ומאשרים. אחרי עדכון מאשרים שוב</td></tr>
+      <tr><td>חסר Node.js או Git</td><td>הכלי מריץ את ה-bootstrap בעצמו. לבדיקה בלבד: <code>bootstrap.ps1 -Check</code></td></tr>
+      <tr><td>הפעלה נכשלה, שגיאה <code>#3858013</code></td><td>הבעלים מאמת מספר טלפון בחשבון המודעות</td></tr>
+      <tr><td>גוגל: <code>invalid_grant</code></td><td>מפרסמים את מסך ההסכמה (Publish app) ומתחברים שוב: <code>node creatives/tools/google-ads.mjs login</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. פקודות טרמינל למתקין</h2>
+  <table class="table">
+    <tbody>
+      <tr><td><code>powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check</code></td><td>מה חסר במחשב, בלי להתקין</td></tr>
+      <tr><td><code>node creatives/tools/meta-upload.mjs --check</code></td><td>הטוקן של Meta עובד</td></tr>
+      <tr><td><code>node creatives/tools/google-ads.mjs check</code></td><td>החיבור לגוגל עובד</td></tr>
+      <tr><td><code>node memory/tools/codex-sync.mjs --write</code></td><td>אחרי שינוי בקבצים של Claude, מעדכן את קבצי Codex</td></tr>
+    </tbody>
+  </table>
+
+  <p class="muted" style="margin-top:28px">המדריך נפתח לבד בסשן הראשון בתיקייה. כדי לפתוח שוב: לחיצה כפולה על <code>START-HERE.html</code>. ההסבר המלא נמצא ב-<code>ONBOARDING.md</code>.</p>
+</main>
+<script>
+  (function () {
+    var body = document.body;
+    var cmds = Array.prototype.slice.call(document.querySelectorAll('.cmd'));
+    cmds.forEach(function (el) { el.setAttribute('data-name', el.textContent.replace(/^\//, '')); });
+    function set(mode) {
+      body.className = mode;
+      cmds.forEach(function (el) { el.textContent = (mode === 'codex' ? '$' : '/') + el.getAttribute('data-name'); });
+      document.querySelectorAll('.bar button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-mode') === mode)); });
+      try { localStorage.setItem('harness-guide-mode', mode); } catch (e) { /* no storage */ }
+    }
+    document.querySelectorAll('.bar button').forEach(function (b) {
+      b.addEventListener('click', function () { set(b.getAttribute('data-mode')); });
+    });
+    var start = 'claude';
+    try { start = localStorage.getItem('harness-guide-mode') || (location.hash === '#codex' ? 'codex' : 'claude'); } catch (e) { /* no storage */ }
+    if (location.hash === '#codex') start = 'codex';
+    set(start === 'codex' ? 'codex' : 'claude');
+  })();
+</script>
+</body>
+</html>

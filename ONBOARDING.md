@@ -29,6 +29,8 @@ Both are named in `config/operator.md`. If you have a **Product team** (the peop
 
 This is the path from an empty computer to the first two ads built PAUSED, in two parts. **Part A, `/connect`:** your language first, then every login and the one key the harness needs, collected in one guided pass in your own Chrome, ending with `/health` green. **Part B, `/campaign`:** the long interview, the market research, the first campaign built PAUSED and shown to you. (`/onboard` and `/setup`, the older names, route into them.) The explainer video (§3d) shows every chapter on screen; the Owner's clicks in Meta are written out one by one in `docs/meta-setup-guide.md`, for reference.
 
+**The quick guide.** `START-HERE.html` is the shortest version of this manual, in Hebrew, on one page; it opens in the browser by itself in the first session in the folder.
+
 ### 3a. The Claude plan
 
 (Running the harness in OpenAI Codex instead: the steps are the same with the Codex app, `$connect` for `/connect`, and a ChatGPT plan; `docs/codex.md` lists the differences.)
