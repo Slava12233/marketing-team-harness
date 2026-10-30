@@ -67,6 +67,8 @@ reports/**/*.mp4
 
 # The account guard's record of object ids a Meta read or create returned (ids only; rebuilt by use)
 memory/state/known-objects.json
+# Codex only: the go ticket the main session writes in the turn of the Owner's go (account-guard.mjs --ticket)
+memory/state/go-ticket.json
 
 # Backups written by upgrade.sh / upgrade.ps1 before a file is replaced
 .upgrade-backup/

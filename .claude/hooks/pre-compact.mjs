@@ -13,6 +13,8 @@
 //   env    CLAUDE_PROJECT_DIR, the project root where the session started.
 // Transcript lines read: {"type":"assistant","message":{"content":[{"type":"text","text":"..."}, ...]}};
 // thinking, tool_use and tool_result blocks and sidechain (sub-agent) lines are skipped.
+// Codex (--codex in .codex/hooks.json) sends the same fields; its transcript is a rollout file whose assistant lines are
+// {"type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"..."}]}}.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -44,6 +46,12 @@ export function lastAssistantTexts(jsonl, max = MAX_BLOCKS) {
   for (const line of String(jsonl).split('\n')) {
     if (!line.trim()) continue;
     let o; try { o = JSON.parse(line); } catch { continue; }
+    if (o && o.type === 'response_item' && o.payload && o.payload.type === 'message' && o.payload.role === 'assistant') {
+      for (const b of Array.isArray(o.payload.content) ? o.payload.content : []) {
+        if (b && b.type === 'output_text' && typeof b.text === 'string' && b.text.trim()) texts.push(b.text);
+      }
+      continue;
+    }
     if (!o || o.type !== 'assistant' || o.isSidechain) continue;
     const content = o.message && o.message.content;
     if (typeof content === 'string') { if (content.trim()) texts.push(content); continue; }

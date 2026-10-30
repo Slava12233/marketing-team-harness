@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { scanSecrets, scrubSecrets, parseFrontmatter, splitFrontmatter, contentHash, allowedEmails, ownerLanguage, vaultTimezone } from './lib.mjs';
 import { buildAll, HOT_MAX_LINES, HOT_MAX_BYTES, HOT_REL } from './build-hot.mjs';
 import { lint } from './lint.mjs';
@@ -329,6 +329,32 @@ test('the SessionStart hook prints HOT as additionalContext, and nothing without
   assert.equal(out.hookSpecificOutput.hookEventName, 'SessionStart');
   assert.match(out.hookSpecificOutput.additionalContext, /Read the note before you act/);
   assert.doesNotMatch(out.hookSpecificOutput.additionalContext, /content_hash/);
+});
+
+test('the SessionStart hook with --codex also carries the files CLAUDE.md imports, in order', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ss-codex-'));
+  fs.writeFileSync(path.join(root, 'CLAUDE.md'), '# H\n\n@config/b.md\n@config/a.md\n@config/missing.md\n');
+  fs.mkdirSync(path.join(root, 'config'));
+  fs.writeFileSync(path.join(root, 'config', 'a.md'), '# A file\r\n');
+  fs.writeFileSync(path.join(root, 'config', 'b.md'), '# B file\n');
+  const hook = path.join(HARNESS, '.claude', 'hooks', 'session-start.mjs');
+  const run = (args) => spawnSync(process.execPath, [hook, ...args], { input: JSON.stringify({ cwd: root, hook_event_name: 'SubagentStart' }), encoding: 'utf8', cwd: root, env: { ...process.env, CLAUDE_PROJECT_DIR: root } });
+  assert.equal(run([]).stdout, ''); // Claude: no HOT, nothing (the imports are Claude's own)
+  const out = JSON.parse(run(['--codex']).stdout).hookSpecificOutput;
+  assert.equal(out.hookEventName, 'SubagentStart');
+  assert.equal(out.additionalContext, 'config/b.md (imported by CLAUDE.md):\n\n# B file\n\n---\n\nconfig/a.md (imported by CLAUDE.md):\n\n# A file');
+});
+
+test('the PreCompact hook reads a Codex rollout transcript too', async () => {
+  const { lastAssistantTexts } = await import(pathToFileURL(path.join(HARNESS, '.claude', 'hooks', 'pre-compact.mjs')).href);
+  const lines = [
+    { type: 'session_meta', payload: { id: 'x' } },
+    { type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: 'question' }] } },
+    { type: 'response_item', payload: { type: 'reasoning', summary: [{ type: 'summary_text', text: 'thinking' }] } },
+    { type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'the answer' }] } },
+    { type: 'response_item', payload: { type: 'function_call', name: 'shell', arguments: '{}' } },
+  ].map(o => JSON.stringify(o)).join('\n');
+  assert.deepEqual(lastAssistantTexts(lines), ['the answer']);
 });
 
 test('the PreCompact hook appends a scrubbed checkpoint of the last 8 assistant texts to today\'s session note', () => {

@@ -34,7 +34,7 @@ done <<< "$TERMS"
 # usually means a generalised file still carries a template token instead of a config reference.
 # creatives/landing-template/ is skipped too: its page.config.js carries intended placeholders.
 PH=$(grep -r -n -E "${EXCL[@]}" --exclude-dir=config --exclude-dir=examples --exclude-dir=docs --exclude-dir=landing-template -e '\{\{[A-Z][A-Z_]+\}\}' "$ROOT" 2>/dev/null \
-  | grep -v -E '(CLAUDE|README|ONBOARDING)\.md:|SKILL\.md:')
+  | grep -v -E '(CLAUDE|AGENTS|README|ONBOARDING)\.md:|SKILL\.md:')
 if [ -n "$PH" ]; then echo "== warning: {{FIELD}} placeholders outside config/, examples/, docs/:"; echo "$PH" | head -20; fi
 
 # The blank gate: the template ships no company. Every tracked company file (config/, checklist.md, the vault's
@@ -43,6 +43,11 @@ if [ -n "$PH" ]; then echo "== warning: {{FIELD}} placeholders outside config/, 
 if [ -f "$ROOT/memory/tools/instance.mjs" ] && command -v node >/dev/null 2>&1; then
   node "$ROOT/memory/tools/instance.mjs" --gate --root "$ROOT" || STATUS=1
 else echo "== warning: the blank gate needs Node.js and memory/tools/instance.mjs; it was skipped"; fi
+
+# The Codex gate: AGENTS.md, .agents/skills/ and .codex/ must match the Claude source they are generated from.
+if [ -f "$ROOT/memory/tools/codex-sync.mjs" ] && command -v node >/dev/null 2>&1; then
+  node "$ROOT/memory/tools/codex-sync.mjs" --check --root "$ROOT" || STATUS=1
+fi
 
 [ "$STATUS" -eq 0 ] && echo "scrub gate: clean ($(echo "$TERMS" | wc -l) terms checked)"
 exit $STATUS

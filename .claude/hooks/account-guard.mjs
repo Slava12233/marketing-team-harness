@@ -30,6 +30,14 @@
 //   tool_input (PreToolUse) and tool_response (PostToolUse); CLAUDE_PROJECT_DIR is the harness folder.
 //   The hook always exits 0 when it cannot decide (no input, no config, a parse error): it never blocks by
 //   accident, it blocks only on evidence.
+// Codex (--codex, the command in .codex/hooks.json): Codex cannot take a tool away from one sub-agent, so with
+//   --codex the guard also refuses every call that turns something on, deletes, or touches money, unless a go ticket
+//   names its ids: ads_activate_entity, every delete, ads_update_entity setting a status of ACTIVE, DELETED or
+//   ARCHIVED or any budget, bid, spend cap or end time, ads_boost_ig_post and experiment creates. The main session
+//   writes the ticket in the turn of the Owner's go:
+//     node .claude/hooks/account-guard.mjs --ticket --go "<the Owner's words>" --ids <id,id,...> [--minutes 30]
+//   (memory/state/go-ticket.json, git-ignored; at most 60 minutes; --ticket --clear removes it). Codex sends the same
+//   stdin fields and takes exit code 2 with the reason on stderr (learn.chatgpt.com/docs/hooks, read 2026-10-30).
 // Dry check from the harness folder:
 //   echo '{"hook_event_name":"PreToolUse","tool_name":"mcp__meta-ads__ads_create_campaign","tool_input":{"ad_account_id":"1000000000000001"}}' | node .claude/hooks/account-guard.mjs ; echo exit $?
 import fs from 'node:fs';
@@ -48,6 +56,9 @@ const ALWAYS_PASS = new Set([
   'ads_get_ad_accounts', 'ads_get_user_pages', 'ads_get_pages_for_business', 'ads_get_help_article',
   'ads_get_field_context', 'ads_library_search', 'ads_get_ig_accounts', 'ads_catalog_get_businesses',
 ]);
+// With --codex: the calls that need a go ticket (see the header).
+const GO_TOOL_RE = /^ads_(activate_entity|boost_ig_post|experiment_.*_create_test)$|delete/;
+const MONEY_KEY_RE = /budget|spend_cap|bid_amount|bid_strategy|end_time|stop_time/i;
 const WRITE_RE = /^ads_(create_|update_|activate_|delete_|creative_(upload|update|delete)|catalog_(create|update|delete|product_|event_source_(connect|disconnect))|experiment_.*_(create|update)_|pixel_(event|parameter)_(create|update|delete)|boost_)/;
 
 export function readStdin() {
@@ -168,7 +179,46 @@ export function idsInResponse(resp) {
   return [...out];
 }
 
-export function decide(input, root) {
+export function ticketFile(root) { return path.join(root, 'memory', 'state', 'go-ticket.json'); }
+
+/** The live go ticket ({ ids, words, expires }) or null when there is none or it expired. */
+export function loadTicket(root, now = Date.now()) {
+  try {
+    const t = JSON.parse(fs.readFileSync(ticketFile(root), 'utf8'));
+    if (!Array.isArray(t.ids) || !t.expires || Date.parse(t.expires) <= now) return null;
+    return t;
+  } catch { return null; }
+}
+
+export function writeTicket(root, { go, ids, minutes = 30 }, now = Date.now()) {
+  const words = String(go || '').trim();
+  const list = String(ids || '').split(/[\s,]+/).map((x) => x.trim().replace(/^act_/i, '')).filter(Boolean);
+  if (!words) return { ok: false, reason: 'a go ticket needs the Owner\'s words: --go "<words>"' };
+  if (!list.length || list.some((x) => !/^\d{6,}$/.test(x))) return { ok: false, reason: 'a go ticket needs the ids it covers: --ids <digits,digits,...>' };
+  const mins = Math.min(60, Math.max(1, Number(minutes) || 30));
+  const t = { created: new Date(now).toISOString(), expires: new Date(now + mins * 60000).toISOString(), words, ids: list };
+  fs.mkdirSync(path.dirname(ticketFile(root)), { recursive: true });
+  fs.writeFileSync(ticketFile(root), JSON.stringify(t, null, 2) + '\n');
+  return { ok: true, ticket: t, minutes: mins };
+}
+
+/** Does this call turn something on, delete, or touch money (the calls that need a go ticket under --codex)? */
+export function needsGo(short, toolInput) {
+  if (GO_TOOL_RE.test(short)) return true;
+  if (short !== 'ads_update_entity') return false;
+  let hit = false;
+  const walk = (v, key) => {
+    if (hit || v == null) return;
+    if (Array.isArray(v)) { for (const x of v) walk(x, key); return; }
+    if (typeof v === 'object') { for (const [k, x] of Object.entries(v)) { if (MONEY_KEY_RE.test(k)) hit = true; walk(x, k); } return; }
+    if (typeof v === 'string' && v.trim().startsWith('{')) { try { walk(JSON.parse(v), key); return; } catch { /* text */ } }
+    if (/status$/i.test(key) && /^(ACTIVE|DELETED|ARCHIVED)$/i.test(String(v).trim())) hit = true;
+  };
+  walk(toolInput || {}, '');
+  return hit;
+}
+
+export function decide(input, root, { codex = false, now = Date.now() } = {}) {
   const tool = String(input.tool_name || '');
   if (!tool.startsWith('mcp__meta-ads__')) return { ok: true };
   const short = tool.slice('mcp__meta-ads__'.length);
@@ -184,6 +234,16 @@ export function decide(input, root) {
     };
   }
   if (!WRITE_RE.test(short)) return { ok: true };
+  if (codex && needsGo(short, input.tool_input)) {
+    const t = loadTicket(root, now);
+    const missing = t ? objects.filter((id) => !t.ids.includes(id)) : objects;
+    if (!t || missing.length) {
+      return {
+        ok: false,
+        reason: `account guard (Codex): ${short} turns something on, deletes or touches money, and ${t ? `the go ticket does not name ${missing.join(', ')}` : 'there is no live go ticket'}. Only the main session, in the turn of the Owner's go, runs: node .claude/hooks/account-guard.mjs --ticket --go "<the Owner's words>" --ids <the ids>. A sub-agent never does. Nothing was sent.`,
+      };
+    }
+  }
   if (!objects.length) return { ok: true };
   const known = loadKnown(root);
   const unknown = objects.filter((id) => !known.ids.has(id) && !idInVault(root, id));
@@ -212,14 +272,26 @@ export function record(input, root) {
   saveKnown(root, known);
 }
 
+function ticketCli(argv) {
+  const val = (k) => { const i = argv.indexOf(k); return i !== -1 ? argv[i + 1] : undefined; };
+  const root = projectDir({ cwd: process.cwd() });
+  if (argv.includes('--clear')) { fs.rmSync(ticketFile(root), { force: true }); process.stdout.write('go ticket: cleared\n'); process.exit(0); }
+  const r = writeTicket(root, { go: val('--go'), ids: val('--ids'), minutes: val('--minutes') });
+  if (!r.ok) { process.stderr.write(`go ticket: ${r.reason}\n`); process.exit(2); }
+  process.stdout.write(`go ticket: ${r.ticket.ids.length} id(s) for ${r.minutes} minutes (until ${r.ticket.expires}); write the go-log row as usual\n`);
+  process.exit(0);
+}
+
 function main() {
+  const argv = process.argv.slice(2);
+  if (argv.includes('--ticket')) ticketCli(argv);
   let input = {};
   try { input = JSON.parse(readStdin() || '{}'); } catch { input = {}; }
   const root = projectDir(input);
   const event = String(input.hook_event_name || '');
   try {
     if (event === 'PostToolUse') { record(input, root); process.exit(0); }
-    const d = decide(input, root);
+    const d = decide(input, root, { codex: argv.includes('--codex') });
     if (!d.ok) { process.stderr.write(d.reason + '\n'); process.exit(2); }
   } catch (e) {
     // Undecidable: never block by accident.

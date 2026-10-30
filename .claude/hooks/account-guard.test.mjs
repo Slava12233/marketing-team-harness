@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { decide, record, collectIds, allowedAccount, loadKnown, idsInResponse } from './account-guard.mjs';
+import { decide, record, collectIds, allowedAccount, loadKnown, idsInResponse, needsGo, writeTicket, loadTicket } from './account-guard.mjs';
 
 const HOOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'account-guard.mjs');
 const ALLOWED = '100000000000001';
@@ -96,4 +96,50 @@ test('as a hook: exit 2 with the reason on a wrong account, exit 0 on the allowe
   assert.equal(run(JSON.stringify(call('ads_create_campaign', { ad_account_id: ALLOWED }))).status, 0);
   assert.equal(run('not json').status, 0);
   assert.equal(run('').status, 0);
+});
+
+test('Codex: activation, deletes and money edits need a go ticket naming their ids; Claude mode is unchanged', () => {
+  const root = harness();
+  const ad = '120000000000021';
+  const other = '120000000000022';
+  fs.writeFileSync(path.join(root, 'memory', 'campaigns', 'c.md'), `ids: ${ad} ${other}
+`);
+  const activate = call('ads_activate_entity', { ad_account_id: ALLOWED, object_ids: [ad] });
+  assert.equal(decide(activate, root).ok, true); // Claude: disallowedTools is the lock, not the ticket
+  const refused = decide(activate, root, { codex: true });
+  assert.equal(refused.ok, false);
+  assert.match(refused.reason, /no live go ticket/);
+  assert.equal(writeTicket(root, { go: '', ids: ad }).ok, false);
+  assert.equal(writeTicket(root, { go: 'go', ids: 'abc' }).ok, false);
+  const now = Date.now();
+  assert.equal(writeTicket(root, { go: 'Yes, turn it on', ids: `act_${ad}` }, now).ok, true);
+  assert.equal(decide(activate, root, { codex: true, now }).ok, true);
+  const wrongId = decide(call('ads_activate_entity', { ad_account_id: ALLOWED, object_ids: [other] }), root, { codex: true, now });
+  assert.match(wrongId.reason, new RegExp(`does not name ${other}`));
+  assert.equal(decide(activate, root, { codex: true, now: now + 31 * 60000 }).ok, false); // expired after 30 minutes
+  assert.equal(loadTicket(root, now + 31 * 60000), null);
+  // A plain PAUSED edit or a create needs no ticket; a budget or status edit does.
+  assert.equal(decide(call('ads_update_entity', { ad_account_id: ALLOWED, entity_id: other, fields: { name: 'x', status: 'PAUSED' } }), root, { codex: true, now }).ok, true);
+  assert.equal(decide(call('ads_update_entity', { ad_account_id: ALLOWED, entity_id: other, fields: { daily_budget: 9000 } }), root, { codex: true, now }).ok, false);
+  assert.equal(decide(call('ads_create_campaign', { ad_account_id: ALLOWED, name: 'c' }), root, { codex: true, now }).ok, true);
+  assert.equal(needsGo('ads_update_entity', { fields: '{"status":"ACTIVE"}' }), true);
+  assert.equal(needsGo('ads_creative_delete', {}), true);
+  assert.equal(needsGo('ads_get_ad_entities', {}), false);
+});
+
+test('Codex: --ticket writes the ticket from the command line, --codex enforces it as a hook', () => {
+  const root = harness();
+  const ad = '120000000000031';
+  fs.writeFileSync(path.join(root, 'memory', 'campaigns', 'c.md'), `id ${ad}
+`);
+  const env = { ...process.env, CLAUDE_PROJECT_DIR: root };
+  const hook = (args) => spawnSync(process.execPath, [HOOK, ...args], { input: JSON.stringify(call('ads_activate_entity', { ad_account_id: ALLOWED, object_ids: [ad] })), encoding: 'utf8', env });
+  assert.equal(hook(['--codex']).status, 2);
+  const t = spawnSync(process.execPath, [HOOK, '--ticket', '--go', 'Go, turn on ad 1', '--ids', ad], { encoding: 'utf8', env, cwd: root });
+  assert.equal(t.status, 0, t.stderr);
+  assert.match(t.stdout, /go ticket: 1 id/);
+  assert.equal(hook(['--codex']).status, 0);
+  assert.equal(spawnSync(process.execPath, [HOOK, '--ticket', '--clear'], { encoding: 'utf8', env, cwd: root }).status, 0);
+  assert.equal(hook(['--codex']).status, 2);
+  assert.equal(spawnSync(process.execPath, [HOOK, '--ticket', '--ids', ad], { encoding: 'utf8', env, cwd: root }).status, 2);
 });

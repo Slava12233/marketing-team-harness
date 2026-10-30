@@ -31,6 +31,8 @@ This is the path from an empty computer to the first two ads built PAUSED, in tw
 
 ### 3a. The Claude plan
 
+(Running the harness in OpenAI Codex instead: the steps are the same with the Codex app, `$connect` for `/connect`, and a ChatGPT plan; `docs/codex.md` lists the differences.)
+
 Claude Max is the working plan: the agents run on Opus and Sonnet, and creative rounds and builds use a lot of model time. Claude Pro works for reads and reports but runs into its usage limits on creative rounds and builds. A company that has an Anthropic API key can use that instead. Plans and their limits change; check them on Anthropic's site.
 
 ### 3b. The path, step by step

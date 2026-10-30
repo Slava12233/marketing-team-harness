@@ -36,6 +36,8 @@ A company that advertises on Meta and wants Claude Code to do the paid-media wor
 
 **Guided setup.** An A-Z explainer video in two parts (Part A, `/connect`: accounts and keys, chapters A0–A10; Part B, `/campaign`: the interview, the research, the first campaign, the control room, B1–B5) and a screenshot guide walk a non-technical Owner through every step, from an empty laptop to two ads built PAUSED in the company's own Meta account. The chapter list is `ONBOARDING.md` §3d; the text half of the guide is `docs/meta-setup-guide.md`. [link to the explainer video and the setup guide]
 
+**OpenAI Codex instead of Claude.** The harness runs in the Codex app or CLI too: open the folder in Codex, trust the project and its hooks (`/hooks`), log in with `codex mcp login meta-ads` and `codex mcp login fal`, and type `$connect`, then `$campaign`. `AGENTS.md`, `.agents/skills/` and `.codex/` are generated from the Claude files; the guide is `docs/codex.md`.
+
 New Operators: read `ONBOARDING.md`. A fully filled fictional configuration is in `examples/acme-fitness/`.
 
 ## Folder map

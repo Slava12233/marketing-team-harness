@@ -41,6 +41,10 @@ skills-lock.json
 .claude/agents/
 .claude/skills/
 .claude/hooks/
+# The Codex edition, generated from CLAUDE.md, .claude/ and .mcp.json by memory/tools/codex-sync.mjs
+AGENTS.md
+.agents/
+.codex/
 # The vault's machinery (the notes themselves are the company's)
 memory/README.md
 memory/tools/

@@ -13,6 +13,13 @@ The product build of 2026-10-26: what a buyer needs to go from a computer withou
 
 ### Added
 
+- **OpenAI Codex.** The harness also runs in Codex (the app or the CLI); guide `docs/codex.md`. `memory/tools/codex-sync.mjs` (test `codex-sync.test.mjs`) generates the Codex edition from the Claude source, so there is one source and no drift:
+  - `AGENTS.md`: a Codex preface (the commands as `$skills`, the question tool, the Codex Chrome extension, no widgets or control room, `codex mcp login`, the network, the go ticket) and `CLAUDE.md`, its imports replaced by one line;
+  - `.agents/skills/`: every skill, long descriptions cut at a sentence, explicit-only skills marked in `agents/openai.yaml`;
+  - `.codex/agents/*.toml`: the ten agents, opus → `gpt-6.1-sol`, sonnet → `gpt-6-luna`, their taken-away tools written as a rule;
+  - `.codex/config.toml` (the MCP servers, the network for `workspace-write`, the size limit) and `.codex/hooks.json` (the same three hooks with `--codex`).
+
+  `--check` is part of the scrub gate. The hooks learned Codex: `session-start.mjs --codex` adds the files `CLAUDE.md` imports; `pre-compact.mjs` reads Codex's transcript; `account-guard.mjs --codex` refuses an activation, a delete or a money edit unless a go ticket names its ids (`--ticket --go "<the Owner's words>" --ids …`, 30 minutes, `memory/state/go-ticket.json`), since Codex cannot take a tool away from one sub-agent. `/connect` and `/health` name the Codex equivalents. Not yet run on a live Codex session: the Meta MCP login through Codex, the guard on a real call, the size limit and the agent names.
 - **Google Ads.** `creatives/tools/google-ads.mjs` (Node 20+, no dependencies; test `google-ads.test.mjs`, a mocked fetch and a real loopback for the login) on the Google Ads REST API v26:
   - `login` is the OAuth installed-app flow with PKCE on `127.0.0.1`; the refresh token is written into `.env` unseen.
   - Reads: `check`, `accounts`, `search --gaql` (SELECT only) and `report` (the baseline columns, micros converted), plus `geo-search`, `language-ids` and `conversions list [--tags]`.
