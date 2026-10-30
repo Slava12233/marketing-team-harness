@@ -290,6 +290,88 @@ const HE = {
   },
 };
 const STRINGS = { en: EN, he: HE };
+// With Codex (dashboard/agent.json, written by the bootstrap's first question) these replace the Claude wording:
+// the Codex CLI and app, the Codex Chrome extension, `codex mcp login`, the hooks trusted in /hooks, the commands as
+// $skills; the memory routines are a Claude desktop app feature. Merged over STRINGS by stringsFor() here and by
+// SetupWizard.strings() in the page.
+const CODEX = {
+  en: {
+    install: { claude: 'The Codex CLI', app: 'The Codex app', hyperframes: 'The HyperFrames video plugin (Claude Code only)',
+      routines: 'The memory routines (a Claude desktop app feature)' },
+    parts: { A: 'Part A, $connect: accounts and keys (one pass; it ends with every row green)', B: 'Part B, $campaign: the first campaign' },
+    chapters: { app: 'The Codex app', chrome: 'The Codex Chrome extension', c8: 'The `$campaign` interview', c9: '`$health`' },
+    info: {
+      c0: ['A ChatGPT plan with Codex',
+        'A Facebook profile that administers the business, with two-factor authentication on, signed in as the personal profile',
+        'Google Chrome, where the Codex Chrome extension will run', 'A phone for the codes; a card for the ad account and for fal (nothing is charged while every ad is paused)',
+        'A computer with Windows or macOS'],
+      c11: ['`$morning` every working day', '`$sync` at the end of every session', '`$next-round` once a week',
+        '`$consolidate` once a week, before `$next-round` (in Codex nothing runs on a schedule)'],
+    },
+    items: {
+      'install.claude': 'The Codex CLI installed (`codex mcp login` needs it)',
+      'app.desktop': 'The Codex app installed (it runs the harness)',
+      'install.approved': 'The folder opened in Codex, the project trusted, and the three hooks trusted in `/hooks`',
+      'chrome.extension': 'Google Chrome with the Codex Chrome extension connected (Codex app → Plugins → Chrome)',
+      'keys.table': '`$health --keys` all green: every login and the one key in place',
+      'obsidian.hooks': 'Memory hooks in `.codex/hooks.json` (shipped; trusted in `/hooks`)',
+      'memory.routines': 'The memory routines (a Claude desktop app feature: in Codex, `$sync` and `$consolidate` by hand)',
+      'meta.login': 'Meta login in Codex (`codex mcp login meta-ads`)',
+      'fal.login': 'fal logged in (`codex mcp login fal`), for paid pictures and clips',
+      'health.run': '`$health` run and its green/yellow/red table read',
+    },
+    hints: {
+      'app.desktop': 'Windows: the bootstrap installs it from the Microsoft Store; Mac: download it from chatgpt.com/codex; then open the harness folder in it',
+      'chrome.extension': 'In the Codex app: Plugins → Chrome → install, and sign in to the extension; then type `$connect`',
+      'keys.table': 'Type `$connect` in Codex; its last chapter runs `$health --keys` and then the full `$health`',
+      'obsidian.hooks': 'The file ships with the harness (`node memory/tools/codex-sync.mjs --write` rewrites it); trust its hooks in `/hooks`',
+      'memory.routines': 'Nothing to register in Codex: run `$sync` after each session and `$consolidate` once a week',
+      'meta.login': 'In a terminal in the harness folder: `codex mcp login meta-ads`, then start a new Codex session',
+    },
+  },
+  he: {
+    install: { claude: 'Codex CLI', app: 'אפליקציית Codex', hyperframes: 'תוסף הווידאו HyperFrames (רק ב-Claude Code)',
+      routines: 'רוטינות הזיכרון (יכולת של אפליקציית Claude)' },
+    parts: { A: 'חלק א, $connect: החשבונות והמפתחות (מעבר אחד; מסתיים כשכל השורות ירוקות)', B: 'חלק ב, $campaign: הקמפיין הראשון' },
+    chapters: { app: 'אפליקציית Codex', chrome: 'התוסף של Codex לכרום', c8: 'הראיון של `$campaign`', c9: '`$health`' },
+    info: {
+      c0: ['מנוי ChatGPT עם Codex',
+        'פרופיל פייסבוק שמנהל את העסק, עם אימות דו-שלבי פעיל, מחובר כפרופיל האישי',
+        'Google Chrome, שבו ירוץ התוסף של Codex', 'טלפון לקודים; כרטיס לחשבון המודעות ול-fal (שום דבר לא מחויב כל עוד כל המודעות כבויות)',
+        'מחשב עם Windows או macOS'],
+      c11: ['`$morning` בכל יום עבודה', '`$sync` בסוף כל סשן', '`$next-round` פעם בשבוע',
+        '`$consolidate` פעם בשבוע, לפני `$next-round` (ב-Codex שום דבר לא רץ לפי לוח זמנים)'],
+    },
+    items: {
+      'install.claude': 'Codex CLI מותקן (`codex mcp login` צריך אותו)',
+      'app.desktop': 'אפליקציית Codex מותקנת (היא מריצה את הצוות)',
+      'install.approved': 'התיקייה נפתחה ב-Codex, הפרויקט אושר, ושלושת ה-hooks אושרו ב-`/hooks`',
+      'chrome.extension': 'Google Chrome עם התוסף של Codex מחובר (אפליקציית Codex ← Plugins ← Chrome)',
+      'keys.table': '`$health --keys` כולו ירוק: כל ההתחברויות והמפתח האחד במקום',
+      'obsidian.hooks': 'ה-hooks של הזיכרון בקובץ `.codex/hooks.json` (מגיעים עם הכלי; מאושרים ב-`/hooks`)',
+      'memory.routines': 'רוטינות הזיכרון (יכולת של אפליקציית Claude: ב-Codex מריצים `$sync` ו-`$consolidate` ידנית)',
+      'meta.login': 'התחברות ל-Meta ב-Codex (`codex mcp login meta-ads`)',
+      'fal.login': 'התחברות ל-fal (`codex mcp login fal`), לתמונות ולקליפים בתשלום',
+      'health.run': 'הרצתם `$health` וקראתם את טבלת הירוק/צהוב/אדום',
+    },
+    hints: {
+      'app.desktop': 'ב-Windows סקריפט ההתקנה מתקין אותה מ-Microsoft Store; ב-Mac מורידים מ-chatgpt.com/codex; אחר כך פותחים בה את תיקיית הפרויקט',
+      'chrome.extension': 'באפליקציית Codex: Plugins ← Chrome ← התקנה, והתחברות לתוסף; אחר כך הקלידו `$connect`',
+      'keys.table': 'הקלידו `$connect` ב-Codex; הפרק האחרון שלו מריץ `$health --keys` ואחריו את `$health` המלא',
+      'obsidian.hooks': 'הקובץ מגיע עם הכלי (`node memory/tools/codex-sync.mjs --write` כותב אותו מחדש); מאשרים את ה-hooks ב-`/hooks`',
+      'memory.routines': 'אין מה לרשום ב-Codex: מריצים `$sync` בסוף כל סשן ו-`$consolidate` פעם בשבוע',
+      'meta.login': 'בטרמינל בתיקיית הפרויקט: `codex mcp login meta-ads`, ואז סשן Codex חדש',
+    },
+  },
+};
+/** One language's strings for the app that runs the harness: the Codex wording merged over the Claude one. */
+export function stringsFor(lang, agent) {
+  const base = STRINGS[lang] || STRINGS.en;
+  if (agent !== 'codex') return base;
+  const over = CODEX[lang] || CODEX.en, out = { ...base };
+  for (const [k, v] of Object.entries(over)) out[k] = Array.isArray(v) || typeof v !== 'object' ? v : { ...base[k], ...v };
+  return out;
+}
 
 const norm = s => String(s ?? '').replace(/[`"'“”‘’*]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 const plain = s => String(s).replace(/`/g, '');
@@ -380,7 +462,9 @@ function facts(root, env = process.env) {   // what the files say; .env is check
   const complete = {};
   for (const n of ls('config')) if (/\.md$/i.test(n) && n.toLowerCase() !== 'readme.md') complete[n] = !(read('config/' + n) ?? '{{').includes('{{');
   const pixel = find(fields, 'field', 'pixel_id'), campaigns = json('dashboard/state.json').campaigns;
+  const agent = json('dashboard/agent.json').agent === 'codex' ? 'codex' : 'claude';   // the bootstrap's first question
   return {
+    agent,
     step: words => find(steps, 'step', words), item: words => find(rows, 'item', words), complete,
     servers: Object.keys(json('.mcp.json').mcpServers || {}), env: existsSync(join(root, '.env')),
     pixelNoSite: !!pixel && !pixel.value.includes('{{') && /no website/i.test(pixel.value),
@@ -389,8 +473,9 @@ function facts(root, env = process.env) {   // what the files say; .env is check
     company: line('config/company.md', 'Short name').split(/;| \(/)[0].trim().slice(0, 60) || null,
     chat: line('config/operator.md', 'Chat language'),
     platforms: (p => (!p ? { meta: true, google: true } : { meta: /meta|facebook|instagram|מטא|פייסבוק/i.test(p), google: /google|גוגל/i.test(p) }))(line('config/operator.md', 'Platforms')),
-    obsidian: obsidianApp(env), desktop: desktopApp(env), ...(cfg => ({ vault: vaultListed(root, cfg), cli: !!cfg && cfg.cli === true }))(obsidianConfig(env)),
-    hooks: (read('.claude/settings.json') || '').includes('session-start.mjs'),
+    desktop: agent === 'claude' && desktopApp(env),   // the Codex app: only the bootstrap's mark answers it
+    obsidian: obsidianApp(env), ...(cfg => ({ vault: vaultListed(root, cfg), cli: !!cfg && cfg.cli === true }))(obsidianConfig(env)),
+    hooks: (read(agent === 'codex' ? '.codex/hooks.json' : '.claude/settings.json') || '').includes('session-start.mjs'),
     business: (b => b !== null && !b.includes('<fill at /setup>'))(read('memory/business/company.md')),
     routines: ((read('config/operator.md') || '').match(/^\|\s*Nightly memory check\s*\|.*$/m) || [''])[0],
   };
@@ -427,7 +512,7 @@ function buildModel(root, progress) {   // the files win, then the mark, then th
   const lang = progress.lang || (/hebrew|עברית/i.test(f.chat) ? 'he' : 'en');
   const real = c => c != null && !String(c).includes('{{') && norm(c) !== '';
   let done = 0, tracked = 0, next = null, a = 0, b = 1;
-  const fallback = key => (key === 'fal.login' && !f.servers.includes('fal') ? 'na' : 'todo');
+  const fallback = key => ((key === 'fal.login' && !f.servers.includes('fal')) || (key === 'memory.routines' && f.agent === 'codex') ? 'na' : 'todo');
   const chapters = CHAPTERS.map(c => {
     const n = c.label || (c.part === 'B' ? 'B' + (b++) : 'A' + (a++));   // A0 … A10, B1 … B5: the video's chapter labels; G for Google
     if (c.info) return { id: c.id, n, part: c.part, info: true };
@@ -447,7 +532,7 @@ function buildModel(root, progress) {   // the files win, then the mark, then th
     done += d; tracked += t;
     return { id: c.id, n, part: c.part, status, done: d, tracked: t, items };
   });
-  return { lang, company: f.company, generatedAt: new Date().toISOString(), done, tracked, next, chapters };
+  return { lang, agent: f.agent, company: f.company, generatedAt: new Date().toISOString(), done, tracked, next, chapters };
 }
 
 // The data files the static page reads (classic scripts: a file:// page may load them, never fetch them). The
@@ -462,7 +547,7 @@ function defaultJs() {   // dashboard/setup-default.js: the chapters, items and 
   const chapters = CHAPTERS.map(c => ({ id: c.id, n: c.label || (c.part === 'B' ? 'B' + (b++) : 'A' + (a++)), part: c.part, ...(c.info ? { info: true } : { items: c.items }) }));
   return '// dashboard/setup-default.js: written by `node dashboard/setup-page.mjs --default` from its tables; shipped with the\n' +
     '// harness so the setup wizard (dashboard/setup.html) renders before Node.js is installed. Never hand-edit.\n' +
-    'window.SETUP_DEFAULT = ' + jsJson({ chapters, optional: OPTIONAL.concat(GOOGLE_KEYS), hinted: HINTED_TODO.source, glyphs: GLYPHS, strings: STRINGS }) + ';\n';
+    'window.SETUP_DEFAULT = ' + jsJson({ chapters, optional: OPTIONAL.concat(GOOGLE_KEYS), hinted: HINTED_TODO.source, glyphs: GLYPHS, strings: STRINGS, codex: CODEX }) + ';\n';
 }
 
 function writeAtomic(file, text) {   // temp file + rename, so a reload never meets a half-written page
@@ -497,7 +582,7 @@ function openPage(file) {   // the default browser; a failure is reported, never
 }
 
 function printText(model) {   // the checklist as plain text, for the wizard to echo in chat
-  const S = STRINGS[model.lang], out = [`${S.title} · ${model.company || S.defaultCompany}: ${S.progress.replace('{done}', model.done).replace('{tracked}', model.tracked)}`];
+  const S = stringsFor(model.lang, model.agent), out = [`${S.title} · ${model.company || S.defaultCompany}: ${S.progress.replace('{done}', model.done).replace('{tracked}', model.tracked)}`];
   let part = '';
   for (const c of model.chapters) {
     if (c.part !== part) { part = c.part; out.push('', `== ${plain(S.parts[part])} ==`); }

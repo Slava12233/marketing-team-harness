@@ -112,7 +112,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12.5px}footer p{margin:0 0 6
     var v = W.merge(D, window.SETUP_DATA || null, window.SETUP_LIVE || null, Date.now());
     lang = (chosen === 'he' || chosen === 'en') ? chosen : (v.lang === 'he' || v.lang === 'en') ? v.lang
       : (/^he\b/i.test(navigator.language || '') ? 'he' : 'en');
-    var S = D.strings[lang], pop = W.popped(prev, v);
+    var S = W.strings ? W.strings(D, lang, v.agent) : D.strings[lang], pop = W.popped(prev, v);
     var body = W.render(v, S, { open: open, pop: pop, hinted: D.hinted });
     prev = W.statuses(v);
     if (body === last) return;   // nothing changed: leave the page (and its animations) alone

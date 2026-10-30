@@ -67,6 +67,7 @@ This is \`CLAUDE.md\`, the rulebook of the harness, for OpenAI Codex. Every rule
 - **Not in Codex:** the Claude desktop app's control-room mod, the chat widgets (\`visualize\`) and the app's session and task tools. Show a Markdown table wherever a rule asks for a widget; the setup wizard \`dashboard/setup.html\` and the board \`dashboard/state.json\` still open in a browser. "The desktop app's Code tab" means the Codex app or the Codex CLI.
 - **MCP.** \`meta-ads\` and \`fal\` are in \`.codex/config.toml\`; "\`/mcp\` → meta-ads → log in" means \`codex mcp login meta-ads\` (and \`codex mcp login fal\`) in a terminal, then a new Codex session.
 - **Network and the sandbox.** The Node tools (\`meta-upload.mjs\`, \`meta-graph.mjs\`, \`google-ads.mjs\`) call Meta's and Google's APIs; \`.codex/config.toml\` turns the network on for \`workspace-write\`. \`google-ads.mjs login\` listens on 127.0.0.1 for Google's answer: approve it when Codex asks.
+- **The bootstrap.** When a skill runs \`bootstrap.ps1\` / \`bootstrap.sh\` (to install a missing tool), add \`-Codex\` / \`--codex\`: in Codex it installs the Codex CLI and app instead of Claude Code and the Claude desktop app. Its choice is remembered in \`dashboard/agent.json\`, and the setup wizard shows the Codex chapters from it.
 - **The machine rules are the same:** heavy commands with \`timeout N\` first, in the foreground, one at a time. Codex's own memories are not the vault; the vault rules below hold.
 
 ---

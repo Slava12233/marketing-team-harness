@@ -7,6 +7,12 @@
 #   bash bootstrap.sh --yes      install everything that is missing, with no question at all
 #   bash bootstrap.sh --check    report only: no questions, no installs
 #   bash bootstrap.sh --help     show the usage
+#   --claude / --codex (with any of the above): which app runs the harness on this computer. Without them the first
+#   question of a run asks it (Claude Code, or Codex), and dashboard/agent.json (git-ignored) remembers the answer;
+#   --check never asks. With Codex, the Codex CLI (npm) and the Codex app (Windows: the Microsoft Store through
+#   winget; Mac: a download from chatgpt.com/codex) take the place of Claude Code and the Claude desktop app, the
+#   Codex Chrome extension that of Claude in Chrome, and the Claude-only items (the HyperFrames plugin, the memory
+#   routines) are skipped.
 # The one install takes every missing item, required, recommended and optional alike (on a Mac without it,
 # Homebrew first; then Git, Node.js, Claude Code, the Claude desktop app, Google Chrome, playwright-core, Obsidian
 # for the memory vault, the Node.js LTS upgrade the video plugin needs when Node.js is 20 or 21, FFmpeg, the
@@ -37,6 +43,9 @@ MODE=all; CHECK=0; YES=0; ASKEACH=0; MISSING=0; RECHECK=""; AGREED=0; RECO_MISSI
 PLAN=""; ENV_TODO=0; PAGE_TODO=0; GO=0; DECLINED=0; NOANSWER=0; ANSWER=""
 LOG=""; CUR=""; BOUND=1200; BREW_TRIED=0; LIVE_ON=0; LIVE_STARTED=""; LIVE_CUR=""; PAGE_OPENED=0
 WINGET_FLAGS="-e --source winget --accept-package-agreements --accept-source-agreements"
+# The app that runs the harness (claude or codex) and its names, set by the first question.
+AGENT=claude; AGENT_FLAG=""; PRE=/; AGENT_NAME="Claude Code"; CLI_NAME="Claude Code"; CLI_CMD=claude
+APP_NAME="the Claude desktop app"; EXT_NAME="the Claude in Chrome extension"
 # The items of dashboard/bootstrap-result.json, each with the tag of the last line printed for it.
 ITEM_KEYS="git node claude env manifest app chrome playwright obsidian node_upgrade ffmpeg hyperframes obsidian_setup routines instance"
 
@@ -94,8 +103,8 @@ write_live() {
   local k s sep="" running=true
   [ "${1:-}" = done ] && running=false
   {
-    printf 'window.SETUP_LIVE = {"started": "%s", "updated": "%s", "script": "bootstrap.sh", "mode": "%s", "running": %s, "current": "%s", "items": {' \
-      "$LIVE_STARTED" "$(iso_now)" "$(run_mode)" "$running" "$LIVE_CUR"
+    printf 'window.SETUP_LIVE = {"started": "%s", "updated": "%s", "script": "bootstrap.sh", "agent": "%s", "mode": "%s", "running": %s, "current": "%s", "items": {' \
+      "$LIVE_STARTED" "$(iso_now)" "$AGENT" "$(run_mode)" "$running" "$LIVE_CUR"
     for k in $ITEM_KEYS; do eval "s=\${S_$k:-pending}"; printf '%s"%s": "%s"' "$sep" "$k" "$s"; sep=', '; done
     printf '}};\n'
   } > dashboard/setup-live.js.tmp 2>/dev/null && mv -f dashboard/setup-live.js.tmp dashboard/setup-live.js 2>/dev/null
@@ -115,18 +124,21 @@ open_wizard() {   # the wizard in the default browser; 0 when the browser was st
 }
 finish() { write_result "$1"; LIVE_CUR=""; write_live done; exit "$1"; }
 usage() {
-  say "Usage: bash bootstrap.sh [--ask | --yes | --check] [--help]"
+  say "Usage: bash bootstrap.sh [--ask | --yes | --check] [--help] [--claude | --codex]"
   say "  (no option)  check, list what is missing, then one question installs all of it (Enter means Yes)"
   say "  --ask        ask per item: one y/N question before each install (Enter means No)"
   say "  --yes        install everything that is missing, required and optional, with no question"
   say "  --check      report only: no questions, no installs (it writes only bootstrap.log and dashboard/bootstrap-result.json)"
   say "  --help       show this text"
+  say "  --claude     the harness runs in Claude Code (the Claude desktop app); --codex: in Codex (the Codex app)"
+  say "               (without either, the first question asks; dashboard/agent.json remembers the answer)"
   say "Given together, the more careful option wins: --check, then --ask, then --yes."
   say "Run it from the harness folder (the one that contains CLAUDE.md and .mcp.json)."
 }
 for a in "$@"; do
   case "$a" in
     --check) CHECK=1 ;;  --ask) ASKEACH=1 ;;  --yes) YES=1 ;;  --help|-h) usage; exit 0 ;;
+    --claude) AGENT_FLAG=claude ;;  --codex) AGENT_FLAG=codex ;;
     *) say "Unknown option: $a"; usage; exit 2 ;;
   esac
 done
@@ -329,6 +341,8 @@ git_v() {   # Git's version line, or nothing when Git is absent
 node_v()   { command -v node >/dev/null 2>&1 && node --version 2>/dev/null | head -n 1; }
 claude_v() { command -v claude >/dev/null 2>&1 && claude --version 2>/dev/null | head -n 1; }
 claude_file() { [ -e "$HOME/.local/bin/claude" ] || [ -e "$HOME/.local/bin/claude.exe" ]; }
+codex_v()  { command -v codex >/dev/null 2>&1 && codex --version 2>/dev/null | head -n 1; }
+cli_v()    { if [ "$AGENT" = codex ]; then codex_v; else claude_v; fi; }   # the version of the app's CLI
 
 check_git() {
   local v; cur git; v=$(git_v); set_version git "$v"
@@ -342,8 +356,14 @@ check_node() {
   else say "[missing] Node.js is not installed (20 or newer is needed)."; fi
   return 1
 }
-check_claude() {   # 0 ok, 1 not installed, 2 installed but its folder is not on PATH
-  local v; cur claude; v=$(claude_v); set_version claude "$v"
+check_claude() {   # 0 ok, 1 not installed, 2 installed but its folder is not on PATH (the item of the app's CLI)
+  local v; cur claude
+  if [ "$AGENT" = codex ]; then
+    v=$(codex_v); set_version claude "$v"
+    if [ -n "$v" ]; then say "[ok] The Codex CLI is installed ($v)."; return 0; fi
+    say "[missing] The Codex CLI is not installed."; return 1
+  fi
+  v=$(claude_v); set_version claude "$v"
   if [ -n "$v" ]; then say "[ok] Claude Code is installed ($v)."; return 0; fi
   if claude_file; then
     say "[missing] Claude Code is installed in $HOME/.local/bin, but that folder is not on your PATH yet."
@@ -355,8 +375,16 @@ check_claude() {   # 0 ok, 1 not installed, 2 installed but its folder is not on
 
 install_git()  { pkg "Git" git Git.Git https://git-scm.com/downloads; }
 install_node() { pkg "Node.js" node OpenJS.NodeJS.LTS https://nodejs.org/en/download; }
+install_codex() {   # the Codex CLI from the npm registry (Node.js is installed before it)
+  local rc
+  if ! command -v npm >/dev/null 2>&1; then note "npm was not found: install Node.js first, then run this script again."; return 1; fi
+  offer "the Codex CLI" 1 "the Codex CLI (@openai/codex) from the npm registry" "npm install -g @openai/codex"; rc=$?
+  path_refresh
+  return "$rc"
+}
 install_claude() {
   local rc
+  if [ "$AGENT" = codex ]; then install_codex; return; fi
   if [ "$OS" = win ]; then
     offer "Claude Code" 1 "Claude Code from claude.ai (the official installer)" \
       'powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://claude.ai/install.ps1 | iex"'
@@ -404,6 +432,29 @@ elif [ "$MODE" = ask ]; then say "Mode: one question before each install. Enter 
 elif [ "$YES" = 1 ]; then say "Mode: check everything, then install all that is missing, with no question (--yes)."
 else say "Mode: check everything, then one question installs all that is missing. Enter means Yes."; fi
 say "No token or password is ever asked for here."
+# The first question: which app runs the harness on this computer, Claude Code or Codex. --claude or --codex answers
+# it, or dashboard/agent.json remembers an earlier answer; --check never asks (Claude Code until one is chosen).
+# Enter means Claude Code. Every item below follows the answer.
+AGENT_FILE=dashboard/agent.json
+if [ -n "$AGENT_FLAG" ]; then AGENT=$AGENT_FLAG; AGENT_SAID="chosen with --$AGENT_FLAG"
+elif [ -f "$AGENT_FILE" ]; then
+  grep -q '"agent"[[:space:]]*:[[:space:]]*"codex"' "$AGENT_FILE" 2>/dev/null && AGENT=codex
+  AGENT_SAID="chosen earlier; --claude or --codex changes it"
+elif [ "$MODE" = check ]; then AGENT_SAID="not chosen yet: a run without --check asks"
+else
+  AGENT_Q="Which app will run the harness on this computer? 1 = Claude Code (the Claude desktop app), 2 = Codex (the Codex app)"
+  printf '%s [1/2]: ' "$AGENT_Q"
+  if answer; then
+    case "$ANSWER" in 2|[cC][oO][dD][eE][xX]) AGENT=codex ;; esac
+    AGENT_SAID="your answer"
+  else AGENT_SAID="no answer could be read; --codex chooses Codex"; fi
+  log_only "$AGENT_Q [1/2]: $AGENT"
+fi
+if [ "$AGENT" = codex ]; then
+  PRE='$'; AGENT_NAME="Codex"; CLI_NAME="The Codex CLI"; CLI_CMD=codex; APP_NAME="the Codex app"; EXT_NAME="the Codex Chrome extension"
+fi
+if [ "$MODE" != check ]; then mkdir -p dashboard 2>/dev/null; printf '{"agent": "%s"}\n' "$AGENT" > "$AGENT_FILE" 2>/dev/null; fi
+say "App: $AGENT_NAME ($AGENT_SAID)."
 # The setup wizard opens now, before the first check, and ticks every step of this run as it lands.
 if [ "$MODE" != check ] && [ -f dashboard/setup.html ]; then
   mkdir -p dashboard 2>/dev/null; LIVE_ON=1; LIVE_STARTED=$(iso_now); write_live
@@ -428,7 +479,7 @@ fi
 check_git || need git "Git" install_git check_git https://git-scm.com/downloads
 check_node || need node "Node.js" install_node check_node https://nodejs.org/en/download
 check_claude; rc=$?
-if [ "$rc" -eq 1 ]; then need claude "Claude Code" install_claude check_claude
+if [ "$rc" -eq 1 ]; then need claude "$CLI_NAME" install_claude check_claude
 elif [ "$rc" -eq 2 ]; then MISSING=1; fi
 
 copy_env() {   # copies .env.example to .env; an .env that exists by now is left as it is
@@ -483,10 +534,35 @@ check_manifest
 say ""
 say "Recommended"
 CLAUDE_APP_PAGE=https://claude.ai/download
+APP_WHY="recommended: its Code tab is where the harness runs, with the memory routines and the Claude in Chrome pairing"
+APP_OPEN="Open it, sign in, and click the Code tab."
+# With Codex the app is the Codex app: the Microsoft Store through winget on Windows (OpenAI's own install line), a
+# download on a Mac (this script only points to it), none on Linux (the harness runs in the Codex CLI there).
+if [ "$AGENT" = codex ]; then
+  CLAUDE_APP_PAGE=https://chatgpt.com/codex
+  APP_WHY="recommended: it runs the harness and carries the Chrome plugin that \$connect uses"
+  APP_OPEN="Open it, sign in, and open this folder."
+fi
+CODEX_WINGET="winget install Codex --source msstore --accept-package-agreements --accept-source-agreements"
 CHROME_PAGE=https://www.google.com/chrome/
 winpath_u() { cygpath -u "$1" 2>/dev/null || printf '%s' "$1"; }
-claude_app_path() {   # where the desktop app is (printed), or nothing
+ps_exe() {   # Windows PowerShell, also when PATH holds only Git's folders
   local p
+  if command -v powershell.exe >/dev/null 2>&1; then out powershell.exe; return 0; fi
+  p="${SYSTEMROOT:-${SystemRoot:-}}"
+  [ -n "$p" ] && p="$(winpath_u "$p")/System32/WindowsPowerShell/v1.0/powershell.exe" && [ -f "$p" ] && { out "$p"; return 0; }
+  return 1
+}
+claude_app_path() {   # where the desktop app (or, with Codex, the Codex app) is (printed), or nothing
+  local p ps
+  if [ "$AGENT" = codex ]; then
+    case "$OS" in
+      mac) for p in /Applications/Codex.app "$HOME/Applications/Codex.app"; do [ -d "$p" ] && { out "$p"; return 0; }; done ;;
+      win) ps=$(ps_exe) && p=$("$ps" -NoProfile -Command '$c = @(Get-AppxPackage -Name "*Codex*" -ErrorAction SilentlyContinue); if ($c.Count -gt 0) { [string]$c[0].Version }' 2>/dev/null | tr -d '\r') \
+             && [ -n "$p" ] && { out "the Microsoft Store build, version $p"; return 0; } ;;
+    esac
+    return 1
+  fi
   case "$OS" in
     mac) for p in /Applications/Claude.app "$HOME/Applications/Claude.app"; do
            [ -d "$p" ] && { out "$p"; return 0; }; done ;;
@@ -524,9 +600,15 @@ edge_found() {   # true when Microsoft Edge is installed
     *) command -v microsoft-edge >/dev/null 2>&1 || command -v microsoft-edge-stable >/dev/null 2>&1 ;;
   esac
 }
-app_from() { if [ "$OS" = win ] || [ "$OS" = mac ]; then pkg_from; fi; }   # nothing on Linux: apt, by hand
+app_from() {   # where the app comes from; nothing on Linux (apt, by hand) and for the Codex app on a Mac (a download)
+  if [ "$AGENT" = codex ] && [ "$OS" != win ]; then return 0; fi
+  if [ "$OS" = win ] || [ "$OS" = mac ]; then pkg_from; fi
+}
 app_hint() {   # what to do instead when this script cannot install the app here
-  if [ "$OS" = linux ]; then
+  if [ "$AGENT" = codex ]; then
+    if [ "$OS" = win ]; then pkg_hint "the Codex app" "$CLAUDE_APP_PAGE"
+    else note "Download the Codex app from $CLAUDE_APP_PAGE, or run the harness from a terminal: type codex in this folder."; fi
+  elif [ "$OS" = linux ]; then
     note "Install it from Anthropic's apt repository: sudo apt install claude-desktop (the steps are at https://code.claude.com/docs/en/desktop-linux),"
     note "or run the harness from a terminal: type claude in this folder."
   else pkg_hint "the Claude desktop app" "$CLAUDE_APP_PAGE"; fi
@@ -538,19 +620,21 @@ cask_pkg() {   # cask_pkg <name> <Homebrew cask> <winget id>: installs with wing
   elif [ -n "$BREW" ]; then offer "$1" 0 "$1 from $from" "$BREW install --cask $2"
   else return 1; fi
 }
-do_claude_app() {   # installs the desktop app (after its question under --ask)
-  local p; cur app
+do_claude_app() {   # installs the desktop app, or the Codex app (after its question under --ask)
+  local p ok=1 app; cur app; app=$(capital "$APP_NAME")
   if [ -z "$(app_from)" ]; then
     app_hint
-    say "[skipped] The Claude desktop app. Install it later; the harness also runs from a terminal."; return 1
+    say "[skipped] $app. Install it later; the harness also runs from a terminal."; return 1
   fi
-  if cask_pkg "the Claude desktop app" claude Anthropic.Claude; then
+  if [ "$AGENT" = codex ]; then TIMED_OUT=0; offer "$APP_NAME" 0 "$APP_NAME from the Microsoft Store (winget)" "$CODEX_WINGET" && ok=0
+  else cask_pkg "$APP_NAME" claude Anthropic.Claude && ok=0; fi
+  if [ "$ok" = 0 ]; then
     p=$(claude_app_path)
-    if [ -n "$p" ]; then say "[installed] The Claude desktop app ($p)."
-    else say "[installed] The Claude desktop app. Open it, sign in, and click the Code tab."; fi
+    if [ -n "$p" ]; then say "[installed] $app ($p)."
+    else say "[installed] $app. $APP_OPEN"; fi
     return 0
   fi
-  [ "$TIMED_OUT" = 1 ] || say "[skipped] The Claude desktop app. Install it later from $CLAUDE_APP_PAGE"; return 1
+  [ "$TIMED_OUT" = 1 ] || say "[skipped] $app. Install it later from $CLAUDE_APP_PAGE"; return 1
 }
 do_chrome() {   # installs Google Chrome (after its question under --ask)
   local p; cur chrome
@@ -567,27 +651,28 @@ do_chrome() {   # installs Google Chrome (after its question under --ask)
   [ "$TIMED_OUT" = 1 ] || say "[skipped] Google Chrome. Install it later from $CHROME_PAGE"; return 1
 }
 cur app
-APP_WHY="recommended: its Code tab is where the harness runs, with the memory routines and the Claude in Chrome pairing"
+APP=$(capital "$APP_NAME")
 app_path=$(claude_app_path)
-if [ -n "$app_path" ]; then say "[ok] The Claude desktop app is installed ($app_path)."
-elif [ "$MODE" = check ]; then say "[missing] The Claude desktop app is not installed ($APP_WHY). Run this script without --check to install it."; RECO_MISSING="$RECO_MISSING app"
+if [ -n "$app_path" ]; then say "[ok] $APP is installed ($app_path)."
+elif [ "$MODE" = check ]; then say "[missing] $APP is not installed ($APP_WHY). Run this script without --check to install it."; RECO_MISSING="$RECO_MISSING app"
 elif [ "$MODE" = all ] && [ -z "$(app_from)" ]; then
-  say "[missing] The Claude desktop app is not installed ($APP_WHY)."
+  say "[missing] $APP is not installed ($APP_WHY)."
   app_hint; RECO_MISSING="$RECO_MISSING app"
 else
-  say "[missing] The Claude desktop app is not installed ($APP_WHY)."
+  say "[missing] $APP is not installed ($APP_WHY)."
   if [ "$MODE" = all ]; then PLAN="$PLAN app"; else do_claude_app; fi
 fi
 cur chrome
 chrome_now=$(chrome_path)
-if [ -n "$chrome_now" ]; then say "[ok] Google Chrome is installed ($chrome_now): for the Claude in Chrome extension and the ad screenshots."
-elif edge_found; then
+if [ -n "$chrome_now" ]; then say "[ok] Google Chrome is installed ($chrome_now): for $EXT_NAME and the ad screenshots."
+elif [ "$AGENT" != codex ] && edge_found; then
   say "[skipped] Google Chrome is not installed; Microsoft Edge was found, and the Claude in Chrome extension runs in Edge too."
   if [ "$OS" = win ]; then note "The guided setup and its video use Chrome. To add it: winget install --id Google.Chrome $WINGET_FLAGS (or $CHROME_PAGE)"
   elif [ "$OS" = mac ]; then note "The guided setup and its video use Chrome. To add it: brew install --cask google-chrome (or $CHROME_PAGE)"
   else note "The guided setup and its video use Chrome. To add it: $CHROME_PAGE"; fi
 else
   CHROME_WHY="recommended: the Claude in Chrome extension that /connect uses and the ad screenshots need a browser, and neither Chrome nor Edge was found"
+  [ "$AGENT" = codex ] && CHROME_WHY="recommended: the Codex Chrome extension that \$connect uses runs in Google Chrome only"
   if [ "$MODE" = check ]; then say "[missing] Google Chrome is not installed ($CHROME_WHY). Run this script without --check to install it."; RECO_MISSING="$RECO_MISSING chrome"
   elif [ "$MODE" = all ] && [ -z "$(app_from)" ]; then
     say "[missing] Google Chrome is not installed ($CHROME_WHY)."
@@ -732,7 +817,7 @@ install_hyperframes() {   # adds the vendored marketplace (one that already exis
 }
 hf_node=$(node_v); hf_major=$(major "$hf_node")
 hf_files=0; [ -f vendor/hyperframes/.claude-plugin/marketplace.json ] && hf_files=1
-hf_claude=0; { [ -n "$(claude_v)" ] || in_plan claude; } && hf_claude=1
+hf_claude=0; [ "$AGENT" = claude ] && { [ -n "$(claude_v)" ] || in_plan claude; } && hf_claude=1   # a Claude Code plugin
 if [ "$hf_major" -ge 20 ] && [ "$hf_major" -lt 22 ] && [ "$hf_files" = 1 ] && [ "$hf_claude" = 1 ]; then
   cur node_upgrade
   set_version node_upgrade "$hf_node"
@@ -746,7 +831,8 @@ if [ "$hf_major" -ge 20 ] && [ "$hf_major" -lt 22 ] && [ "$hf_files" = 1 ] && [ 
   fi
 fi
 cur hyperframes
-if [ "$hf_claude" = 0 ]; then say "[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads)."
+if [ "$AGENT" = codex ]; then say "[skipped] The HyperFrames video plugin is for Claude Code only (optional: in Codex, videos are files the company brings)."
+elif [ "$hf_claude" = 0 ]; then say "[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads)."
 elif [ "$hf_major" -lt 22 ] && ! in_plan node && ! in_plan node-upgrade; then
   if hf_installed; then say "[ok] The HyperFrames video plugin is installed, but it needs Node.js 22 or newer to render (${hf_node:-none found})."
   else say "[skipped] The HyperFrames video plugin needs Node.js 22 or newer (${hf_node:-none found}; the harness itself needs 20 or newer)."; fi
@@ -780,9 +866,11 @@ plan_line() {   # one line of the plan: the item and where it comes from
     brew)         say "  - Homebrew, the installer this script uses on a Mac, from https://brew.sh; its installer asks for your Mac password itself, in this window" ;;
     git)          say "  - Git, from $(pkg_from)" ;;
     node)         if [ "$OS" = win ]; then say "  - Node.js LTS, from $(pkg_from)"; else say "  - Node.js, from $(pkg_from)"; fi ;;
-    claude)       say "  - Claude Code, from claude.ai (the official installer; the npm registry if that fails)" ;;
-    app)          say "  - The Claude desktop app (its Code tab is where the harness runs), from $(app_from)" ;;
-    chrome)       say "  - Google Chrome (for the Claude in Chrome extension and the ad screenshots), from $(app_from)" ;;
+    claude)       if [ "$AGENT" = codex ]; then say "  - The Codex CLI (@openai/codex), from the npm registry"
+                  else say "  - Claude Code, from claude.ai (the official installer; the npm registry if that fails)"; fi ;;
+    app)          if [ "$AGENT" = codex ]; then say "  - The Codex app (it runs the harness and carries the Chrome plugin), from the Microsoft Store through winget"
+                  else say "  - The Claude desktop app (its Code tab is where the harness runs), from $(app_from)"; fi ;;
+    chrome)       say "  - Google Chrome (for $EXT_NAME and the ad screenshots), from $(app_from)" ;;
     playwright)   say "  - playwright-core (a few megabytes), from the npm registry into node_modules in this folder" ;;
     obsidian)     say "  - Obsidian for the memory vault (free, also for commercial use), from $(obsidian_from)" ;;
     node-upgrade) say "  - Node.js LTS upgrade (the video plugin needs 22 or newer; the harness itself needs 20), from $(pkg_from)" ;;
@@ -838,7 +926,7 @@ if [ "$MODE" = all ]; then
     in_plan brew && { doing brew; do_brew || MISSING=1; }
     in_plan git && { doing git; put "Git" install_git check_git; }
     in_plan node && { doing node; put "Node.js" install_node check_node; }
-    in_plan claude && { doing claude; put "Claude Code" install_claude check_claude; }
+    in_plan claude && { doing claude; put "$CLI_NAME" install_claude check_claude; }
     in_plan app && { doing app; do_claude_app; }
     in_plan chrome && { doing chrome; do_chrome; }
     [ "$ENV_TODO" = 1 ] && { doing env; copy_env; }
@@ -924,11 +1012,16 @@ if [ -d "$TASK_DIR" ]; then
     if tr '\\' '/' < "$skill" | tr '[:upper:]' '[:lower:]' | grep -qF "$HERE_KEY"; then ROUTINES=$((ROUTINES + 1)); fi
   done
 fi
-if [ "$MODE" = check ]; then
-  if [ "$ROUTINES" -ge 2 ]; then say "[ok] The memory routines are registered for this folder ($ROUTINES scheduled tasks)."
-  else say "[todo] The memory routines are not registered yet: /campaign registers them in the Claude desktop app (one question)."; fi
+if [ "$AGENT" = codex ]; then   # a Claude desktop app feature: in Codex the Operator runs $sync and $consolidate
+  [ "$MODE" = check ] && say "[skipped] The memory routines are a Claude desktop app feature (in Codex, run \$sync after each session and \$consolidate weekly)."
+  set_status routines skipped
+else
+  if [ "$MODE" = check ]; then
+    if [ "$ROUTINES" -ge 2 ]; then say "[ok] The memory routines are registered for this folder ($ROUTINES scheduled tasks)."
+    else say "[todo] The memory routines are not registered yet: /campaign registers them in the Claude desktop app (one question)."; fi
+  fi
+  if [ "$ROUTINES" -ge 2 ]; then set_status routines ok; else set_status routines todo; fi
 fi
-if [ "$ROUTINES" -ge 2 ]; then set_status routines ok; else set_status routines todo; fi
 cur ""
 
 say ""
@@ -940,21 +1033,31 @@ elif [ "$MISSING" = 1 ]; then
 fi
 if [ -n "$RECO_MISSING" ]; then
   reco=""
-  case " $RECO_MISSING " in *" app "*) reco="the Claude desktop app" ;; esac
+  case " $RECO_MISSING " in *" app "*) reco="$APP_NAME" ;; esac
   case " $RECO_MISSING " in *" chrome "*) reco="${reco:+$reco and }Google Chrome" ;; esac
   say "  Also: $reco marked [missing] above: run this script again without --check, or install from the page on that line."
 fi
-say "  1. Open the Claude desktop app, sign in, click the Code tab and open this folder (Open folder...; trust it when asked)."
-say "     A terminal works too (type claude in this folder), but the memory routines and the Claude in Chrome pairing are the app's."
-say "  2. When Claude Code asks whether to use the two servers in .mcp.json (meta-ads and fal), approve them; if it does not ask, /mcp lists them."
-say "  3. Install the Claude in Chrome extension in Chrome and sign in to it with the same Claude account"
-say "     (in the app: your initials at the lower left > Settings > Customize > Connectors > Claude in Chrome > Configure; from a terminal here: claude --chrome)."
-say "  4. In the Code tab type /connect: the connections pass. It asks your language first, then what you already have in Meta,"
+if [ "$AGENT" = codex ]; then
+  say "  1. Open the Codex app, sign in, and open this folder itself (not a folder above it); trust the project when asked."
+  say "     A terminal works too: type codex in this folder."
+  say "  2. In Codex type /hooks and trust the three hooks: without them the account guard is off. Then, in a terminal here,"
+  say "     log in to the two servers: codex mcp login meta-ads, then codex mcp login fal; then start a new Codex session."
+  say "  3. Install the Codex Chrome extension: in the Codex app, Plugins > Chrome; sign in to it."
+  say "  4. In Codex type \$connect: the connections pass. It asks your language first, then what you already have in Meta,"
+else
+  say "  1. Open the Claude desktop app, sign in, click the Code tab and open this folder (Open folder...; trust it when asked)."
+  say "     A terminal works too (type claude in this folder), but the memory routines and the Claude in Chrome pairing are the app's."
+  say "  2. When Claude Code asks whether to use the two servers in .mcp.json (meta-ads and fal), approve them; if it does not ask, /mcp lists them."
+  say "  3. Install the Claude in Chrome extension in Chrome and sign in to it with the same Claude account"
+  say "     (in the app: your initials at the lower left > Settings > Customize > Connectors > Claude in Chrome > Configure; from a terminal here: claude --chrome)."
+  say "  4. In the Code tab type /connect: the connections pass. It asks your language first, then what you already have in Meta,"
+fi
 say "     leads every login in your own Chrome (the Meta business, the Page, the ad account, the developer app and the System User,"
-say "     the pixel, WhatsApp, fal), stores the upload token from your clipboard without ever showing it, and ends with /health green."
-say "  5. Then type /campaign: the first campaign A to Z (the interview, the market research, the plan, copy, creatives,"
+say "     the pixel, WhatsApp, fal), stores the upload token from your clipboard without ever showing it, and ends with ${PRE}health green."
+say "  5. Then type ${PRE}campaign: the first campaign A to Z (the interview, the market research, the plan, copy, creatives,"
 say "     the campaign built PAUSED and shown to you)."
-if [ "$ROUTINES" -ge 2 ]; then say "     The two memory routines are already registered for this folder."
+if [ "$AGENT" = codex ]; then say "     The memory routines are a Claude desktop app feature: in Codex, run \$sync after each session and \$consolidate weekly."
+elif [ "$ROUTINES" -ge 2 ]; then say "     The two memory routines are already registered for this folder."
 else say "     /campaign registers them too: two memory routines, a nightly check and a weekly review that alert your phone and never act."; fi
 say "  6. The Owner's Meta console steps stay listed in docs/meta-setup-guide.md, with their pitfalls, for reference."
 # The memory vault in Obsidian: the result of obsidian-setup.mjs above, after a run that went ahead. Nothing
@@ -979,7 +1082,7 @@ if [ "$MODE" != check ] && [ "$DECLINED" = 0 ] && [ -f dashboard/setup-page.mjs 
     pg_node=$(node_v); pg_major=$(major "$pg_node")
     mark_git=todo; { [ -n "$(git_v)" ] || ran check_git; } && mark_git=done
     mark_node=todo; { [ "$pg_major" -ge 20 ] || ran check_node; } && mark_node=done
-    mark_claude=todo; { [ -n "$(claude_v)" ] || ran check_claude; } && mark_claude=done
+    mark_claude=todo; { [ -n "$(cli_v)" ] || ran check_claude; } && mark_claude=done
     mark_obsidian=todo; [ -n "$obs_now" ] && mark_obsidian=done
     mark_app=todo; [ -n "$(claude_app_path)" ] && mark_app=done
     obs_marks=(); page_open=""; [ "$PAGE_OPENED" = 1 ] || page_open=--open
@@ -987,8 +1090,8 @@ if [ "$MODE" != check ] && [ "$DECLINED" = 0 ] && [ -f dashboard/setup-page.mjs 
     say ""
     if node dashboard/setup-page.mjs --mark "install.git=$mark_git" --mark "install.node=$mark_node" \
          --mark "install.claude=$mark_claude" --mark "app.desktop=$mark_app" --mark "obsidian.installed=$mark_obsidian" ${obs_marks[@]+"${obs_marks[@]}"} ${page_open:+"$page_open"} >/dev/null 2>&1
-    then if [ "$PAGE_OPENED" = 1 ]; then say "The setup wizard now shows the next steps too (/connect, then /campaign); keep it beside Claude Code: dashboard/setup.html"
-         else say "The setup wizard opened in your browser; keep it beside Claude Code: dashboard/setup.html"; fi
+    then if [ "$PAGE_OPENED" = 1 ]; then say "The setup wizard now shows the next steps too; keep it beside $AGENT_NAME: dashboard/setup.html"
+         else say "The setup wizard opened in your browser; keep it beside $AGENT_NAME: dashboard/setup.html"; fi
     else say "The setup wizard could not be filled with the next steps (node dashboard/setup-page.mjs failed); /connect fills it later."; fi
   elif [ "$PAGE_TODO" = 1 ]; then
     say ""

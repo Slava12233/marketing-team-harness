@@ -17,7 +17,7 @@
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
   function fmt(s) { return esc(s == null ? '' : s).replace(/`([^`]+)`/g, '<code dir="ltr">$1</code>'); }
-  function cmds(html) { return html.replace(/(^|[\s(])(\/[a-z][a-z-]*)/g, '$1<bdi dir="ltr">$2</bdi>'); }   // /connect stays left to right in RTL
+  function cmds(html) { return html.replace(/(^|[\s(])([\/$][a-z][a-z-]*)/g, '$1<bdi dir="ltr">$2</bdi>'); }   // /connect and $connect stay left to right in RTL
   function tpl(s, v) { return String(s).replace(/\{(\w+)\}/g, function (_, k) { return v[k] == null ? '' : v[k]; }); }
   function isDone(s) { return s === 'ok' || s === 'installed'; }
 
@@ -87,6 +87,8 @@
     else nowCard = { kind: 'done', status: 'done' };
     var stamps = [data && data.generatedAt, live && live.updated].filter(Boolean).map(function (x) { return Date.parse(x); }).filter(function (x) { return !isNaN(x); });
     return {
+      // the app that runs the harness: the files' answer (setup-page.mjs reads dashboard/agent.json), else the bootstrap's
+      agent: (data && data.agent) || (live && live.agent) || null,
       lang: data && data.lang, company: data && data.company, chapters: chapters, done: done, tracked: tracked, parts: parts,
       now: nowCard, running: running, liveSeen: !!live, updated: stamps.length ? new Date(Math.max.apply(null, stamps)).toISOString() : null,
     };
@@ -182,5 +184,21 @@
     return m;
   }
 
-  root.SetupWizard = { merge: merge, render: render, popped: popped, statuses: statuses };
+  // One language's strings for the app that runs the harness: with Codex, def.codex[lang] merged over def.strings[lang]
+  // (one level deep: a group such as items or hints keeps the keys Codex does not change).
+  function strings(def, lang, agent) {
+    var base = def.strings[lang] || def.strings.en, over = agent === 'codex' && def.codex && (def.codex[lang] || def.codex.en);
+    if (!over) return base;
+    var out = {}, k, j;
+    for (k in base) out[k] = base[k];
+    for (k in over) {
+      if (Array.isArray(over[k]) || typeof over[k] !== 'object') { out[k] = over[k]; continue; }
+      out[k] = {};
+      for (j in base[k]) out[k][j] = base[k][j];
+      for (j in over[k]) out[k][j] = over[k][j];
+    }
+    return out;
+  }
+
+  root.SetupWizard = { merge: merge, render: render, popped: popped, statuses: statuses, strings: strings };
 })(typeof window !== 'undefined' ? window : globalThis);

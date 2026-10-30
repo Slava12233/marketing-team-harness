@@ -6,6 +6,11 @@
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Yes     install everything that is missing, with no question at all
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check   report only: no questions, no installs
 #   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Help    show the usage
+#   -Claude / -Codex (with any of the above): which app runs the harness on this computer. Without them the first
+#   question of a run asks it (Claude Code, or Codex), and dashboard/agent.json (git-ignored) remembers the answer;
+#   -Check never asks. With Codex, the Codex CLI (npm) and the Codex app (the Microsoft Store, through winget) take
+#   the place of Claude Code and the Claude desktop app, the Codex Chrome extension that of Claude in Chrome, and
+#   the Claude-only items (the HyperFrames plugin, the memory routines) are skipped.
 # The one install takes every missing item, required, recommended and optional alike (Git, Node.js, Claude Code,
 # the Claude desktop app, Google Chrome, playwright-core, Obsidian for the memory vault, the Node.js LTS upgrade
 # the video plugin needs when Node.js is 20 or 21, FFmpeg, the HyperFrames video plugin from vendor\hyperframes),
@@ -29,7 +34,7 @@
 # item left out, [todo] a step a later command does. Exit codes: 0 everything required is present, 1 something
 # required is missing or the install was declined, 2 wrong folder or unknown option. It never asks for, reads
 # or prints a token: .env is only copied from .env.example.
-param([switch]$Check, [switch]$Ask, [switch]$Yes, [switch]$Help)
+param([switch]$Check, [switch]$Ask, [switch]$Yes, [switch]$Help, [switch]$Claude, [switch]$Codex)
 Set-StrictMode -Version 2
 $ErrorActionPreference = 'Continue'
 
@@ -38,6 +43,8 @@ $Plan = @(); $EnvTodo = $false; $PageTodo = $false; $Go = $false; $Declined = $f
 $LogPath = ''; $Cur = ''; $BoundMs = 1200000; $LiveOn = $false; $LiveStarted = ''; $LiveCur = ''; $PageOpened = $false; $Seen = @{}
 $WingetFlags = '-e --source winget --accept-package-agreements --accept-source-agreements'
 $ClaudeDir = Join-Path $env:USERPROFILE '.local\bin'
+# The app that runs the harness (claude or codex) and its names, set by the first question (Set-AgentNames).
+$Agent = 'claude'; $Pre = '/'; $AgentName = 'Claude Code'; $CliName = 'Claude Code'; $CliCmd = 'claude'; $AppName = 'the Claude desktop app'; $ExtName = 'the Claude in Chrome extension'
 # The items of dashboard/bootstrap-result.json, each with the tag of the last line printed for it.
 $ItemKeys = @('git', 'node', 'claude', 'env', 'manifest', 'app', 'chrome', 'playwright', 'obsidian', 'node_upgrade', 'ffmpeg', 'hyperframes', 'obsidian_setup', 'routines', 'instance')
 $Items = @{}
@@ -90,7 +97,7 @@ function Write-Live([switch]$Finished) {
   $running = 'true'; if ($Finished) { $running = 'false' }
   $pairs = @()
   foreach ($k in $ItemKeys) { $s = 'pending'; if ($script:Seen.ContainsKey($k)) { $s = $script:Items[$k].status }; $pairs += ('"' + $k + '": "' + $s + '"') }
-  $text = 'window.SETUP_LIVE = {"started": "' + $script:LiveStarted + '", "updated": "' + (Get-Now) + '", "script": "bootstrap.ps1", "mode": "' + (Get-RunMode) +
+  $text = 'window.SETUP_LIVE = {"started": "' + $script:LiveStarted + '", "updated": "' + (Get-Now) + '", "script": "bootstrap.ps1", "agent": "' + $script:Agent + '", "mode": "' + (Get-RunMode) +
     '", "running": ' + $running + ', "current": "' + $script:LiveCur + '", "items": {' + ($pairs -join ', ') + '}};' + "`n"
   try {
     $dir = Join-Path (Get-Location).ProviderPath 'dashboard'
@@ -108,12 +115,14 @@ function Open-Wizard {   # the wizard in the default browser; $true when the bro
 }
 function Stop-Run([int]$code) { Write-Result $code; $script:LiveCur = ''; Write-Live -Finished; exit $code }
 function Show-Usage {
-  Say 'Usage: powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 [-Ask | -Yes | -Check] [-Help]'
+  Say 'Usage: powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 [-Ask | -Yes | -Check] [-Help] [-Claude | -Codex]'
   Say '  (no option)  check, list what is missing, then one question installs all of it (Enter means Yes)'
   Say '  -Ask         ask per item: one y/N question before each install (Enter means No)'
   Say '  -Yes         install everything that is missing, required and optional, with no question'
   Say '  -Check       report only: no questions, no installs (it writes only bootstrap.log and dashboard/bootstrap-result.json)'
   Say '  -Help        show this text'
+  Say '  -Claude      the harness runs in Claude Code (the Claude desktop app); -Codex: in Codex (the Codex app)'
+  Say '               (without either, the first question asks; dashboard/agent.json remembers the answer)'
   Say 'Given together, the more careful option wins: -Check, then -Ask, then -Yes.'
   Say 'Run it from the harness folder (the one that contains CLAUDE.md and .mcp.json).'
 }
@@ -277,8 +286,13 @@ function Test-Node {
   if ($v) { Say "[missing] Node.js $v is too old (20 or newer is needed)." } else { Say '[missing] Node.js is not installed (20 or newer is needed).' }
   return 1
 }
-function Test-Claude {   # 0 ok, 1 not installed, 2 installed but its folder is not on PATH
+function Test-Claude {   # 0 ok, 1 not installed, 2 installed but its folder is not on PATH (the item of the app's CLI)
   $script:Cur = 'claude'
+  if ($Agent -eq 'codex') {
+    $v = Get-Version 'codex'; Set-Version 'claude' $v
+    if ($v) { Say "[ok] The Codex CLI is installed ($v)."; return 0 }
+    Say '[missing] The Codex CLI is not installed.'; return 1
+  }
   $v = Get-Version 'claude'; Set-Version 'claude' $v
   if ($v) { Say "[ok] Claude Code is installed ($v)."; return 0 }
   if (Test-Path -LiteralPath (Join-Path $ClaudeDir 'claude.exe')) {
@@ -289,8 +303,14 @@ function Test-Claude {   # 0 ok, 1 not installed, 2 installed but its folder is 
   Say '[missing] Claude Code is not installed.'; return 1
 }
 
+function Install-Codex {   # the Codex CLI from the npm registry (Node.js is installed before it)
+  $script:Done = $false; $script:Agreed = $false; $script:TimedOut = $false
+  if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { Note 'npm was not found: install Node.js first, then run this script again.'; return }
+  Offer 'the Codex CLI' $true 'the Codex CLI (@openai/codex) from the npm registry' 'npm install -g @openai/codex' 'npm' 'install -g @openai/codex'
+}
 function Install-Claude {
-  $cmd = '[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; irm https://claude.ai/install.ps1 | iex'
+  if ($Agent -eq 'codex') { Install-Codex; return }
+  $cmd ='[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; irm https://claude.ai/install.ps1 | iex'
   Offer 'Claude Code' $true 'Claude Code from claude.ai (the official installer)' 'irm https://claude.ai/install.ps1 | iex' 'powershell' ('-NoProfile -ExecutionPolicy Bypass -Command "' + $cmd + '"')
   if ($script:TimedOut) { return }
   if ($script:Done -and ((Get-Command claude -ErrorAction SilentlyContinue) -or (Test-Path -LiteralPath (Join-Path $ClaudeDir 'claude.exe')))) { return }
@@ -337,6 +357,37 @@ elseif ($Mode -eq 'ask') { Say 'Mode: one question before each install. Enter me
 elseif ($Yes) { Say 'Mode: check everything, then install all that is missing, with no question (-Yes).' }
 else { Say 'Mode: check everything, then one question installs all that is missing. Enter means Yes.' }
 Say 'No token or password is ever asked for here.'
+# The first question: which app runs the harness on this computer, Claude Code or Codex. -Claude or -Codex answers
+# it, or dashboard/agent.json remembers an earlier answer; -Check never asks (Claude Code until one is chosen).
+# Enter means Claude Code. Every item below follows the answer.
+$AgentFile = Join-Path $Root 'dashboard\agent.json'
+$AgentSaid = ''
+if ($Codex) { $Agent = 'codex'; $AgentSaid = 'chosen with -Codex' }
+elseif ($Claude) { $Agent = 'claude'; $AgentSaid = 'chosen with -Claude' }
+elseif (Test-Path -LiteralPath $AgentFile -PathType Leaf) {
+  try { if ([System.IO.File]::ReadAllText($AgentFile) -match '"agent"\s*:\s*"codex"') { $Agent = 'codex' } } catch { }
+  $AgentSaid = 'chosen earlier; -Claude or -Codex changes it'
+}
+elseif ($Mode -eq 'check') { $AgentSaid = 'not chosen yet: a run without -Check asks' }
+else {
+  $q = 'Which app will run the harness on this computer? 1 = Claude Code (the Claude desktop app), 2 = Codex (the Codex app)'
+  Write-Host ($q + ' [1/2]: ') -NoNewline
+  $a = Read-Answer
+  if ($null -eq $a) { $AgentSaid = 'no answer could be read; -Codex chooses Codex' }
+  else { if ($a -match '^(2|codex)$') { $Agent = 'codex' }; $AgentSaid = 'your answer' }
+  Write-Log ($q + ' [1/2]: ' + $Agent)
+}
+if ($Agent -eq 'codex') {
+  $Pre = '$'; $AgentName = 'Codex'; $CliName = 'The Codex CLI'; $CliCmd = 'codex'; $AppName = 'the Codex app'; $ExtName = 'the Codex Chrome extension'
+}
+if ($Mode -ne 'check') {
+  try {
+    $dir = Join-Path $Root 'dashboard'
+    if (-not (Test-Path -LiteralPath $dir -PathType Container)) { New-Item -ItemType Directory -Path $dir -ErrorAction Stop | Out-Null }
+    [System.IO.File]::WriteAllText($AgentFile, ('{"agent": "' + $Agent + '"}' + "`n"))
+  } catch { }
+}
+Say ('App: ' + $AgentName + ' (' + $AgentSaid + ').')
 # The setup wizard opens now, before the first check, and ticks every step of this run as it lands.
 if (($Mode -ne 'check') -and (Test-Path -LiteralPath 'dashboard/setup.html' -PathType Leaf)) {
   $LiveOn = $true; $LiveStarted = Get-Now; Write-Live
@@ -349,7 +400,7 @@ Say 'Required'
 if ((Test-Git) -ne 0) { Need 'Git' 'git' 'https://git-scm.com/downloads' }
 if ((Test-Node) -ne 0) { Need 'Node.js' 'node' 'https://nodejs.org/en/download' }
 $rc = Test-Claude
-if ($rc -eq 1) { Need 'Claude Code' 'claude' } elseif ($rc -eq 2) { $Missing = $true }
+if ($rc -eq 1) { Need $CliName 'claude' } elseif ($rc -eq 2) { $Missing = $true }
 
 function Protect-Env {   # limits .env to this Windows user (read and write); a failure is a note, never fatal
   $global:LASTEXITCODE = 0
@@ -408,13 +459,28 @@ Test-HarnessFiles
 # per-user exe installer (AnthropicClaude). Neither item fails the run when it is missing.
 Say ''
 Say 'Recommended'
+# With Codex the app is the Codex app from the Microsoft Store (winget's msstore source, OpenAI's own install line).
 $ClaudeAppArgs = "install --id Anthropic.Claude $WingetFlags"
-$ClaudeAppCmd = "winget $ClaudeAppArgs"
 $ClaudeAppPage = 'https://claude.ai/download'
+$AppWhy = 'recommended: its Code tab is where the harness runs, with the memory routines and the Claude in Chrome pairing'
+$AppOpen = 'Open it from the Start menu, sign in, and click the Code tab.'
+if ($Agent -eq 'codex') {
+  $ClaudeAppArgs = 'install Codex --source msstore --accept-package-agreements --accept-source-agreements'
+  $ClaudeAppPage = 'https://chatgpt.com/codex'
+  $AppWhy = 'recommended: it runs the harness and carries the Chrome plugin that /connect uses'
+  $AppOpen = 'Open it from the Start menu, sign in, and open this folder.'
+}
+$ClaudeAppCmd = "winget $ClaudeAppArgs"
 $ChromeArgs = "install --id Google.Chrome $WingetFlags"
 $ChromeCmd = "winget $ChromeArgs"
 $ChromePage = 'https://www.google.com/chrome/'
-function Get-ClaudeAppPath {   # where the desktop app is, or '' when it is not there
+function Get-ClaudeAppPath {   # where the desktop app (or, with Codex, the Codex app) is, or '' when it is not there
+  if ($Agent -eq 'codex') {
+    $cx = $null
+    try { $cx = @(Get-AppxPackage -Name '*Codex*' -ErrorAction SilentlyContinue) } catch { $cx = $null }
+    if ($cx -and $cx.Count -gt 0) { return ('the Microsoft Store build, version ' + $cx[0].Version) }
+    return ''
+  }
   $places = @()
   if ($env:LOCALAPPDATA) {
     $places += (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\claude-desktop.exe')
@@ -444,16 +510,17 @@ function Test-Edge {   # true when Microsoft Edge is installed (enough for the a
 function Invoke-ClaudeApp {   # installs the desktop app (after its question under -Ask)
   $script:Cur = 'app'; $script:Done = $false; $script:TimedOut = $false
   $from = Get-PkgFrom
+  $App = Get-Capital $AppName
   if (-not $from) {
-    Show-PkgHint 'the Claude desktop app' $ClaudeAppPage
-    Say ('[skipped] The Claude desktop app. Install it later from ' + $ClaudeAppPage + '; the harness also runs from a terminal (type claude in this folder).')
+    Show-PkgHint $AppName $ClaudeAppPage
+    Say ('[skipped] ' + $App + '. Install it later from ' + $ClaudeAppPage + '; the harness also runs from a terminal (type ' + $CliCmd + ' in this folder).')
     return
   }
-  Offer 'the Claude desktop app' $false "the Claude desktop app from $from" $ClaudeAppCmd 'winget' $ClaudeAppArgs
+  Offer $AppName $false "$AppName from $from" $ClaudeAppCmd 'winget' $ClaudeAppArgs
   $p = Get-ClaudeAppPath
-  if ($script:Done -and $p) { Say "[installed] The Claude desktop app ($p)." }
-  elseif ($script:Done) { Say '[installed] The Claude desktop app. Open it from the Start menu, sign in, and click the Code tab.' }
-  elseif (-not $script:TimedOut) { Say ('[skipped] The Claude desktop app. Install it later with: ' + $ClaudeAppCmd + ' (or from ' + $ClaudeAppPage + ')') }
+  if ($script:Done -and $p) { Say "[installed] $App ($p)." }
+  elseif ($script:Done) { Say ('[installed] ' + $App + '. ' + $AppOpen) }
+  elseif (-not $script:TimedOut) { Say ('[skipped] ' + $App + '. Install it later with: ' + $ClaudeAppCmd + ' (or from ' + $ClaudeAppPage + ')') }
 }
 function Invoke-Chrome {   # installs Google Chrome (after its question under -Ask)
   $script:Cur = 'chrome'; $script:Done = $false; $script:TimedOut = $false
@@ -470,27 +537,28 @@ function Invoke-Chrome {   # installs Google Chrome (after its question under -A
   elseif (-not $script:TimedOut) { Say ('[skipped] Google Chrome. Install it later with: ' + $ChromeCmd + ' (or from ' + $ChromePage + ')') }
 }
 $Cur = 'app'
-$appWhy = 'recommended: its Code tab is where the harness runs, with the memory routines and the Claude in Chrome pairing'
+$App = Get-Capital $AppName
 $appPath = Get-ClaudeAppPath
-if ($appPath) { Say "[ok] The Claude desktop app is installed ($appPath)." }
-elseif ($Mode -eq 'check') { Say "[missing] The Claude desktop app is not installed ($appWhy). Run this script without -Check to install it."; $RecoMissing += 'the Claude desktop app' }
+if ($appPath) { Say "[ok] $App is installed ($appPath)." }
+elseif ($Mode -eq 'check') { Say "[missing] $App is not installed ($AppWhy). Run this script without -Check to install it."; $RecoMissing += $AppName }
 elseif (($Mode -eq 'all') -and -not (Get-PkgFrom)) {
-  Say "[missing] The Claude desktop app is not installed ($appWhy)."
-  Show-PkgHint 'the Claude desktop app' $ClaudeAppPage; $RecoMissing += 'the Claude desktop app'
+  Say "[missing] $App is not installed ($AppWhy)."
+  Show-PkgHint $AppName $ClaudeAppPage; $RecoMissing += $AppName
 }
 else {
-  Say "[missing] The Claude desktop app is not installed ($appWhy)."
+  Say "[missing] $App is not installed ($AppWhy)."
   if ($Mode -eq 'all') { $Plan += 'app' } else { Invoke-ClaudeApp }
 }
 $Cur = 'chrome'
 $chromePath = Get-ChromePath
-if ($chromePath) { Say "[ok] Google Chrome is installed ($chromePath): for the Claude in Chrome extension and the ad screenshots." }
-elseif (Test-Edge) {
+if ($chromePath) { Say "[ok] Google Chrome is installed ($chromePath): for $ExtName and the ad screenshots." }
+elseif ((Test-Edge) -and ($Agent -ne 'codex')) {
   Say '[skipped] Google Chrome is not installed; Microsoft Edge was found, and the Claude in Chrome extension runs in Edge too.'
   Note ('The guided setup and its video use Chrome. To add it: ' + $ChromeCmd + ' (or ' + $ChromePage + ')')
 }
 else {
   $chromeWhy = 'recommended: the Claude in Chrome extension that /connect uses and the ad screenshots need a browser, and neither Chrome nor Edge was found'
+  if ($Agent -eq 'codex') { $chromeWhy = 'recommended: the Codex Chrome extension that $connect uses runs in Google Chrome only' }
   if ($Mode -eq 'check') { Say "[missing] Google Chrome is not installed ($chromeWhy). Run this script without -Check to install it."; $RecoMissing += 'Google Chrome' }
   elseif (($Mode -eq 'all') -and -not (Get-PkgFrom)) {
     Say "[missing] Google Chrome is not installed ($chromeWhy)."
@@ -631,7 +699,7 @@ function Install-Hyperframes {   # adds the vendored marketplace (one that alrea
 $hfNode = Get-Version 'node'; $hfMajor = Get-Major $hfNode
 $hfFound = 'none found'; if ($hfNode) { $hfFound = $hfNode }
 $hfFiles = Test-Path -LiteralPath 'vendor\hyperframes\.claude-plugin\marketplace.json' -PathType Leaf
-$hfClaude = ([bool](Get-Version 'claude')) -or ($Plan -contains 'claude')
+$hfClaude = ($Agent -eq 'claude') -and (([bool](Get-Version 'claude')) -or ($Plan -contains 'claude'))   # a Claude Code plugin
 if (($hfMajor -ge 20) -and ($hfMajor -lt 22) -and $hfFiles -and $hfClaude) {
   $Cur = 'node_upgrade'
   Set-Version 'node_upgrade' $hfNode
@@ -649,7 +717,8 @@ if (($hfMajor -ge 20) -and ($hfMajor -lt 22) -and $hfFiles -and $hfClaude) {
   }
 }
 $Cur = 'hyperframes'
-if (-not $hfClaude) { Say '[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads).' }
+if ($Agent -eq 'codex') { Say '[skipped] The HyperFrames video plugin is for Claude Code only (optional: in Codex, videos are files the company brings).' }
+elseif (-not $hfClaude) { Say '[skipped] The HyperFrames video plugin needs Claude Code first (optional: only for silent video ads).' }
 elseif (($hfMajor -lt 22) -and -not ($Plan -contains 'node') -and -not ($Plan -contains 'node-upgrade')) {
   if (Test-Hyperframes) { Say "[ok] The HyperFrames video plugin is installed, but it needs Node.js 22 or newer to render ($hfFound)." }
   else { Say "[skipped] The HyperFrames video plugin needs Node.js 22 or newer ($hfFound; the harness itself needs 20 or newer)." }
@@ -681,9 +750,11 @@ else {
 function Show-PlanLine([string]$item) {   # one line of the plan: the item and where it comes from
   if ($item -eq 'git') { Say ('  - Git, from ' + (Get-PkgFrom)) }
   elseif ($item -eq 'node') { Say ('  - Node.js LTS, from ' + (Get-PkgFrom)) }
+  elseif (($item -eq 'claude') -and ($Agent -eq 'codex')) { Say '  - The Codex CLI (@openai/codex), from the npm registry' }
   elseif ($item -eq 'claude') { Say '  - Claude Code, from claude.ai (the official installer; the npm registry if that fails)' }
+  elseif (($item -eq 'app') -and ($Agent -eq 'codex')) { Say '  - The Codex app (it runs the harness and carries the Chrome plugin), from the Microsoft Store through winget' }
   elseif ($item -eq 'app') { Say ('  - The Claude desktop app (its Code tab is where the harness runs), from ' + (Get-PkgFrom)) }
-  elseif ($item -eq 'chrome') { Say ('  - Google Chrome (for the Claude in Chrome extension and the ad screenshots), from ' + (Get-PkgFrom)) }
+  elseif ($item -eq 'chrome') { Say ('  - Google Chrome (for ' + $ExtName + ' and the ad screenshots), from ' + (Get-PkgFrom)) }
   elseif ($item -eq 'playwright') { Say '  - playwright-core (a few megabytes), from the npm registry into node_modules in this folder' }
   elseif ($item -eq 'obsidian') { Say ('  - Obsidian for the memory vault (free, also for commercial use), from ' + (Get-PkgFrom)) }
   elseif ($item -eq 'node-upgrade') { Say ('  - Node.js LTS upgrade (the video plugin needs 22 or newer; the harness itself needs 20), from ' + (Get-PkgFrom)) }
@@ -745,7 +816,7 @@ if ($Mode -eq 'all') {
     if ($Plan.Count -gt 0) { Say ''; Say 'Installing' }
     if ($Plan -contains 'git') { Set-Doing 'git'; Put 'Git' 'git' }
     if ($Plan -contains 'node') { Set-Doing 'node'; Put 'Node.js' 'node' }
-    if ($Plan -contains 'claude') { Set-Doing 'claude'; Put 'Claude Code' 'claude' }
+    if ($Plan -contains 'claude') { Set-Doing 'claude'; Put $CliName 'claude' }
     if ($Plan -contains 'app') { Set-Doing 'app'; Invoke-ClaudeApp }
     if ($Plan -contains 'chrome') { Set-Doing 'chrome'; Invoke-Chrome }
     if ($EnvTodo) { Set-Doing 'env'; Copy-Env }
@@ -839,11 +910,16 @@ if (Test-Path -LiteralPath $taskDir -PathType Container) {
     if ($body -and $body.Replace('/', '\').ToLowerInvariant().Contains($herePath)) { $Routines++ }
   }
 }
-if ($Mode -eq 'check') {
-  if ($Routines -ge 2) { Say "[ok] The memory routines are registered for this folder ($Routines scheduled tasks)." }
-  else { Say '[todo] The memory routines are not registered yet: /campaign registers them in the Claude desktop app (one question).' }
+if ($Agent -eq 'codex') {   # a Claude desktop app feature: in Codex the Operator runs $sync and $consolidate
+  if ($Mode -eq 'check') { Say '[skipped] The memory routines are a Claude desktop app feature (in Codex, run $sync after each session and $consolidate weekly).' }
+  Set-Result 'routines' 'skipped'
+} else {
+  if ($Mode -eq 'check') {
+    if ($Routines -ge 2) { Say "[ok] The memory routines are registered for this folder ($Routines scheduled tasks)." }
+    else { Say '[todo] The memory routines are not registered yet: /campaign registers them in the Claude desktop app (one question).' }
+  }
+  if ($Routines -ge 2) { Set-Result 'routines' 'ok' } else { Set-Result 'routines' 'todo' }
 }
-if ($Routines -ge 2) { Set-Result 'routines' 'ok' } else { Set-Result 'routines' 'todo' }
 $Cur = ''
 
 Say ''
@@ -854,18 +930,33 @@ elseif ($Missing) {
   else { Say '  First: install what is marked [missing] above (run this script again, or install it by hand).' }
 }
 if ($RecoMissing.Count -gt 0) { Say ('  Also: ' + ($RecoMissing -join ' and ') + ' marked [missing] above: run this script again without -Check, or install from the page on that line.') }
-Say '  1. Open the Claude desktop app, sign in, click the Code tab and open this folder (Open folder...; trust it when asked).'
-Say "     A terminal works too (type claude in this folder), but the memory routines and the Claude in Chrome pairing are the app's."
-Say '  2. When Claude Code asks whether to use the two servers in .mcp.json (meta-ads and fal), approve them; if it does not ask, /mcp lists them.'
-Say '  3. Install the Claude in Chrome extension in Chrome and sign in to it with the same Claude account'
-Say '     (in the app: your initials at the lower left > Settings > Customize > Connectors > Claude in Chrome > Configure; from a terminal here: claude --chrome).'
-Say '  4. In the Code tab type /connect: the connections pass. It asks your language first, then what you already have in Meta,'
+if ($Agent -eq 'codex') {
+  Say '  1. Open the Codex app, sign in, and open this folder itself (not a folder above it); trust the project when asked.'
+  Say '     A terminal works too: type codex in this folder.'
+  Say '  2. In Codex type /hooks and trust the three hooks: without them the account guard is off. Then, in a terminal here,'
+  Say '     log in to the two servers: codex mcp login meta-ads, then codex mcp login fal; then start a new Codex session.'
+  Say '  3. Install the Codex Chrome extension: in the Codex app, Plugins > Chrome; sign in to it.'
+  Say '  4. In Codex type $connect: the connections pass. It asks your language first, then what you already have in Meta,'
+} else {
+  Say '  1. Open the Claude desktop app, sign in, click the Code tab and open this folder (Open folder...; trust it when asked).'
+  Say "     A terminal works too (type claude in this folder), but the memory routines and the Claude in Chrome pairing are the app's."
+  Say '  2. When Claude Code asks whether to use the two servers in .mcp.json (meta-ads and fal), approve them; if it does not ask, /mcp lists them.'
+  Say '  3. Install the Claude in Chrome extension in Chrome and sign in to it with the same Claude account'
+  Say '     (in the app: your initials at the lower left > Settings > Customize > Connectors > Claude in Chrome > Configure; from a terminal here: claude --chrome).'
+  Say '  4. In the Code tab type /connect: the connections pass. It asks your language first, then what you already have in Meta,'
+}
 Say '     leads every login in your own Chrome (the Meta business, the Page, the ad account, the developer app and the System User,'
-Say '     the pixel, WhatsApp, fal), stores the upload token from your clipboard without ever showing it, and ends with /health green.'
-Say '  5. Then type /campaign: the first campaign A to Z (the interview, the market research, the plan, copy, creatives,'
-Say '     the campaign built PAUSED and shown to you).'
-if ($Routines -ge 2) { Say '     The two memory routines are already registered for this folder.' }
-else { Say '     /campaign registers them too: two memory routines, a nightly check and a weekly review that alert your phone and never act.' }
+Say ('     the pixel, WhatsApp, fal), stores the upload token from your clipboard without ever showing it, and ends with ' + $Pre + 'health green.')
+if ($Agent -eq 'codex') {
+  Say '  5. Then type $campaign: the first campaign A to Z (the interview, the market research, the plan, copy, creatives,'
+  Say '     the campaign built PAUSED and shown to you).'
+  Say '     The memory routines are a Claude desktop app feature: in Codex, run $sync after each session and $consolidate weekly.'
+} else {
+  Say '  5. Then type /campaign: the first campaign A to Z (the interview, the market research, the plan, copy, creatives,'
+  Say '     the campaign built PAUSED and shown to you).'
+  if ($Routines -ge 2) { Say '     The two memory routines are already registered for this folder.' }
+  else { Say '     /campaign registers them too: two memory routines, a nightly check and a weekly review that alert your phone and never act.' }
+}
 Say "  6. The Owner's Meta console steps stay listed in docs/meta-setup-guide.md, with their pitfalls, for reference."
 # The memory vault in Obsidian: the result of obsidian-setup.mjs above, after a run that went ahead. Nothing
 # for the Owner to click; the memory hooks ship in .claude/settings.json.
@@ -897,7 +988,7 @@ if (($Mode -ne 'check') -and -not $Declined -and (Test-Path -LiteralPath 'dashbo
     $pageMajor = Get-Major $pageNode
     $markGit = 'todo'; if ((Get-Version 'git') -or ($Recheck -contains 'git')) { $markGit = 'done' }
     $markNode = 'todo'; if (($pageMajor -ge 20) -or ($Recheck -contains 'node')) { $markNode = 'done' }
-    $markClaude = 'todo'; if ((Get-Version 'claude') -or ($Recheck -contains 'claude')) { $markClaude = 'done' }
+    $markClaude = 'todo'; if ((Get-Version $CliCmd) -or ($Recheck -contains 'claude')) { $markClaude = 'done' }
     $markObsidian = 'todo'; if ($obsNow) { $markObsidian = 'done' }
     $markApp = 'todo'; if (Get-ClaudeAppPath) { $markApp = 'done' }
     $pageArgs = @('dashboard/setup-page.mjs', '--mark', "install.git=$markGit", '--mark', "install.node=$markNode", '--mark', "install.claude=$markClaude", '--mark', "app.desktop=$markApp", '--mark', "obsidian.installed=$markObsidian")
@@ -906,8 +997,8 @@ if (($Mode -ne 'check') -and -not $Declined -and (Test-Path -LiteralPath 'dashbo
     Say ''
     $global:LASTEXITCODE = 0
     try { & node @pageArgs *> $null } catch { $global:LASTEXITCODE = 1 }
-    if (($LASTEXITCODE -eq 0) -and $PageOpened) { Say 'The setup wizard now shows the next steps too (/connect, then /campaign); keep it beside Claude Code: dashboard/setup.html' }
-    elseif ($LASTEXITCODE -eq 0) { Say 'The setup wizard opened in your browser; keep it beside Claude Code: dashboard/setup.html' }
+    if (($LASTEXITCODE -eq 0) -and $PageOpened) { Say ('The setup wizard now shows the next steps too; keep it beside ' + $AgentName + ': dashboard/setup.html') }
+    elseif ($LASTEXITCODE -eq 0) { Say ('The setup wizard opened in your browser; keep it beside ' + $AgentName + ': dashboard/setup.html') }
     else { Say 'The setup wizard could not be filled with the next steps (node dashboard/setup-page.mjs failed); /connect fills it later.' }
   } elseif ($PageTodo) {
     Say ''

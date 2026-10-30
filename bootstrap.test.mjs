@@ -66,11 +66,13 @@ function stubs(kind, nodeVersion) {   // a folder of stub git, node and claude c
     fs.writeFileSync(path.join(dir, 'git.cmd'), '@echo off\r\necho git version 2.99.0.test\r\n');
     fs.writeFileSync(path.join(dir, 'node.cmd'), `@echo off\r\necho ${nodeVersion}\r\n`);
     fs.writeFileSync(path.join(dir, 'claude.cmd'), '@echo off\r\nif "%~1"=="--version" echo 2.1.0 (Claude Code)\r\nexit /b 0\r\n');
+    fs.writeFileSync(path.join(dir, 'codex.cmd'), '@echo off\r\nif "%~1"=="--version" echo codex-cli 0.200.0\r\nexit /b 0\r\n');
   } else {
     const w = (name, body) => { const f = path.join(dir, name); fs.writeFileSync(f, `#!/bin/sh\n${body}\n`); fs.chmodSync(f, 0o755); };
     w('git', 'echo "git version 2.99.0.test"');
     w('node', `echo "${nodeVersion}"`);
     w('claude', '[ "$1" = --version ] && echo "2.1.0 (Claude Code)"\nexit 0');
+    w('codex', '[ "$1" = --version ] && echo "codex-cli 0.200.0"\nexit 0');
   }
   return dir;
 }
@@ -109,11 +111,13 @@ function run(kind, args, cwd, env, script) {
   if (res.error) throw res.error;
   return { code: res.status, out: (res.stdout || '') + (res.stderr || ''), stdout: res.stdout || '' };
 }
-function check(kind, nodeVersion = 'v22.11.0', mutate) {   // one --check run in a fresh temporary harness
+function check(kind, nodeVersion = 'v22.11.0', mutate, agent) {   // one --check run in a fresh temporary harness
   const dir = harness(mutate);
   const sd = stubs(kind, nodeVersion);
   try {
-    const r = run(kind, [kind === 'ps' ? '-Check' : '--check'], dir, envWithPath(shellPath(kind, sd)));
+    const args = [kind === 'ps' ? '-Check' : '--check'];
+    if (agent) args.push(kind === 'ps' ? `-${agent[0].toUpperCase()}${agent.slice(1)}` : `--${agent}`);
+    const r = run(kind, args, dir, envWithPath(shellPath(kind, sd)));
     const resultFile = path.join(dir, 'dashboard', 'bootstrap-result.json');
     const logFile = path.join(dir, 'bootstrap.log');
     r.result = fs.existsSync(resultFile) ? fs.readFileSync(resultFile, 'utf8') : null;
@@ -255,18 +259,20 @@ test('Node.js 20: both scripts report the optional upgrade for the video plugin,
 // ---- (f) the live file of the setup wizard ----
 // An --ask run where every question is answered No (Enter, then end of input): nothing is installed, no browser
 // starts (HARNESS_NO_BROWSER), and dashboard/setup-live.js holds every item, finished, in the same shape from both.
-function askRun(kind) {
+function askRun(kind, first = '') {   // first: the answer to the first question (the app), Enter by default
   const dir = harness();
   const sd = stubs(kind, 'v22.11.0');
   try {
     const env = { ...envWithPath(shellPath(kind, sd)), HARNESS_NO_BROWSER: '1' };
     const r = spawnSync(kind === 'ps' ? PS : BASH, kind === 'ps'
       ? ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(dir, 'bootstrap.ps1'), '-Ask'] : ['bootstrap.sh', '--ask'],
-      { cwd: dir, env, encoding: 'utf8', timeout: 120000, input: '\n'.repeat(20) });
+      { cwd: dir, env, encoding: 'utf8', timeout: 120000, input: first + '\n'.repeat(20) });
     if (r.error) throw r.error;
     const f = path.join(dir, 'dashboard', 'setup-live.js');
     const text = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : null;
-    return { out: (r.stdout || '') + (r.stderr || ''), text };
+    const af = path.join(dir, 'dashboard', 'agent.json');
+    const agentFile = fs.existsSync(af) ? fs.readFileSync(af, 'utf8') : null;
+    return { out: (r.stdout || '') + (r.stderr || ''), text, agentFile };
   } finally { rm(dir); rm(sd); }
 }
 function liveOf(text) { const w = {}; new Function('window', text)(w); return w.SETUP_LIVE; }
@@ -286,6 +292,43 @@ test('(f) a run without --check writes the live file of the wizard: every item, 
   }
   const a = liveOf(ps.text), b = liveOf(sh.text);
   for (const k of KEYS) assert.equal(a.items[k], b.items[k], `item ${k}: ps ${a.items[k]}, sh ${b.items[k]}`);
+});
+
+// ---- (g) Codex instead of Claude Code ----
+test('(g) --check --codex: the Codex CLI, app and extension in place of Claude, the Claude-only items skipped, in parity', { skip: skipPs || skipSh }, () => {
+  const ps = check('ps', 'v22.11.0', null, 'codex'); const sh = check('sh', 'v22.11.0', null, 'codex');
+  assertShape(ps, 'bootstrap.ps1'); assertShape(sh, 'bootstrap.sh');
+  assert.equal(ps.code, sh.code, `exit codes differ\n--- ps\n${ps.out}\n--- sh\n${sh.out}`);
+  assert.deepEqual(items(ps.stdout), items(sh.stdout), `item sets differ\n--- ps\n${ps.out}\n--- sh\n${sh.out}`);
+  for (const r of [ps, sh]) {
+    assert.ok(r.stdout.includes('App: Codex (chosen with '), r.out);
+    assert.ok(r.stdout.includes('[ok] The Codex CLI is installed (codex-cli 0.200.0).'), r.out);
+    assert.ok(r.stdout.includes('[skipped] The HyperFrames video plugin is for Claude Code only'), r.out);
+    assert.ok(r.stdout.includes('[skipped] The memory routines are a Claude desktop app feature'), r.out);
+    assert.ok(r.stdout.includes('  3. Install the Codex Chrome extension: in the Codex app, Plugins > Chrome; sign in to it.'), r.out);
+    assert.ok(!/Claude in Chrome|Claude desktop app is|Code tab/.test(r.stdout.split('What remains')[1] || ''), `${r.out}`);
+    const j = JSON.parse(r.result);
+    assert.equal(j.items.claude.version, 'codex-cli 0.200.0');
+    assert.equal(j.items.routines.status, 'skipped');
+  }
+  const jp = JSON.parse(ps.result), js = JSON.parse(sh.result);
+  for (const k of KEYS) assert.equal(jp.items[k].status, js.items[k].status, `item ${k}: ps ${jp.items[k].status}, sh ${js.items[k].status}`);
+  // --check without a flag never asks and stays Claude Code.
+  const plain = check('sh');
+  assert.ok(plain.stdout.includes('App: Claude Code (not chosen yet: a run without --check asks).'), plain.out);
+});
+
+test('(g) the first question picks the app: 2 means Codex, written to dashboard/agent.json and the live file, in both scripts', { skip: skipPs || skipSh }, () => {
+  for (const kind of ['ps', 'sh']) {
+    const r = askRun(kind, '2\n');
+    assert.ok(r.out.includes('Which app will run the harness on this computer?'), `${kind}: no question\n${r.out}`);
+    assert.ok(r.out.includes('App: Codex (your answer).'), `${kind}\n${r.out}`);
+    assert.match(r.agentFile || '', /"agent": "codex"/, `${kind}: dashboard/agent.json`);
+    assert.equal(liveOf(r.text).agent, 'codex', `${kind}: the live file`);
+    const enter = askRun(kind);
+    assert.ok(enter.out.includes('App: Claude Code (your answer).'), `${kind}: Enter means Claude Code\n${enter.out}`);
+    assert.equal(liveOf(enter.text).agent, 'claude');
+  }
 });
 
 test('(f) --check writes no live file and opens nothing', { skip: skipPs || skipSh }, () => {

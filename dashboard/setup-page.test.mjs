@@ -307,3 +307,28 @@ test('the platforms of config/operator.md: Meta only hides the Google chapter, G
   assert.ok(!keys.some(k => k.startsWith('meta.') || k === 'login.tools' || k === 'token.check'), 'no Meta rows for a Google-only company');
   assert.equal(data.chapters.find(c => c.id === 'google').n, 'G');
 }));
+
+test('Codex (dashboard/agent.json, or the bootstrap\'s live file): the Codex app and extension, $commands, no Claude wording', () => withCopy(false, dir => {
+  writeFileSync(join(dir, 'dashboard', 'agent.json'), '{"agent": "codex"}\n');
+  const r = run(dir, '--print');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /The Codex Chrome extension/);
+  assert.doesNotMatch(r.stdout, /Claude in Chrome|Claude desktop app installed/);
+  const w = loadInto(loadInto(loadInto({}, DEFAULT_JS), WIZARD_JS), join(dir, 'dashboard', 'setup-data.js'));
+  const D = w.SETUP_DEFAULT, W = w.SetupWizard;
+  assert.equal(w.SETUP_DATA.agent, 'codex');
+  const v = W.merge(D, w.SETUP_DATA, null, Date.now());
+  assert.equal(v.agent, 'codex');
+  assert.equal(v.chapters.find(c => c.id === 'vault').items.find(i => i.key === 'memory.routines').status, 'na', 'no routines in Codex');
+  for (const lang of ['en', 'he']) {
+    const S = W.strings(D, lang, 'codex');
+    const html = W.render(v, S, { hinted: D.hinted, open: { app: true, chrome: true, c0: true } });
+    assert.doesNotMatch(html, /Claude in Chrome|Code tab|לשונית Code/, `${lang}: Claude wording left`);
+    assert.match(html, lang === 'en' ? /The Codex app/ : /אפליקציית Codex/);
+    assert.match(html, /<bdi dir="ltr">\$connect<\/bdi>/, `${lang}: $connect kept left to right`);
+    for (const k of Object.keys(D.strings[lang].items)) assert.ok(S.items[k], `${lang}: item ${k} lost in the merge`);
+  }
+  // Before setup-page.mjs ran, the bootstrap's live file says it; the Claude wording stays the default.
+  assert.equal(W.merge(D, null, { running: false, agent: 'codex', items: {} }, Date.now()).agent, 'codex');
+  assert.equal(W.strings(D, 'en', 'claude'), D.strings.en);
+}));

@@ -22,13 +22,13 @@ node memory/tools/codex-sync.mjs --write
 
 ## The first session in Codex
 
-1. **Install Codex**, the app (Windows or macOS) or the CLI:
+1. **Run the bootstrap for Codex.** Its first question is which app runs the harness (Claude Code or Codex); `-Codex` / `--codex` answers it:
 
    ```bash
-   npm install -g @openai/codex
+   powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Yes -Codex
    ```
 
-   Then sign in with the company's ChatGPT account. The bootstrap still installs Git, Node.js and the rest; it also installs Claude Code, which does no harm.
+   On a Mac: `bash bootstrap.sh --yes --codex`. It installs Git, Node.js, the Codex CLI (`npm install -g @openai/codex`), the Codex app (Windows: from the Microsoft Store through winget; Mac: it points to the download at chatgpt.com/codex), Google Chrome for the Codex Chrome extension, Obsidian and the rest, and nothing of Claude: the HyperFrames plugin and the memory routines are Claude-only and are skipped. The answer is kept in `dashboard/agent.json` (never committed); the setup wizard shows the Codex chapters (the Codex app, the Codex Chrome extension, `codex mcp login`, the hooks in `/hooks`) from it. Sign in to the Codex app with the company's ChatGPT account.
 2. **Open the harness folder in Codex** (the folder itself, not a folder above it: the hooks are started from there) and **trust the project** when Codex asks. Without the trust Codex ignores `.codex/`: no MCP servers, no hooks.
 3. **Trust the hooks:** `/hooks` in Codex, review the three hooks, trust them. **Until the hooks are trusted the account guard is off**, and the harness makes no Meta write. A hook changed by an upgrade has to be trusted again.
 4. **Log in to the MCP servers** in a terminal:

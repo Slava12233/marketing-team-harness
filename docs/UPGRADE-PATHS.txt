@@ -123,6 +123,7 @@ memory/INDEX.md
 memory/capabilities/
 dashboard/state.json
 dashboard/state.local.json
+dashboard/agent.json
 dashboard/setup-data.js
 dashboard/setup-live.js
 dashboard/setup-progress.json

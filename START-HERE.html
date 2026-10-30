@@ -86,10 +86,14 @@
     <li><b>תיקייה חדשה לעסק.</b> מורידים את הריפו לתיקייה ריקה:
       <pre>git clone &lt;repo-url&gt; &lt;client-name&gt;</pre>
       במקום <code>&lt;repo-url&gt;</code> שמים את כתובת הריפו, ובמקום <code>&lt;client-name&gt;</code> את שם התיקייה של הלקוח. אפשר גם להוריד את ה-ZIP ולפרוס אותו. <b>תיקייה אחת לכל עסק.</b> עותק של תיקייה של לקוח אחר מתאפס לבד: הקבצים הקודמים עוברים ל-<code>.previous-company/</code>, ושום דבר לא נמחק.</li>
-    <li><b>Bootstrap.</b> מתקין את כל מה שחסר בלי שאלות (<bdi dir="ltr">Git, Node.js, Claude Code, Chrome, Obsidian</bdi> ועוד) ופותח את אשף ההתקדמות <code>dashboard/setup.html</code>. מריצים בתוך התיקייה:
-      <pre>powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Yes</pre>
+    <li data-only="claude"><b>Bootstrap.</b> השאלה הראשונה שלו היא Claude Code או Codex. ‏<code>-Claude</code> עונה עליה מראש. אחר כך הוא מתקין את כל מה שחסר (<bdi dir="ltr">Git, Node.js, Claude Code</bdi>, אפליקציית Claude, <bdi dir="ltr">Chrome, Obsidian</bdi> ועוד) ופותח את אשף ההתקדמות <code>dashboard/setup.html</code>. מריצים בתוך התיקייה:
+      <pre>powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Yes -Claude</pre>
       ב-Mac:
-      <pre>bash bootstrap.sh --yes</pre></li>
+      <pre>bash bootstrap.sh --yes --claude</pre></li>
+    <li data-only="codex"><b>Bootstrap.</b> השאלה הראשונה שלו היא Claude Code או Codex. ‏<code>-Codex</code> עונה עליה מראש. אחר כך הוא מתקין את <bdi dir="ltr">Git, Node.js</bdi>, את <bdi dir="ltr">Codex CLI</bdi>, את אפליקציית Codex (ב-Windows מ-Microsoft Store), את <bdi dir="ltr">Chrome, Obsidian</bdi> ועוד. בלי Claude בכלל. גם אשף ההתקדמות <code>dashboard/setup.html</code> מציג את הפרקים של Codex. מריצים בתוך התיקייה:
+      <pre>powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Yes -Codex</pre>
+      ב-Mac (את אפליקציית Codex מורידים מ-chatgpt.com/codex):
+      <pre>bash bootstrap.sh --yes --codex</pre></li>
     <li data-only="claude"><b>פותחים את התיקייה ב-Claude.</b> אפליקציית Claude, לשונית <b>Code</b>, <b>Open folder</b>, <b>Trust</b>, ומאשרים את שני השרתים <code>meta-ads</code> ו-<code>fal</code>.</li>
     <li data-only="codex"><b>פותחים את התיקייה ב-Codex.</b> את התיקייה עצמה, לא תיקייה מעליה. אפשר באפליקציית Codex, או <code>codex</code> בטרמינל בתוך התיקייה. אחר כך:
       <br>א. <b>Trust project</b>.
@@ -97,8 +101,7 @@
       <br>ג. בטרמינל:
       <pre>codex mcp login meta-ads</pre>
       <pre>codex mcp login fal</pre>
-      ד. פותחים סשן חדש.
-      <br>להתקנת Codex: <code>npm install -g @openai/codex</code></li>
+      ד. פותחים סשן חדש.</li>
     <li><b>תוסף כרום.</b> <span data-only="claude">באפליקציית Claude: Settings, Connectors, Claude in Chrome.</span><span data-only="codex">באפליקציית Codex: Plugins, Chrome.</span> הבעלים צריך להיות מחובר בכרום שלו לפייסבוק ולגוגל.</li>
     <li><b>מקלידים <span class="cmd">/connect</span>.</b> הכלי מחבר הכול, צעד אחר צעד, ונגמר בבדיקה ירוקה.</li>
     <li><b>מקלידים <span class="cmd">/campaign</span>.</b> ראיון, מחקר, תוכנית ובניית הקמפיין הראשון, מושהה.</li>
@@ -182,7 +185,7 @@
   <h2>8. פקודות טרמינל למתקין</h2>
   <table class="table">
     <tbody>
-      <tr><td><code>powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check</code></td><td>מה חסר במחשב, בלי להתקין</td></tr>
+      <tr><td><code>powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Check</code></td><td>מה חסר במחשב, בלי להתקין. הבחירה בין Claude ל-Codex נשמרת ב-<code>dashboard/agent.json</code>, ו-<code>-Claude</code> או <code>-Codex</code> מחליפים אותה</td></tr>
       <tr><td><code>node creatives/tools/meta-upload.mjs --check</code></td><td>הטוקן של Meta עובד</td></tr>
       <tr><td><code>node creatives/tools/google-ads.mjs check</code></td><td>החיבור לגוגל עובד</td></tr>
       <tr><td><code>node memory/tools/codex-sync.mjs --write</code></td><td>אחרי שינוי בקבצים של Claude, מעדכן את קבצי Codex</td></tr>
