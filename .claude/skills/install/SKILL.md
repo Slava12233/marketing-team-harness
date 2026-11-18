@@ -5,7 +5,7 @@ description: "Step 1 of the installer's path (/install, /meta, /check, /campaign
 
 # /install: the tools on this computer
 
-Step 1 of **the installer's path**: `/install` (the tools) → `/meta` (the Meta connections) → `/check` (is everything connected) → `/campaign` (the business questions and the first campaign, PAUSED). The path is for an installer or technician who sets the harness up for a client and wants one short command per stage; the installer's one-page sheet is `docs/quick-install.md`. The guided pass (`/connect`, the wizard, the Owner's Chrome driven by the extension) stays as it is and writes the same files: the two can be mixed at any point.
+Step 1 of **the installer's path**: `/install` (the tools) → `/meta` (the Meta connections) → `/fal` (optional: the fal account, for generated pictures and video) → `/check` (is everything connected) → `/campaign` (the business questions and the first campaign, PAUSED). The path is for an installer or technician who sets the harness up for a client and wants one short command per stage; the installer's one-page sheet is `docs/quick-install.md`. The guided pass (`/connect`, the wizard, the Owner's Chrome driven by the extension) stays as it is and writes the same files: the two can be mixed at any point.
 
 This page is a thin layer. The installs are the bootstrap's (`bootstrap.ps1` / `bootstrap.sh`), and the checks are step 0.5 of `setup`. It says what runs, in which order, and how one item is installed alone. `CLAUDE.md` wins on any conflict.
 
@@ -72,7 +72,7 @@ Never open, read, grep or print `.env`: only `test -f .env`. An item the bootstr
 
 Reads only:
 
-1. `.mcp.json` declares `meta-ads` and `fal` (it holds names and URLs, no secret). When Claude Code asked about them on opening the folder, the installer approved both; when it did not, `/mcp` lists them. The logins themselves are `/meta`'s.
+1. `.mcp.json` declares `meta-ads` and `fal` (it holds names and URLs, no secret). When Claude Code asked about them on opening the folder, the installer approved both; when it did not, `/mcp` lists them. The logins themselves are `/meta`'s (`meta-ads`) and `/fal`'s (`fal`, optional).
 2. `.claude/settings.json` names `session-start.mjs`, `pre-compact.mjs` and `account-guard.mjs` (shipped; never edited here). Missing: a `checklist.md` row "restore from `docs/hooks-paste-block.md`", owner Operator.
 
 ## Step 5. Close

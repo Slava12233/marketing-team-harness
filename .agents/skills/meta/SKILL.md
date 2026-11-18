@@ -5,7 +5,7 @@ description: "Step 2 of the installer's path (/install, /meta, /check, /campaign
 
 # /meta: everything Meta, by command
 
-Step 2 of **the installer's path**: `/install` → **`/meta`** → `/check` → `/campaign` (the sheet: `docs/quick-install.md`). The installer sits at the client's Meta screens with the client's admin access and **clicks every step**; the harness prints a short click list, waits for "done", checks the outcome live and records it. No browser extension is needed and the harness clicks nothing in a browser. An installer who wants the harness to drive the screens types `/connect` instead (the Claude in Chrome extension): both write the same rows, so a pass started in one resumes in the other.
+Step 2 of **the installer's path**: `/install` → **`/meta`** → `/fal` (optional) → `/check` → `/campaign` (the sheet: `docs/quick-install.md`). The installer sits at the client's Meta screens with the client's admin access and **clicks every step**; the harness prints a short click list, waits for "done", checks the outcome live and records it. No browser extension is needed and the harness clicks nothing in a browser. An installer who wants the harness to drive the screens types `/connect` instead (the Claude in Chrome extension): both write the same rows, so a pass started in one resumes in the other.
 
 This page is a thin layer. The click lists are step 2 (b) of `setup`; the outcomes, the token route, the live checks, the traps table and the session-log format are `setup-console` (its steps 1–11); the long form with pitfalls is `docs/meta-setup-guide.md`. This page says what the core is, in which order it runs for an installer, and what one word after the command does. `CLAUDE.md` wins on any conflict.
 
@@ -107,7 +107,7 @@ The installer answers "done" with the App ID and the System User's name (both pu
 - `config/accounts.md`: the ids and names the core learned (replace only the `{{` placeholders they fill), the MCP servers and logins table (who holds the `meta-ads` login; the System User's name), and the console-steps rows, dated. **The rows the core did not run** (pixel, WhatsApp, Lead Ads terms, Leads Center, domain, Instagram, the webhook) are written `open` with the note `deferred: /meta <item> when the campaign needs it`, or `n/a` when the installer already said the business has no website or will not use that format. Google rows: `n/a` (Meta only) unless Google is a platform.
 - `checklist.md`: one row per console step with its status, and a row for the Owner: "remove or downgrade the installer's admin access once `/check` is green" (when the installer's own profile was used).
 - `node dashboard/setup-page.mjs`, the session-note lines, `node memory/tools/build-hot.mjs --by meta`.
-- **Closing message, in the chat language:** what is connected (names and public ids), what the humans still owe (the open `checklist.md` rows, numbered), which items are deferred and the command for each, that nothing was built, activated or spent, and the next command: **`/check`**.
+- **Closing message, in the chat language:** what is connected (names and public ids), what the humans still owe (the open `checklist.md` rows, numbered), which items are deferred and the command for each, that nothing was built, activated or spent, and the next command: **`/check`**, with **`/fal`** before it when the client wants generated pictures or video (optional; it can also run any time later).
 
 ## The items outside the core
 

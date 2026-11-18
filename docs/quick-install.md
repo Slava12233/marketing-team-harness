@@ -1,12 +1,13 @@
 # Quick install: the installer's path
 
-One page for the installer or technician who sets the harness up on a client's computer. Four commands, in this order; each one says what it did and names the next. Nothing here builds, activates or spends: the first campaign is built PAUSED by the last command, and only the Owner's go, in a message of their own, ever runs an ad.
+One page for the installer or technician who sets the harness up on a client's computer. Four commands and one optional one, in this order; each one says what it did and names the next. Nothing here builds, activates or spends: the first campaign is built PAUSED by the last command, and only the Owner's go, in a message of their own, ever runs an ad.
 
 | # | Command | What it does | Who clicks |
 |---|---|---|---|
 | 0 | one line in a terminal | Claude Code on the computer, the folder open | you |
 | 1 | `/install` | The tools: Git, Node.js, the Claude desktop app, Chrome, Obsidian, FFmpeg, the video plugin, the blank `.env` | you, only a Windows permission prompt |
 | 2 | `/meta` | Everything Meta: the login, the ad account and Page, the developer app, the System User, the token, the checks | you click Meta's screens; the harness checks each step |
+| 2b | `/fal` (optional) | The fal account, for generated pictures and video: the sign-up, the login, the balance read | you or the Owner: the sign-up and the card stay with the human |
 | 3 | `/check` | Is everything connected? A table and one verdict: READY or the fix | nobody |
 | 4 | `/campaign` | The questions about the business, the market research, the first campaign built PAUSED | the Owner answers |
 
@@ -91,11 +92,23 @@ Each step is a short click list, then your "done", then a live check. One step o
 | Instagram placements from the company's own account | `/meta instagram` |
 | An Operator other than the Owner | `/meta people` |
 
+## Step 2b. `/fal` (optional)
+
+fal is where the harness generates pictures and video, paid per run on the client's own account. Skip it and everything still works: stills come from the renderer and video from the HyperFrames plugin. Run it now when the client wants generated pictures or video, or any time later.
+
+Type `/fal`:
+
+1. **The account:** sign up (or sign in) at fal.ai with **the client's own account**. The e-mail, the password and the card are typed by the human at fal's screen, never in the chat. A starting credit is the Owner's choice.
+2. **The login:** `/mcp` → `fal` → log in. Then a new session and `/fal` again.
+3. **The check:** the harness reads the account's name and balance and asks whether that account pays for this business.
+
+Nothing is generated and nothing is charged. No key is needed: never paste a fal key anywhere. Where things stand: `/fal status`. The client does not want it: `/fal skip`.
+
 ## Step 3. `/check`
 
 Type `/check`. It reads everything and changes nothing. **READY for /campaign** means the computer can be handed over. **NOT READY** lists each red row with the one command that fixes it (`/install <item>` or `/meta <item>`); run it, then `/check` again.
 
-Yellow rows listed as "later" are fine: the empty company files (step 4 fills them), a deferred Meta item, the browser extension you did not need.
+Yellow rows listed as "later" are fine: the empty company files (step 4 fills them), a deferred Meta item, fal when you skipped step 2b, the browser extension you did not need.
 
 ## Step 4. `/campaign`
 
@@ -120,6 +133,7 @@ Type `/campaign`, with the Owner. The first question is which campaign to build;
 | Code 190 | the token is wrong or revoked | `/meta token` (revoke first, then generate) |
 | "the value is empty" after `copied` | the Copy did not land | click Copy again, type `copied` |
 | The token appeared in the chat | it is burned | revoke it in Business Settings, then `/meta token` |
+| The fal tools are missing after the login | they load only into a session started after it | a new session, then `/fal` |
 | A tool is missing | | `/install <item>` |
 
 The long form of every Meta step, with its pitfalls, is `docs/meta-setup-guide.md`.

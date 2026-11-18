@@ -5,7 +5,7 @@ description: "Step 3 of the installer's path (/install, /meta, /check, /campaign
 
 # /check: is everything connected?
 
-Step 3 of **the installer's path**: `/install` → `/meta` → **`/check`** → `/campaign` (the sheet: `docs/quick-install.md`). It answers one question for the installer: can this computer be handed over and `/campaign` started?
+Step 3 of **the installer's path**: `/install` → `/meta` → `/fal` (optional) → **`/check`** → `/campaign` (the sheet: `docs/quick-install.md`). It answers one question for the installer: can this computer be handed over and `/campaign` started?
 
 This page is a thin layer over the `health` skill: every read, colour, bound and "what to do" line is `health`'s, and this command fixes nothing. It adds the order and the verdict. `CLAUDE.md` wins on any conflict.
 
@@ -33,7 +33,8 @@ This page is a thin layer over the `health` skill: every read, colour, bound and
 
 - **Waiting for `/campaign`:** row 10's placeholders in `config/` and the `memory/business/` notes, row 15's empty `config/goals.md`, row 21's `config/reporting.md`. The interview fills them. The guard's dry check of row 18 exiting 0 while `config/accounts.md` still holds the account placeholder is the same case; once `/meta` wrote the account it must refuse.
 - **Deferred Meta items:** a console-steps row `open` with the note `deferred: /meta <item>` (the pixel of row 5, WhatsApp, lead forms, the domain, Instagram). Say which campaign type needs which.
-- **The driven mode's tools:** row 27 without the Claude in Chrome extension (only `/connect`'s driven mode uses it), row 26 in a terminal session, fal (row 8) and Obsidian (row 19) when the client skipped them.
+- **The driven mode's tools:** row 27 without the Claude in Chrome extension (only `/connect`'s driven mode uses it), row 26 in a terminal session, and Obsidian (row 19) when the client skipped it.
+- **fal (row 8), optional:** not connected (the `mcp__fal__*` tools are not loaded, or the mark `fal.login` is not `done`) is "later" with its command, `/fal`; skipped by the client (`fal.login=na`) is n/a and not listed; connected with a zero balance is yellow, "the Owner adds credit at fal".
 - **The Owner's own steps:** the payment method and the verified phone on the ad account when their rows are `open`. They do not block `/campaign` (a campaign is built PAUSED) and they do block any activation: say so in the verdict.
 
 Anything else red is NOT READY. Never soften a red row: a wrong account in row 2, a token error in rows 13 or 20, an `.env` that git would commit, a missing guard.
@@ -48,6 +49,7 @@ READY for /campaign
 connected: account <meta_ad_account_id>, Page <page_id>, token holder <System User name>
 later:     27 extension not connected (only /connect's driven mode needs it)
            5 pixel deferred: /meta pixel when the campaign sends people to the website
+           8 fal not connected: /fal when the client wants generated pictures or video
            10, 15, 21 filled by /campaign
 owner:     payment method and phone on the ad account, before any activation
 mode:      Part 1 is closed: switch the permission mode back to Manual (the selector under the prompt box)
@@ -65,4 +67,4 @@ NOT READY: 2 rows
  2 login ... red  the ad account is not visible → /meta login (re-authenticate with the Owner's profile)
 ```
 
-Every red row names one command of the path (`/install <item>`, `/meta <item>`) or one click and who clicks it. No write to the account, no re-login, no install: those are `/install`'s and `/meta`'s.
+Every red row names one command of the path (`/install <item>`, `/meta <item>`, `/fal`) or one click and who clicks it. No write to the account, no re-login, no install: those are `/install`'s and `/meta`'s.

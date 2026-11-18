@@ -9,7 +9,7 @@ Part 1 of the onboarding. You connect the harness to everything it needs (the Cl
 
 The step bodies are shared: the console chapters are `onboard` (A3–A10), which reuses the step bodies, the hard-stop list, the traps and the marks of `setup-console`; the prerequisites and the account write are steps 0.5, 3 and 5 of `setup`. This page says what runs, in which order, in which language, and what differs. `CLAUDE.md` wins on any conflict.
 
-**The same pass by command, for an installer.** An installer or technician who would rather click the Meta screens themselves than have the extension drive them runs `/install` (the tools), `/meta` (the Meta core: the login, the assets, the developer app, the token; other items by a word, `/meta pixel`), `/check` (`/health` with a verdict), then `/campaign`. Those commands print the click lists and run the same live checks, and they write the same rows, ids and marks as the chapters below, so a pass started there resumes here and the other way round (`docs/quick-install.md`).
+**The same pass by command, for an installer.** An installer or technician who would rather click the Meta screens themselves than have the extension drive them runs `/install` (the tools), `/meta` (the Meta core: the login, the assets, the developer app, the token; other items by a word, `/meta pixel`), `/fal` (optional: the fal account, step 4 below by command), `/check` (`/health` with a verdict), then `/campaign`. Those commands print the click lists and run the same live checks, and they write the same rows, ids and marks as the chapters below, so a pass started there resumes here and the other way round (`docs/quick-install.md`).
 
 ## Rules you state at the start (two or three plain sentences, after the language question)
 
