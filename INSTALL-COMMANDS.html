@@ -109,6 +109,13 @@
           <td data-h="מה קורה">Claude נפתח בתיקיית ההרנס.</td>
           <td data-h="מה אתם עושים">מתחברים עם חשבון Claude של הלקוח, מאשרים את התיקייה ואת שני השרתים (<code>meta-ads</code>, <code>fal</code>), ועונים על שאלת השפה.</td>
         </tr>
+        <tr>
+          <td class="n">0.4</td>
+          <td class="where"><span class="pill claude">Claude</span></td>
+          <td>שתי שאלות אחרי השפה, בכל סשן עד ש-<code>/check</code> אומר READY</td>
+          <td data-h="מה קורה">ההרנס בודק בעצמו אם תוסף Claude לכרום מחובר, ושואל רק אם לא מצא. אחר כך שואל אם הסשן במצב Bypass permissions, ומציג את הלחיצות אם מבקשים.</td>
+          <td data-h="מה אתם עושים">תוסף: במסלול הזה עונים "ממשיכים בלי". Bypass: Settings ← Claude Code ← מדליקים Allow bypass permissions mode, ואז בבורר המצב שמתחת לתיבת ההודעה (Ctrl+Shift+M) בוחרים Bypass permissions. אפשר גם להישאר עם אישורים, ההרנס ממשיך בכל מקרה.</td>
+        </tr>
 
         <tr class="part"><td colspan="5">שלב 1: הכלים</td></tr>
         <tr>
@@ -325,7 +332,8 @@
         <tr><td class="n">2</td><td>הכניסה ל-Meta היא של בעל העסק</td><td>ב-<code>/mcp</code>, השרת <code>meta-ads</code> מחובר בפרופיל שלו ולא בשלכם.</td></tr>
         <tr><td class="n">3</td><td>בעל העסק מנהל את אפליקציית המפתחים</td><td>רק אם יצרתם את האפליקציה בפרופיל שלכם: הוא Administrator שלה.</td></tr>
         <tr><td class="n">4</td><td>הגישה שלכם מוסרת</td><td>בעל העסק מסיר או מוריד את הרשאת האדמין שלכם ב-Business Settings ← Users ← People.</td></tr>
-        <tr><td class="n">5</td><td>הסשן נסגר</td><td><code>/sync</code></td></tr>
+        <tr><td class="n">5</td><td>מצב ההרשאות חזר ל-Manual</td><td>בבורר המצב שמתחת לתיבת ההודעה (Ctrl+Shift+M). Bypass permissions מיועד רק לסשנים של ההתקנה: בעבודה היומית ההרנס קורא דפים מהרשת, והאישור הוא הבדיקה האנושית.</td></tr>
+        <tr><td class="n">6</td><td>הסשן נסגר</td><td><code>/sync</code></td></tr>
       </tbody>
     </table>
   </div>

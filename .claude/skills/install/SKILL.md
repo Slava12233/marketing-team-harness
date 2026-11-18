@@ -21,6 +21,8 @@ This page is a thin layer. The installs are the bootstrap's (`bootstrap.ps1` / `
 
 ## Step 0. This folder
 
+Before it, the session has asked the language and the two setup questions of `setup` step 0.4. On this path the extension answer is "go on without it" (nothing here needs it), and Bypass permissions is worth the installer's two clicks: this command runs a dozen installs and checks, each an approval otherwise. Go on whichever they answered.
+
 1. `node --version` through Bash. When Node.js is missing, skip to step 2: the bootstrap needs no Node.js and installs it first. **No Bash in this session** (Windows without Git): run the Windows line of step 2 through the PowerShell tool without the leading `timeout 1800` (the tool call's own time limit bounds it), then tell the installer to start a new session and type `/install` again.
 2. `node memory/tools/instance.mjs --check`. Exit 0: this folder's own harness, go on. Exit 3: a new copy, so a new business: `node memory/tools/instance.mjs --reset` at once, with no question (the previous company's files move to `.previous-company/<stamp>/`, the blank templates come back), exactly as `/connect` does before its step 0; say it in one line.
 3. The setup wizard beside the chat: `node dashboard/setup-page.mjs --open` (the bootstrap opens it itself on a run that installs).

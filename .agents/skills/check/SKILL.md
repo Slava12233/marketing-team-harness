@@ -50,8 +50,11 @@ later:     27 extension not connected (only /connect's driven mode needs it)
            5 pixel deferred: /meta pixel when the campaign sends people to the website
            10, 15, 21 filled by /campaign
 owner:     payment method and phone on the ad account, before any activation
+mode:      Part 1 is closed: switch the permission mode back to Manual (the selector under the prompt box)
 next:      /campaign
 ```
+
+The `mode:` line is the reminder of `setup` step 0.4, printed on every READY whatever mode the session is in (the harness cannot read it), with its reason in one sentence the first time: the daily sessions read public web pages, and the approval prompt is the human check.
 
 or
 

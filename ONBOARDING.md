@@ -154,7 +154,7 @@ The times are set in `config/operator.md`; the control room, if installed, remin
 
 ## 6. How to ask for things
 
-Write in plain language. Every session opens with one question, which language you prefer, and Claude answers in the one you pick (the language in `config/operator.md` is offered first); files stay in English. Every creative carries a fixed number in its flight (#1, #2, ...), never renumbered; use the number, not a description.
+Write in plain language. Every session opens with one question, which language you prefer, and Claude answers in the one you pick (the language in `config/operator.md` is offered first); files stay in English. Until the connections are finished, two more questions follow it: whether the Claude extension is in Chrome (asked only when Claude cannot find it), and whether the session is in Bypass permissions mode, which shortens the setup because Claude stops asking you to approve each command. Claude shows the clicks, you may also keep approving each step, and when the connections are done it reminds you to switch back to Manual. Every creative carries a fixed number in its flight (#1, #2, ...), never renumbered; use the number, not a description.
 
 | You ask | Example | What Claude will do | What Claude will not do |
 |---|---|---|---|

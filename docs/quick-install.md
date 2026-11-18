@@ -49,6 +49,15 @@ claude
 
 Trust the folder and approve the two servers it brings (`meta-ads`, `fal`) when asked. The first question of every session is the language.
 
+**Two more questions follow it, in every session until `/check` says READY:**
+
+1. **The Claude extension in Chrome.** The harness looks for it itself and asks only when it finds none. On this path answer **"go on without it"**: you click Meta's screens yourself. (With the extension connected, `/connect` can drive the screens instead.)
+2. **Bypass permissions.** In this mode Claude runs its commands without asking you to approve each one, which makes the install much shorter. Answer "show me how" and the harness lists the clicks:
+   - Claude desktop app: Settings → Claude Code → turn on **Allow bypass permissions mode**; then the mode selector under the prompt box (Ctrl+Shift+M) → **Bypass permissions**. On a Team or Enterprise plan the organization may have turned the option off: go on with approvals.
+   - Terminal: start the session with `claude --allow-dangerously-skip-permissions`, then Shift+Tab until the mode line reads "bypass permissions".
+
+   You may also keep approving each step; the harness goes on either way. The mode is for the install sessions only, with you at the screen: **switch back to Manual before you leave.** The account guard, the rule that only the Owner's go spends money, and every password, code and card staying with the human hold in every mode.
+
 No terminal at all? The bootstrap does step 0 and step 1 together: `powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1` (macOS: `bash bootstrap.sh`), then open the folder in the Claude desktop app's Code tab and go to step 2.
 
 ## Step 1. `/install`
@@ -98,6 +107,7 @@ Type `/campaign`, with the Owner. The first question is which campaign to build;
 - The Meta login in `/mcp` is the Owner's own profile, not yours.
 - When you created the developer app with your own profile: the Owner is an Administrator of the app.
 - The Owner removes or downgrades your admin access in Business Settings → Users → People (a row in `checklist.md` reminds them).
+- The permission mode is back on **Manual** (the selector under the prompt box). The daily sessions read public web pages, and the approval prompt is the human check on them.
 - Type `/sync` to close the session.
 
 ## When something fails

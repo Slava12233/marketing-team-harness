@@ -32,6 +32,8 @@ This page is a thin layer. The click lists are step 2 (b) of `setup`; the outcom
 
 ## Step 0. Before the first step
 
+Before it, the session has asked the language and the two setup questions of `setup` step 0.4 (the extension: not needed here, the installer clicks; the permission mode: Bypass permissions shortens the checks, by the installer's own clicks). They are asked again in the new session after the login, kept short.
+
 1. `node memory/tools/instance.mjs --check` exits 0 (exit 3: a new copy; reset it as `/install` step 0 does, then go on). `test -f .env` says present (missing: `/install env`); never open, read, grep or print `.env`.
 2. **Access, said by the installer, not checked in a browser:** their browser is signed in to facebook.com as a **personal profile** (not switched into the Page) that is an admin of the client's Business portfolio, with two-factor authentication on (`setup-console` prerequisites 1–3; traps 2 and 3 are what a miss looks like).
 3. Read the console-steps table of `config/accounts.md`, `checklist.md` and today's session note. **Resume:** the first core row not `done` is where `/meta` starts; rows already done are read back in one line, never redone.
