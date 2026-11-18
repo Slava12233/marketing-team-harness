@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>פקודות למתקין</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --card: #ffffff; --ink: #1d1d1b; --muted: #5f5e58; --line: #e3e1d9;
+    --accent: #1f5fbf; --accent-soft: #e6eefb; --warn: #9a3412; --warn-soft: #fdeee4;
+    --ok: #166534; --ok-soft: #e7f4ea; --code: #f0efe9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --card: #1d1d1b; --ink: #eceae3; --muted: #a8a69d; --line: #33322e;
+      --accent: #7aa7ec; --accent-soft: #1d2a3f; --warn: #f2a37a; --warn-soft: #3a2418;
+      --ok: #86d19b; --ok-soft: #1a2e20; --code: #2a2926;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141413; --card: #1d1d1b; --ink: #eceae3; --muted: #a8a69d; --line: #33322e;
+    --accent: #7aa7ec; --accent-soft: #1d2a3f; --warn: #f2a37a; --warn-soft: #3a2418;
+    --ok: #86d19b; --ok-soft: #1a2e20; --code: #2a2926;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 "Segoe UI", "Arial Hebrew", Arial, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 36px 0 6px; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+  p { margin: 8px 0; }
+  .lead { color: var(--muted); margin-bottom: 8px; }
+  .sub { color: var(--muted); font-size: 15px; margin: 0 0 12px; }
+  code { font-family: Consolas, "Courier New", monospace; font-size: 14px; background: var(--code); padding: 1px 6px; border-radius: 5px; direction: ltr; unicode-bidi: isolate; }
+  .wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: start; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  th { background: var(--accent-soft); font-size: 14px; white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.n { font-weight: 700; color: var(--accent); white-space: nowrap; width: 1%; }
+  td.where { white-space: nowrap; width: 1%; }
+  td:has(> .cmd) { width: 1%; }
+  .pill { display: inline-block; font-size: 13px; font-weight: 600; border-radius: 999px; padding: 1px 10px; white-space: nowrap; }
+  .pill.term { background: var(--code); color: var(--ink); }
+  .pill.claude { background: var(--accent-soft); color: var(--accent); }
+  .cmd { display: flex; gap: 8px; align-items: flex-start; direction: ltr; justify-content: flex-end; }
+  .cmd code { font-weight: 700; color: var(--accent); padding: 4px 8px; white-space: nowrap; text-align: left; }
+  .cmd.long code { font-weight: 400; color: var(--ink); }
+  button.copy { font: inherit; font-size: 13px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; white-space: nowrap; flex: none; }
+  button.copy:hover { border-color: var(--accent); color: var(--accent); }
+  button.copy.done { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+  tr.part td { background: var(--bg); font-weight: 700; font-size: 14px; color: var(--muted); padding: 6px 12px; }
+  .rules { background: var(--warn-soft); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin-top: 16px; }
+  .rules ul { margin: 4px 0; padding-inline-start: 20px; }
+  .rules li { margin: 4px 0; }
+  .muted { color: var(--muted); font-size: 14px; }
+  @media (max-width: 720px) {
+    thead { display: none; }
+    table, tbody, tr, td { display: block; width: 100%; }
+    tr { border-bottom: 1px solid var(--line); padding: 6px 0; }
+    td { border: 0; padding: 4px 12px; }
+    td.n, td.where { width: 100%; display: inline-block; }
+    td[data-h]::before { content: attr(data-h) ": "; color: var(--muted); font-size: 13px; }
+    .cmd { justify-content: flex-start; flex-direction: row-reverse; }
+    .cmd code { white-space: pre-wrap; word-break: break-word; }
+  }
+  @media print { button.copy { display: none; } body { background: #fff; } .wrap { border: 0; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>פקודות למתקין</h1>
+  <p class="lead">התקנת צוות השיווק על מחשב חדש של לקוח: מה מקלידים, איפה, ובאיזה סדר. כל פקודה אומרת בסופה מה הפקודה הבאה.</p>
+
+  <div class="rules">
+    <ul>
+      <li><b>שום דבר לא מופעל ולא מוציא כסף.</b> הקמפיין הראשון נבנה במצב PAUSED. רק הודעת go של בעל העסק, עם הסכום, מפעילה מודעה.</li>
+      <li><b>טוקן, סיסמה או קוד לא נכנסים לצ'אט.</b> את הטוקן מעתיקים בכפתור Copy של Meta, וכלי מעביר אותו לקובץ <code>.env</code> בלי שאיש רואה אותו.</li>
+      <li><b>הכניסה ל-Meta היא בפרופיל של בעל העסק,</b> לא של המתקין. גם כרטיס האשראי, הקודים ותנאי השימוש הם שלו.</li>
+    </ul>
+  </div>
+
+  <h2>המסלול, לפי הסדר</h2>
+  <p class="sub">"טרמינל" הוא חלון PowerShell שנפתח בתיקיית ההרנס (קליק ימני על התיקייה ← Open in Terminal). "Claude" הוא תיבת ההודעה של Claude Code.</p>
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>איפה</th><th>מה מקלידים</th><th>מה קורה</th><th>מה אתם עושים</th></tr>
+      </thead>
+      <tbody>
+        <tr class="part"><td colspan="5">שלב 0: לפני Claude (פעם אחת)</td></tr>
+        <tr>
+          <td class="n">0.1</td>
+          <td class="where"><span class="pill term">טרמינל</span></td>
+          <td><div class="cmd long"><button class="copy" data-copy="winget install --id Git.Git -e --source winget">העתקה</button><code>winget install --id Git.Git -e --source winget</code></div></td>
+          <td data-h="מה קורה">Git מותקן. Claude Code ב-Windows מריץ דרכו פקודות.</td>
+          <td data-h="מה אתם עושים">מאשרים את חלון ההרשאה של Windows.</td>
+        </tr>
+        <tr>
+          <td class="n">0.2</td>
+          <td class="where"><span class="pill term">טרמינל</span></td>
+          <td><div class="cmd long"><button class="copy" data-copy="irm https://claude.ai/install.ps1 | iex">העתקה</button><code>irm https://claude.ai/install.ps1 | iex</code></div></td>
+          <td data-h="מה קורה">Claude Code מותקן.</td>
+          <td data-h="מה אתם עושים">סוגרים את הטרמינל ופותחים אותו מחדש בתיקייה.</td>
+        </tr>
+        <tr>
+          <td class="n">0.3</td>
+          <td class="where"><span class="pill term">טרמינל</span></td>
+          <td><div class="cmd"><button class="copy" data-copy="claude">העתקה</button><code>claude</code></div></td>
+          <td data-h="מה קורה">Claude נפתח בתיקיית ההרנס.</td>
+          <td data-h="מה אתם עושים">מתחברים עם חשבון Claude של הלקוח, מאשרים את התיקייה ואת שני השרתים (<code>meta-ads</code>, <code>fal</code>), ועונים על שאלת השפה.</td>
+        </tr>
+
+        <tr class="part"><td colspan="5">שלב 1: הכלים</td></tr>
+        <tr>
+          <td class="n">1</td>
+          <td class="where"><span class="pill claude">Claude</span></td>
+          <td><div class="cmd"><button class="copy" data-copy="/install">העתקה</button><code>/install</code></div></td>
+          <td data-h="מה קורה">דוח של מה קיים ומה חסר, ואז התקנה של כל החסר: Node.js, אפליקציית הדסקטופ של Claude, Chrome, Obsidian, FFmpeg, תוסף הווידאו וקובץ <code>.env</code> ריק.</td>
+          <td data-h="מה אתם עושים">מאשרים הרשאות של Windows. בסוף פותחים סשן חדש, עדיף בלשונית Code של אפליקציית הדסקטופ.</td>
+        </tr>
+
+        <tr class="part"><td colspan="5">שלב 2: החיבור ל-Meta</td></tr>
+        <tr>
+          <td class="n">2.1</td>
+          <td class="where"><span class="pill claude">Claude</span></td>
+          <td><div class="cmd"><button class="copy" data-copy="/meta">העתקה</button><code>/meta</code></div></td>
+          <td data-h="מה קורה">סבב שאלות קצר (שם העסק, שם קצר, שפת בעל העסק), ואז הכניסה ל-Meta: <code>/mcp</code> ← <code>meta-ads</code> ← log in.</td>
+          <td data-h="מה אתם עושים">בעל העסק מתחבר בפרופיל שלו ומשתף רק את התיק העסקי, חשבון המודעות והעמוד של העסק הזה. אחר כך סשן חדש.</td>
+        </tr>
+        <tr>
+          <td class="n">2.2</td>
+          <td class="where"><span class="pill claude">Claude</span></td>
+          <td><div class="cmd"><button class="copy" data-copy="/meta">העתקה</button><code>/meta</code></div></td>
+          <td data-h="מה קורה">ממשיך מהמקום שנעצר: בחירת חשבון המודעות והעמוד, אפליקציית המפתחים, ה-System User והטוקן. אחרי כל צעד בדיקה חיה.</td>
+          <td data-h="מה אתם עושים">לוחצים במסכי Meta לפי רשימת הקליקים וכותבים <code>done</code>. בטוקן: לוחצים Copy וכותבים <code>copied</code>.</td>
+        </tr>
+
+        <tr class="part"><td colspan="5">שלב 3: בדיקה</td></tr>
+        <tr>
+          <td class="n">3</td>
+          <td class="where"><span class="pill claude">Claude</span></td>
+          <td><div class="cmd"><button class="copy" data-copy="/check">העתקה</button><code>/check</code></div></td>
+          <td data-h="מה קורה">טבלת ירוק/צהוב/אדום ופסק דין אחד: READY, או NOT READY עם הפקודה שמתקנת כל שורה אדומה.</td>
+          <td data-h="מה אתם עושים">אם NOT READY: מריצים את הפקודה שנכתבה ליד השורה, ואז שוב <code>/check</code>.</td>
+        </tr>
+
+        <tr class="part"><td colspan="5">שלב 4: העסק והקמפיין הראשון</td></tr>
+        <tr>
+          <td class="n">4</td>
+          <td class="where"><span class="pill claude">Claude</span></td>
+          <td><div class="cmd"><button class="copy" data-copy="/campaign">העתקה</button><code>/campaign</code></div></td>
+          <td data-h="מה קורה">איזה קמפיין בונים, סבבי שאלות על העסק, מחקר שוק, תוכנית, קופי, קריאייטיב, והקמפיין נבנה PAUSED ומוצג כתצוגה מקדימה של Meta.</td>
+          <td data-h="מה אתם עושים">בעל העסק עונה על השאלות ובוחר. אם סוג הקמפיין צריך עוד פריט ב-Meta, Claude אומר איזו פקודה להריץ.</td>
+        </tr>
+
+        <tr class="part"><td colspan="5">סיום</td></tr>
+        <tr>
+          <td class="n">5</td>
+          <td class="where"><span class="pill claude">Claude</span></td>
+          <td><div class="cmd"><button class="copy" data-copy="/sync">העתקה</button><code>/sync</code></div></td>
+          <td data-h="מה קורה">סוגר את הסשן: הזיכרון מתעדכן והרשימה לבעל העסק נכתבת.</td>
+          <td data-h="מה אתם עושים">עוברים על "לפני שעוזבים" בסוף הדף.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">ב-macOS שלב 0 הוא שורה אחת, <code>curl -fsSL https://claude.ai/install.sh | bash</code>, ואחריה <code>claude</code>. Python לא נדרש.</p>
+
+  <h2>צעד בודד ב-Meta</h2>
+  <p class="sub"><code>/meta</code> מריץ את ארבעת הצעדים האלה לפי הסדר. אפשר להריץ כל אחד לבד, למשל אחרי תקלה.</p>
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr><th>מה מקלידים</th><th>מה המתקין עושה</th><th>מה Claude בודק</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta login">העתקה</button><code>/meta login</code></div></td>
+          <td data-h="המתקין"><code>/mcp</code> ← <code>meta-ads</code> ← log in, בפרופיל של בעל העסק. אחר כך סשן חדש.</td>
+          <td data-h="הבדיקה">חשבון המודעות של הלקוח מופיע בקריאה חיה.</td>
+        </tr>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta assets">העתקה</button><code>/meta assets</code></div></td>
+          <td data-h="המתקין">בוחר את חשבון המודעות ואת העמוד מתוך הרשימה, ומאשר שיש אמצעי תשלום וטלפון מאומת.</td>
+          <td data-h="הבדיקה">המזהים, המטבע והתקציב היומי המינימלי נקראים ונרשמים.</td>
+        </tr>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta app">העתקה</button><code>/meta app</code></div></td>
+          <td data-h="המתקין">יוצר אפליקציית מפתחים (Marketing API) ו-System User בתפקיד Employee, ומשייך לו שלושה נכסים: חשבון המודעות, האפליקציה והעמוד.</td>
+          <td data-h="הבדיקה">נבדק בצעד הטוקן.</td>
+        </tr>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta token">העתקה</button><code>/meta token</code></div></td>
+          <td data-h="המתקין">Generate token, שש ההרשאות, Generate, <b>Copy</b>, סוגר את החלון וכותב <code>copied</code>.</td>
+          <td data-h="הבדיקה">הטוקן עובר ל-<code>.env</code>, ושלוש בדיקות רצות: העלאות, הרשאות, טפסי לידים.</td>
+        </tr>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta status">העתקה</button><code>/meta status</code></div></td>
+          <td data-h="המתקין">כלום.</td>
+          <td data-h="הבדיקה">מציג מה נעשה, מה פתוח ומה הפקודה הבאה.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>פריטים לפי סוג הקמפיין</h2>
+  <p class="sub">לא חלק מהליבה. מריצים כשיודעים איזה קמפיין בונים, או כש-<code>/campaign</code> מבקש.</p>
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr><th>מה מקלידים</th><th>מתי צריך</th><th>מה רק אדם עושה</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta pixel">העתקה</button><code>/meta pixel</code></div></td>
+          <td data-h="מתי">הקמפיין שולח אנשים לאתר, או מוכר מקטלוג.</td>
+          <td data-h="רק אדם">השינוי באתר עצמו.</td>
+        </tr>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta domain">העתקה</button><code>/meta domain</code></div></td>
+          <td data-h="מתי">יש אתר (מומלץ יחד עם הפיקסל).</td>
+          <td data-h="רק אדם">רשומת ה-DNS או התג באתר.</td>
+        </tr>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta whatsapp">העתקה</button><code>/meta whatsapp</code></div></td>
+          <td data-h="מתי">קמפיין קליק ל-WhatsApp.</td>
+          <td data-h="רק אדם">המספר והקוד, מוקלדים במסך של Meta ולא בצ'אט.</td>
+        </tr>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta leads">העתקה</button><code>/meta leads</code></div></td>
+          <td data-h="מתי">טופס לידים בתוך פייסבוק ואינסטגרם.</td>
+          <td data-h="רק אדם">אישור תנאי מודעות הלידים.</td>
+        </tr>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta instagram">העתקה</button><code>/meta instagram</code></div></td>
+          <td data-h="מתי">מודעות מחשבון האינסטגרם של העסק.</td>
+          <td data-h="רק אדם">הכניסה לאינסטגרם.</td>
+        </tr>
+        <tr>
+          <td><div class="cmd"><button class="copy" data-copy="/meta people">העתקה</button><code>/meta people</code></div></td>
+          <td data-h="מתי">מי שמפעיל את ההרנס אינו בעל העסק.</td>
+          <td data-h="רק אדם">המפעיל מאשר את ההזמנה.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>כלי בודד</h2>
+  <p class="sub"><code>/install</code> מתקין הכול. מילה אחריו מתקינה כלי אחד.</p>
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr><th>מה מקלידים</th><th>מה מותקן</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install check">העתקה</button><code>/install check</code></div></td><td>כלום. רק דוח של מה קיים ומה חסר.</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install git">העתקה</button><code>/install git</code></div></td><td>Git</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install node">העתקה</button><code>/install node</code></div></td><td>Node.js LTS</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install claude">העתקה</button><code>/install claude</code></div></td><td>Claude Code (הפקודה <code>claude</code>)</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install app">העתקה</button><code>/install app</code></div></td><td>אפליקציית הדסקטופ של Claude</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install chrome">העתקה</button><code>/install chrome</code></div></td><td>Google Chrome</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install obsidian">העתקה</button><code>/install obsidian</code></div></td><td>Obsidian, החלון אל הזיכרון של ההרנס</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install ffmpeg">העתקה</button><code>/install ffmpeg</code></div></td><td>FFmpeg (לווידאו בלבד)</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install playwright">העתקה</button><code>/install playwright</code></div></td><td><code>playwright-core</code>, לצילומי המסך של כלי הקריאייטיב</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install video">העתקה</button><code>/install video</code></div></td><td>תוסף הווידאו HyperFrames</td></tr>
+        <tr><td><div class="cmd"><button class="copy" data-copy="/install env">העתקה</button><code>/install env</code></div></td><td>קובץ <code>.env</code> ריק (שמות בלבד, בלי ערכים)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>כשמשהו נכשל</h2>
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr><th>מה רואים</th><th>מה זה</th><th>מה עושים</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>הכלים של Meta חסרים אחרי הכניסה</td>
+          <td data-h="מה זה">הם נטענים רק בסשן שנפתח אחרי הכניסה.</td>
+          <td data-h="מה עושים">סשן חדש, ואז <code>/meta</code></td>
+        </tr>
+        <tr>
+          <td>קוד 10 בבדיקת טפסי הלידים</td>
+          <td data-h="מה זה">העמוד לא שויך ל-System User.</td>
+          <td data-h="מה עושים"><code>/meta app</code>, צעד 5 ברשימה שלו, ואז <code>/check</code></td>
+        </tr>
+        <tr>
+          <td>קוד 200, "API access blocked", בכל בדיקה</td>
+          <td data-h="מה זה">Meta חסמה את חשבון המפתחים של מנהל האפליקציה. זו לא בעיה בטוקן.</td>
+          <td data-h="מה עושים">משלימים את האימות ב-developers.facebook.com בפרופיל האישי (לא בפרופיל העמוד), ואז <code>/meta token</code></td>
+        </tr>
+        <tr>
+          <td>קוד 190</td>
+          <td data-h="מה זה">הטוקן שגוי או בוטל.</td>
+          <td data-h="מה עושים"><code>/meta token</code>: קודם Revoke, אחר כך Generate</td>
+        </tr>
+        <tr>
+          <td>"the value is empty" אחרי <code>copied</code></td>
+          <td data-h="מה זה">ה-Copy לא נקלט בלוח.</td>
+          <td data-h="מה עושים">לוחצים Copy שוב וכותבים <code>copied</code></td>
+        </tr>
+        <tr>
+          <td>הטוקן הופיע בצ'אט</td>
+          <td data-h="מה זה">הוא שרוף.</td>
+          <td data-h="מה עושים">Revoke ב-Business Settings, ואז <code>/meta token</code></td>
+        </tr>
+        <tr>
+          <td>כלי חסר</td>
+          <td data-h="מה זה">ההתקנה שלו לא הושלמה.</td>
+          <td data-h="מה עושים"><code>/install</code> ושם הכלי, למשל <code>/install node</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>לפני שעוזבים</h2>
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>מה בודקים</th><th>איך</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="n">1</td><td>הכול מחובר</td><td><code>/check</code> אומר READY, ובעל העסק ראה את הטבלה.</td></tr>
+        <tr><td class="n">2</td><td>הכניסה ל-Meta היא של בעל העסק</td><td>ב-<code>/mcp</code>, השרת <code>meta-ads</code> מחובר בפרופיל שלו ולא בשלכם.</td></tr>
+        <tr><td class="n">3</td><td>בעל העסק מנהל את אפליקציית המפתחים</td><td>רק אם יצרתם את האפליקציה בפרופיל שלכם: הוא Administrator שלה.</td></tr>
+        <tr><td class="n">4</td><td>הגישה שלכם מוסרת</td><td>בעל העסק מסיר או מוריד את הרשאת האדמין שלכם ב-Business Settings ← Users ← People.</td></tr>
+        <tr><td class="n">5</td><td>הסשן נסגר</td><td><code>/sync</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="muted">הגרסה המלאה באנגלית: <code>docs/quick-install.md</code>. כל צעד של Meta עם המלכודות שלו: <code>docs/meta-setup-guide.md</code>.</p>
+</main>
+<script>
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button.copy') : null;
+    if (!b) return;
+    var text = b.getAttribute('data-copy');
+    function done() {
+      var old = b.textContent;
+      b.textContent = 'הועתק';
+      b.classList.add('done');
+      setTimeout(function () { b.textContent = old; b.classList.remove('done'); }, 1200);
+    }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { if (document.execCommand('copy')) done(); } catch (err) { /* the command stays selectable in the table */ }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  });
+</script>
+</body>
+</html>
