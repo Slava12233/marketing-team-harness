@@ -152,7 +152,7 @@ The times are set in `config/operator.md`; the control room, if installed, remin
 
 ## 6. How to ask for things
 
-Write in plain language. Claude answers in the chat language set in `config/operator.md`; files stay in English. Every creative carries a fixed number in its flight (#1, #2, ...), never renumbered; use the number, not a description.
+Write in plain language. Every session opens with one question, which language you prefer, and Claude answers in the one you pick (the language in `config/operator.md` is offered first); files stay in English. Every creative carries a fixed number in its flight (#1, #2, ...), never renumbered; use the number, not a description.
 
 | You ask | Example | What Claude will do | What Claude will not do |
 |---|---|---|---|

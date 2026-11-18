@@ -15,7 +15,7 @@ Vocabulary, file names and field names are fixed by `docs/TEMPLATE-SPEC.md`; whe
 
 1. **Nothing is activated by the wizard.** It only reads the Meta account and writes files in this folder. No campaign, ad set or ad is created, and no money is spent.
 2. **No secrets in chat.** Never paste a token, password or key here. The one secret the harness uses (the Meta System User token) moves from Meta's Copy button into `.env` by `creatives/tools/env-set.mjs --from-clipboard` (it clears the clipboard and prints a character count only; `setup-console` 7g); the harness only ever names it and never opens `.env`.
-3. **Language.** The first question of the onboarding (`/connect` step 0) is "Which language do you prefer?", asked in both languages. From that answer on, every question, option, chat message, summary and closing note is in the chosen language (right to left when it is RTL); the files stay in English (except copy quoted verbatim in the company's own languages). When the language is already set in `config/operator.md`, use it from the first word.
+3. **Language.** The first question of the onboarding (`/connect` step 0) is "Which language do you prefer?", asked in both languages. From that answer on, every question, option, chat message, summary and closing note is in the chosen language (right to left when it is RTL); the files stay in English (except copy quoted verbatim in the company's own languages). Every later session opens with the same question through the question tool (CLAUDE.md, "Memory: read first"), with the language already set in `config/operator.md` offered first; that session's answer is its chat language.
 
 ## Step 0. Preconditions
 
